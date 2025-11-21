@@ -57,14 +57,18 @@ export const usePsdParser = () => {
     const result: Layer[] = [];
 
     for (const layer of layers) {
-      const x = layer.left + parentX;
-      const y = layer.top + parentY;
+      // Don't accumulate parent coordinates for groups - use absolute positions
+      const x = layer.left;
+      const y = layer.top;
       const width = layer.right - layer.left;
       const height = layer.bottom - layer.top;
 
+      console.log('Parsing layer:', layer.name, { x, y, width, height, hasCanvas: !!layer.canvas, hasText: !!layer.text });
+
       // Process children first (if folder/group)
       if (layer.children && layer.children.length > 0) {
-        result.push(...flattenLayers(layer.children, x, y, zIndexCounter));
+        result.push(...flattenLayers(layer.children, 0, 0, zIndexCounter));
+        continue; // Skip adding the group itself
       }
 
       // Determine layer type
@@ -158,8 +162,13 @@ export const usePsdParser = () => {
         throw new Error('Failed to parse PSD file');
       }
 
-      // Flatten and reverse layers (PSD stores top-to-bottom, we need bottom-to-top)
       const layers = psd.children ? flattenLayers(psd.children as PsdLayer[]).reverse() : [];
+
+      console.log('PSD parsed:', {
+        dimensions: { width: psd.width, height: psd.height },
+        layerCount: layers.length,
+        layers: layers.map(l => ({ name: l.name, type: l.type, x: l.x, y: l.y, width: l.width, height: l.height }))
+      });
 
       const slide: Slide = {
         id: `slide-${Date.now()}`,
