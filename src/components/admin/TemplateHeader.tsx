@@ -77,7 +77,8 @@ export const TemplateHeader = () => {
   };
 
   const handleCategorySave = () => {
-    updateTemplateCategory(tempCategory);
+    const categoryToSave = (tempCategory && tempCategory !== "none") ? tempCategory : "";
+    updateTemplateCategory(categoryToSave);
     setIsEditingCategory(false);
   };
 
@@ -136,12 +137,12 @@ export const TemplateHeader = () => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select value={tempCategory} onValueChange={setTempCategory}>
+                <Select value={tempCategory || "none"} onValueChange={setTempCategory}>
                   <SelectTrigger id="category">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {availableCategories.map(cat => (
                       <SelectItem key={cat} value={cat}>
                         {cat}

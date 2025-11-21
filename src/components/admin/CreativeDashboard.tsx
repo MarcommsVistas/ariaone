@@ -114,7 +114,7 @@ export const CreativeDashboard = () => {
 
     setShowMetadataDialog(false);
     const brand = brandName.trim() || undefined;
-    const category = categoryName || undefined;
+    const category = (categoryName && categoryName !== "none") ? categoryName : undefined;
 
     // Parse files
     let template;
@@ -172,12 +172,12 @@ export const CreativeDashboard = () => {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select value={categoryName} onValueChange={setCategoryName}>
+                <Select value={categoryName || "none"} onValueChange={setCategoryName}>
                   <SelectTrigger id="category">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {availableCategories.map(cat => (
                       <SelectItem key={cat} value={cat}>
                         {cat}
