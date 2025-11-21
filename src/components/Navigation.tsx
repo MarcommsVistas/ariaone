@@ -15,11 +15,11 @@ import ariaOneLogo from "@/assets/aria-one-logo.png";
 
 export const Navigation = () => {
   const { mode, setMode } = useTemplateStore();
-  const { userRole, userName, logout } = useAuthStore();
+  const { userRole, user, logout } = useAuthStore();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -70,13 +70,13 @@ export const Navigation = () => {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="gap-2">
               <User className="w-4 h-4" />
-              <span className="hidden sm:inline">{userName}</span>
+              <span className="hidden sm:inline">{user?.email}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuLabel>
               <div className="flex flex-col gap-1">
-                <span className="text-sm font-medium">{userName}</span>
+                <span className="text-sm font-medium">{user?.email}</span>
                 <span className="text-xs text-muted-foreground capitalize">
                   {userRole}
                 </span>
