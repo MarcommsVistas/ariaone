@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/store/useAuthStore';
 import { motion } from 'framer-motion';
+import ariaOneLogo from '@/assets/aria-one-logo.png';
 
 const Login = () => {
   const [name, setName] = useState('');
@@ -27,11 +28,8 @@ const Login = () => {
         className="w-full max-w-4xl"
       >
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-              <Layers className="w-7 h-7 text-primary-foreground" />
-            </div>
-            <h1 className="text-4xl font-bold text-foreground">Aria-One</h1>
+          <div className="inline-flex items-center justify-center mb-4">
+            <img src={ariaOneLogo} alt="Aria-One" className="h-16" />
           </div>
           <p className="text-muted-foreground text-lg">Sign in to continue</p>
         </div>
