@@ -31,6 +31,8 @@ interface PsdLayer {
 export const usePsdParser = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [progressStatus, setProgressStatus] = useState('');
 
   const rgbToHex = (r: number, g: number, b: number): string => {
     return '#' + [r, g, b].map(x => {
@@ -170,16 +172,24 @@ export const usePsdParser = () => {
   const parsePsdFile = async (file: File): Promise<Template | null> => {
     setIsLoading(true);
     setError(null);
+    setProgress(0);
+    setProgressStatus('Initializing...');
 
     try {
       // Get current user
+      setProgress(10);
+      setProgressStatus('Authenticating...');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User must be authenticated to upload templates');
       }
 
       // Parse PSD file
+      setProgress(20);
+      setProgressStatus('Reading PSD file...');
       const buffer = await file.arrayBuffer();
+      setProgress(40);
+      setProgressStatus('Parsing layers...');
       const psd = readPsd(buffer);
 
       if (!psd) {
@@ -195,6 +205,8 @@ export const usePsdParser = () => {
       });
 
       // Upload PSD file to storage
+      setProgress(50);
+      setProgressStatus('Uploading to storage...');
       const timestamp = Date.now();
       const storagePath = `templates/${timestamp}/${file.name}`;
       
@@ -208,6 +220,8 @@ export const usePsdParser = () => {
       if (uploadError) {
         throw new Error(`Failed to upload PSD file: ${uploadError.message}`);
       }
+      
+      setProgress(60);
 
       // Get public URL for the uploaded file
       const { data: { publicUrl } } = supabase.storage
@@ -215,6 +229,7 @@ export const usePsdParser = () => {
         .getPublicUrl(storagePath);
 
       // Insert template into database
+      setProgressStatus('Creating template...');
       const templateName = file.name.replace('.psd', '');
       const { data: templateData, error: templateError } = await supabase
         .from('templates')
@@ -230,6 +245,9 @@ export const usePsdParser = () => {
       if (templateError || !templateData) {
         throw new Error(`Failed to create template: ${templateError?.message}`);
       }
+      
+      setProgress(70);
+      setProgressStatus('Creating slide...');
 
       // Insert slide into database
       const { data: slideData, error: slideError } = await supabase
@@ -249,6 +267,8 @@ export const usePsdParser = () => {
       }
 
       // Insert layers into database
+      setProgress(80);
+      setProgressStatus(`Saving ${layers.length} layers...`);
       const layersToInsert = layers.map((layer, index) => ({
         slide_id: slideData.id,
         type: layer.type,
@@ -284,6 +304,8 @@ export const usePsdParser = () => {
       }
 
       // Track PSD upload
+      setProgress(90);
+      setProgressStatus('Finalizing...');
       await supabase
         .from('psd_uploads')
         .insert({
@@ -295,6 +317,8 @@ export const usePsdParser = () => {
         });
 
       // Build template object with database IDs
+      setProgress(100);
+      setProgressStatus('Complete!');
       const dbLayers: Layer[] = layersData.map((dbLayer) => ({
         id: dbLayer.id,
         type: dbLayer.type as 'text' | 'image' | 'shape',
@@ -340,11 +364,15 @@ export const usePsdParser = () => {
       };
 
       setIsLoading(false);
+      setProgress(0);
+      setProgressStatus('');
       return template;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       setIsLoading(false);
+      setProgress(0);
+      setProgressStatus('');
       console.error('Error parsing PSD:', err);
       return null;
     }
@@ -353,9 +381,13 @@ export const usePsdParser = () => {
   const parsePsdFiles = async (files: File[]): Promise<Template | null> => {
     setIsLoading(true);
     setError(null);
+    setProgress(0);
+    setProgressStatus('Initializing...');
 
     try {
       // Get current user
+      setProgress(5);
+      setProgressStatus('Authenticating...');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User must be authenticated to upload templates');
@@ -368,6 +400,8 @@ export const usePsdParser = () => {
       }
 
       // Use first file name as template name
+      setProgress(10);
+      setProgressStatus('Creating template...');
       const templateName = psdFiles[0].name.replace('.psd', '');
       const timestamp = Date.now();
 
@@ -387,12 +421,18 @@ export const usePsdParser = () => {
       }
 
       const slides: Slide[] = [];
+      const progressPerFile = 80 / psdFiles.length; // 80% of progress for processing files
       
       for (let fileIndex = 0; fileIndex < psdFiles.length; fileIndex++) {
         const file = psdFiles[fileIndex];
+        const baseProgress = 15 + (fileIndex * progressPerFile);
+        
+        setProgress(Math.round(baseProgress));
+        setProgressStatus(`Processing file ${fileIndex + 1}/${psdFiles.length}: ${file.name}`);
 
         // Parse PSD
         const buffer = await file.arrayBuffer();
+        setProgress(Math.round(baseProgress + progressPerFile * 0.3));
         const psd = readPsd(buffer);
 
         if (!psd) {
@@ -403,6 +443,8 @@ export const usePsdParser = () => {
         const layers = psd.children ? flattenLayers(psd.children as PsdLayer[]).reverse() : [];
 
         // Upload PSD file to storage
+        setProgress(Math.round(baseProgress + progressPerFile * 0.5));
+        setProgressStatus(`Uploading ${file.name}...`);
         const storagePath = `templates/${templateData.id}/${file.name}`;
         
         const { error: uploadError } = await supabase.storage
@@ -529,6 +571,9 @@ export const usePsdParser = () => {
         throw new Error('Failed to parse any PSD files');
       }
 
+      setProgress(95);
+      setProgressStatus('Finalizing template...');
+
       const template: Template = {
         id: templateData.id,
         name: templateData.name,
@@ -536,16 +581,22 @@ export const usePsdParser = () => {
         saved: templateData.is_published
       };
 
+      setProgress(100);
+      setProgressStatus('Complete!');
       setIsLoading(false);
+      setProgress(0);
+      setProgressStatus('');
       return template;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       setIsLoading(false);
+      setProgress(0);
+      setProgressStatus('');
       console.error('Error parsing PSD files:', err);
       return null;
     }
   };
 
-  return { parsePsdFile, parsePsdFiles, isLoading, error };
+  return { parsePsdFile, parsePsdFiles, isLoading, error, progress, progressStatus };
 };

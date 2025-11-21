@@ -2,13 +2,14 @@ import { useRef, useEffect } from "react";
 import { Plus, Upload, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { usePsdParser } from "@/hooks/usePsdParser";
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { useToast } from "@/hooks/use-toast";
 
 export const CreativeDashboard = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { parsePsdFile, parsePsdFiles, isLoading } = usePsdParser();
+  const { parsePsdFile, parsePsdFiles, isLoading, progress, progressStatus } = usePsdParser();
   const { 
     addTemplate, 
     templates, 
@@ -151,18 +152,26 @@ export const CreativeDashboard = () => {
             {/* Import PSD Card */}
             <Card 
               className="border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer group relative"
-              onClick={handleImportPSD}
+              onClick={!isLoading ? handleImportPSD : undefined}
             >
               <div className="aspect-square flex flex-col items-center justify-center p-8">
                 {isLoading ? (
-                  <>
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 animate-pulse">
+                  <div className="w-full space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto animate-pulse">
                       <Upload className="h-8 w-8 text-primary animate-bounce" />
                     </div>
-                    <p className="text-primary font-medium">
-                      Parsing PSD...
-                    </p>
-                  </>
+                    <div className="space-y-2">
+                      <Progress value={progress} className="h-2" />
+                      <div className="text-center space-y-1">
+                        <p className="text-primary font-medium text-sm">
+                          {progress}%
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {progressStatus}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <>
                     <div className="w-16 h-16 rounded-full bg-muted group-hover:bg-muted/80 transition-colors flex items-center justify-center mb-4">
