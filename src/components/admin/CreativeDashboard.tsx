@@ -1,8 +1,11 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Plus, Upload, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { usePsdParser } from "@/hooks/usePsdParser";
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -22,6 +25,10 @@ export const CreativeDashboard = () => {
   } = useTemplateStore();
   const { userRole } = useAuthStore();
   const { toast } = useToast();
+  
+  const [showBrandDialog, setShowBrandDialog] = useState(false);
+  const [brandName, setBrandName] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
   
   const isMarcomms = userRole === 'marcomms';
   
@@ -70,12 +77,23 @@ export const CreativeDashboard = () => {
       return;
     }
 
+    // Show brand dialog
+    setPendingFiles(files);
+    setShowBrandDialog(true);
+  };
+
+  const handleBrandSubmit = async () => {
+    if (!pendingFiles) return;
+
+    setShowBrandDialog(false);
+    const brand = brandName.trim() || undefined;
+
     // Parse files
     let template;
-    if (files.length === 1) {
-      template = await parsePsdFile(files[0]);
+    if (pendingFiles.length === 1) {
+      template = await parsePsdFile(pendingFiles[0], brand);
     } else {
-      template = await parsePsdFiles(Array.from(files));
+      template = await parsePsdFiles(Array.from(pendingFiles), brand);
     }
     
     if (template) {
@@ -92,7 +110,9 @@ export const CreativeDashboard = () => {
       });
     }
 
-    // Reset input
+    // Reset
+    setBrandName("");
+    setPendingFiles(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -110,6 +130,42 @@ export const CreativeDashboard = () => {
           onChange={handleFileChange}
           className="hidden"
         />
+
+        {/* Brand Dialog */}
+        <Dialog open={showBrandDialog} onOpenChange={setShowBrandDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Set Brand</DialogTitle>
+              <DialogDescription>
+                Specify a brand name for this template to help organize and filter templates.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="brand">Brand Name (Optional)</Label>
+                <Input
+                  id="brand"
+                  placeholder="e.g., Nike, Adidas, Apple"
+                  value={brandName}
+                  onChange={(e) => setBrandName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleBrandSubmit();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowBrandDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleBrandSubmit}>
+                Continue
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Header */}
         <div className="mb-12">
@@ -145,6 +201,9 @@ export const CreativeDashboard = () => {
                   <div className="text-center">
                     <Layers className="h-12 w-12 text-primary mx-auto mb-3" />
                     <p className="font-semibold text-foreground">{template.name}</p>
+                    {template.brand && (
+                      <p className="text-xs text-muted-foreground mt-1">{template.brand}</p>
+                    )}
                     <p className="text-sm text-muted-foreground mt-1">
                       {template.slides.length} {template.slides.length === 1 ? 'slide' : 'slides'}
                     </p>

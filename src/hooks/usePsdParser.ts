@@ -169,7 +169,7 @@ export const usePsdParser = () => {
     return result;
   };
 
-  const parsePsdFile = async (file: File): Promise<Template | null> => {
+  const parsePsdFile = async (file: File, brand?: string): Promise<Template | null> => {
     setIsLoading(true);
     setError(null);
     setProgress(0);
@@ -237,7 +237,8 @@ export const usePsdParser = () => {
           name: templateName,
           created_by: user.id,
           is_published: false,
-          psd_file_url: publicUrl
+          psd_file_url: publicUrl,
+          brand: brand || null
         })
         .select()
         .single();
@@ -359,6 +360,7 @@ export const usePsdParser = () => {
       const template: Template = {
         id: templateData.id,
         name: templateData.name,
+        brand: templateData.brand || undefined,
         slides: [slide],
         saved: templateData.is_published
       };
@@ -378,7 +380,7 @@ export const usePsdParser = () => {
     }
   };
 
-  const parsePsdFiles = async (files: File[]): Promise<Template | null> => {
+  const parsePsdFiles = async (files: File[], brand?: string): Promise<Template | null> => {
     setIsLoading(true);
     setError(null);
     setProgress(0);
@@ -411,7 +413,8 @@ export const usePsdParser = () => {
         .insert({
           name: templateName,
           created_by: user.id,
-          is_published: false
+          is_published: false,
+          brand: brand || null
         })
         .select()
         .single();
@@ -577,6 +580,7 @@ export const usePsdParser = () => {
       const template: Template = {
         id: templateData.id,
         name: templateData.name,
+        brand: templateData.brand || undefined,
         slides,
         saved: templateData.is_published
       };

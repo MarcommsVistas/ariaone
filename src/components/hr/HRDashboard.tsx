@@ -1,9 +1,9 @@
-import { useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTemplateStore } from "@/store/useTemplateStore";
-import { SlideRenderer } from "@/components/editor/SlideRenderer";
-import { Layers } from "lucide-react";
+import { TemplateCard } from "./TemplateCard";
+import { Search, Layers, Filter } from "lucide-react";
 
 export const HRDashboard = () => {
   const { 
@@ -14,6 +14,10 @@ export const HRDashboard = () => {
     unsubscribeFromChanges,
     isLoading 
   } = useTemplateStore();
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("recent");
   
   // Fetch templates and subscribe to changes on mount
   useEffect(() => {
@@ -27,6 +31,50 @@ export const HRDashboard = () => {
   
   // Only show saved templates
   const savedTemplates = templates.filter(t => t.saved);
+  
+  // Extract unique brands
+  const brands = useMemo(() => {
+    const brandSet = new Set<string>();
+    savedTemplates.forEach(template => {
+      if (template.brand) {
+        brandSet.add(template.brand);
+      }
+    });
+    return Array.from(brandSet).sort();
+  }, [savedTemplates]);
+
+  // Filter and sort templates
+  const filteredTemplates = useMemo(() => {
+    let filtered = savedTemplates;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(t => 
+        t.name.toLowerCase().includes(query) ||
+        t.brand?.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by brand
+    if (selectedBrand !== "all") {
+      filtered = filtered.filter(t => t.brand === selectedBrand);
+    }
+
+    // Sort templates
+    if (sortBy === "name") {
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === "brand") {
+      filtered.sort((a, b) => {
+        const brandA = a.brand || "";
+        const brandB = b.brand || "";
+        return brandA.localeCompare(brandB);
+      });
+    }
+    // "recent" is already sorted by created_at from the database
+
+    return filtered;
+  }, [savedTemplates, searchQuery, selectedBrand, sortBy]);
 
   const handleOpenStudio = (templateId: string) => {
     setCurrentTemplate(templateId);
@@ -34,7 +82,60 @@ export const HRDashboard = () => {
 
   return (
     <div className="h-full overflow-auto bg-background">
-      <div className="container mx-auto px-8 py-12 max-w-4xl">
+      <div className="container mx-auto px-8 py-12 max-w-7xl">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
+            Templates
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Browse and customize templates for your brand
+          </p>
+        </div>
+
+        {/* Filters */}
+        <div className="mb-8 flex flex-col sm:flex-row gap-4">
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search templates..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Brand Filter */}
+          <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="All Brands" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Brands</SelectItem>
+              {brands.map(brand => (
+                <SelectItem key={brand} value={brand}>
+                  {brand}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Sort */}
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Most Recent</SelectItem>
+              <SelectItem value="name">Name A-Z</SelectItem>
+              <SelectItem value="brand">Brand</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Content */}
         {isLoading && templates.length === 0 ? (
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
@@ -44,71 +145,29 @@ export const HRDashboard = () => {
               <p className="text-muted-foreground">Loading templates...</p>
             </div>
           </div>
-        ) : (
-          <div className="space-y-8">
-            {savedTemplates.map((template) => {
-              const firstSlide = template.slides[0];
-              
-              return (
-                <Card 
-                  key={template.id}
-                  className="overflow-hidden border border-border bg-card"
-                >
-                  {/* Template Preview */}
-                  <div className="bg-muted/30 flex items-center justify-center p-8">
-                    <div 
-                      className="relative bg-white shadow-lg"
-                      style={{
-                        width: '420px',
-                        height: firstSlide ? `${(firstSlide.height / firstSlide.width) * 420}px` : '420px',
-                      }}
-                    >
-                      {firstSlide && (
-                        <div style={{ transform: `scale(${420 / firstSlide.width})`, transformOrigin: 'top left' }}>
-                          <SlideRenderer
-                            slide={firstSlide}
-                            scale={420 / firstSlide.width}
-                            interactive={false}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Template Info */}
-                  <div className="p-6 space-y-4">
-                    <div>
-                      <h2 className="text-2xl font-bold text-foreground mb-1">
-                        {template.name}
-                      </h2>
-                      <p className="text-muted-foreground">
-                        {template.slides.length} {template.slides.length === 1 ? 'Slide' : 'Slides'}
-                      </p>
-                    </div>
-
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      size="lg"
-                      onClick={() => handleOpenStudio(template.id)}
-                    >
-                      Open Studio
-                    </Button>
-                  </div>
-                </Card>
-              );
-            })}
-
-            {savedTemplates.length === 0 && !isLoading && (
-              <div className="text-center py-16">
-                <p className="text-muted-foreground text-lg">
-                  No templates available yet
-                </p>
-                <p className="text-muted-foreground text-sm mt-2">
-                  Contact your admin to create templates
-                </p>
-              </div>
+        ) : filteredTemplates.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-muted-foreground text-lg">
+              {searchQuery || selectedBrand !== "all" 
+                ? "No templates match your filters"
+                : "No templates available yet"
+              }
+            </p>
+            {!searchQuery && selectedBrand === "all" && (
+              <p className="text-muted-foreground text-sm mt-2">
+                Contact your admin to create templates
+              </p>
             )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTemplates.map((template) => (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                onOpenStudio={handleOpenStudio}
+              />
+            ))}
           </div>
         )}
       </div>
