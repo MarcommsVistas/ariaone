@@ -2,9 +2,30 @@ import { useState } from 'react';
 import { toPng, toJpeg } from 'html-to-image';
 import { toast } from 'sonner';
 import JSZip from 'jszip';
+import { useFontStore } from '@/store/useFontStore';
 
 export const useExport = () => {
   const [isExporting, setIsExporting] = useState(false);
+  const { uploadedFonts } = useFontStore();
+
+  const injectFontsToElement = (element: HTMLElement) => {
+    // Create a style element with embedded fonts
+    const styleEl = document.createElement('style');
+    const fontFaceRules = uploadedFonts.map(font => {
+      return `
+        @font-face {
+          font-family: '${font.family}';
+          src: url('${font.dataUrl}');
+          font-display: block;
+        }
+      `;
+    }).join('\n');
+    
+    styleEl.textContent = fontFaceRules;
+    element.appendChild(styleEl);
+    
+    return styleEl;
+  };
 
   const exportAsImage = async (
     elementId: string,
@@ -18,6 +39,16 @@ export const useExport = () => {
       const element = document.getElementById(elementId);
       if (!element) {
         throw new Error('Element not found');
+      }
+
+      // Inject fonts into the element
+      const styleEl = injectFontsToElement(element);
+
+      // Wait for all custom fonts to be loaded
+      if (uploadedFonts.length > 0) {
+        await Promise.all(
+          uploadedFonts.map(font => document.fonts.load(`16px ${font.family}`))
+        );
       }
 
       // Wait for all images to load
@@ -36,15 +67,21 @@ export const useExport = () => {
         )
       );
 
-      // Add a small delay to ensure rendering is complete
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Add a delay to ensure fonts and rendering are complete
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       const exportFunction = format === 'png' ? toPng : toJpeg;
       const dataUrl = await exportFunction(element, {
         quality,
         pixelRatio: 2, // 2x for retina quality
         cacheBust: true,
+        fontEmbedCSS: uploadedFonts.map(font => 
+          `@font-face { font-family: '${font.family}'; src: url('${font.dataUrl}'); }`
+        ).join('\n'),
       });
+
+      // Clean up injected style
+      styleEl.remove();
 
       // Create download link
       const link = document.createElement('a');
@@ -89,6 +126,16 @@ export const useExport = () => {
           throw new Error('Element not found');
         }
 
+        // Inject fonts into the element
+        const styleEl = injectFontsToElement(element);
+
+        // Wait for all custom fonts to be loaded
+        if (uploadedFonts.length > 0) {
+          await Promise.all(
+            uploadedFonts.map(font => document.fonts.load(`16px ${font.family}`))
+          );
+        }
+
         // Wait for all images to load
         const images = element.getElementsByTagName('img');
         await Promise.all(
@@ -105,12 +152,21 @@ export const useExport = () => {
           )
         );
 
+        // Add delay to ensure fonts are rendered
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
         // Export the slide
         const dataUrl = await exportFunction(element, {
           quality,
           pixelRatio: 2,
           cacheBust: true,
+          fontEmbedCSS: uploadedFonts.map(font => 
+            `@font-face { font-family: '${font.family}'; src: url('${font.dataUrl}'); }`
+          ).join('\n'),
         });
+
+        // Clean up injected style
+        styleEl.remove();
 
         // Convert data URL to blob
         const base64Data = dataUrl.split(',')[1];

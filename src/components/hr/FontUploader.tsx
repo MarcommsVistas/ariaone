@@ -48,7 +48,11 @@ export const FontUploader = () => {
         
         fontFace.load().then((loadedFont) => {
           document.fonts.add(loadedFont);
-          addFont({ name: fontName, family: fontFamily });
+          addFont({ 
+            name: fontName, 
+            family: fontFamily,
+            dataUrl: fontData as string 
+          });
           toast.success(`Font "${fontName}" uploaded successfully`);
         }).catch(() => {
           toast.error(`Failed to load font "${fontName}"`);
