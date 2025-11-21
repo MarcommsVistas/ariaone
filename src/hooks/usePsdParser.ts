@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { readPsd } from 'ag-psd';
 import { Layer, Slide, Template } from '@/store/useTemplateStore';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PsdLayer {
   name: string;
@@ -171,6 +172,13 @@ export const usePsdParser = () => {
     setError(null);
 
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User must be authenticated to upload templates');
+      }
+
+      // Parse PSD file
       const buffer = await file.arrayBuffer();
       const psd = readPsd(buffer);
 
@@ -186,18 +194,149 @@ export const usePsdParser = () => {
         layers: layers.map(l => ({ name: l.name, type: l.type, x: l.x, y: l.y, width: l.width, height: l.height }))
       });
 
+      // Upload PSD file to storage
+      const timestamp = Date.now();
+      const storagePath = `templates/${timestamp}/${file.name}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('psd-files')
+        .upload(storagePath, file, {
+          contentType: 'application/octet-stream',
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw new Error(`Failed to upload PSD file: ${uploadError.message}`);
+      }
+
+      // Get public URL for the uploaded file
+      const { data: { publicUrl } } = supabase.storage
+        .from('psd-files')
+        .getPublicUrl(storagePath);
+
+      // Insert template into database
+      const templateName = file.name.replace('.psd', '');
+      const { data: templateData, error: templateError } = await supabase
+        .from('templates')
+        .insert({
+          name: templateName,
+          created_by: user.id,
+          is_published: false,
+          psd_file_url: publicUrl
+        })
+        .select()
+        .single();
+
+      if (templateError || !templateData) {
+        throw new Error(`Failed to create template: ${templateError?.message}`);
+      }
+
+      // Insert slide into database
+      const { data: slideData, error: slideError } = await supabase
+        .from('slides')
+        .insert({
+          template_id: templateData.id,
+          name: templateName,
+          width: psd.width || 1080,
+          height: psd.height || 1080,
+          order_index: 0
+        })
+        .select()
+        .single();
+
+      if (slideError || !slideData) {
+        throw new Error(`Failed to create slide: ${slideError?.message}`);
+      }
+
+      // Insert layers into database
+      const layersToInsert = layers.map((layer, index) => ({
+        slide_id: slideData.id,
+        type: layer.type,
+        name: layer.name,
+        visible: layer.visible,
+        locked: layer.locked,
+        z_index: index,
+        x: layer.x,
+        y: layer.y,
+        width: layer.width,
+        height: layer.height,
+        opacity: layer.opacity,
+        rotation: layer.rotation,
+        text_content: layer.text || null,
+        font_family: layer.fontFamily || null,
+        font_size: layer.fontSize || null,
+        color: layer.color || null,
+        text_align: layer.align || null,
+        line_height: layer.lineHeight || null,
+        letter_spacing: layer.letterSpacing || null,
+        text_transform: layer.textTransform || null,
+        max_length: layer.maxLength || null,
+        image_src: layer.src || null
+      }));
+
+      const { data: layersData, error: layersError } = await supabase
+        .from('layers')
+        .insert(layersToInsert)
+        .select();
+
+      if (layersError) {
+        throw new Error(`Failed to create layers: ${layersError.message}`);
+      }
+
+      // Track PSD upload
+      await supabase
+        .from('psd_uploads')
+        .insert({
+          template_id: templateData.id,
+          file_name: file.name,
+          file_size: file.size,
+          storage_path: storagePath,
+          uploaded_by: user.id
+        });
+
+      // Build template object with database IDs
+      const dbLayers: Layer[] = layersData.map((dbLayer) => ({
+        id: dbLayer.id,
+        type: dbLayer.type as 'text' | 'image' | 'shape',
+        name: dbLayer.name,
+        visible: dbLayer.visible,
+        locked: dbLayer.locked,
+        zIndex: dbLayer.z_index,
+        x: dbLayer.x,
+        y: dbLayer.y,
+        width: dbLayer.width,
+        height: dbLayer.height,
+        opacity: dbLayer.opacity,
+        rotation: dbLayer.rotation,
+        ...(dbLayer.type === 'text' && {
+          text: dbLayer.text_content || '',
+          fontFamily: dbLayer.font_family || 'DM Sans',
+          fontSize: dbLayer.font_size || 16,
+          color: dbLayer.color || '#000000',
+          align: (dbLayer.text_align as 'left' | 'center' | 'right') || 'left',
+          lineHeight: dbLayer.line_height || 1.2,
+          letterSpacing: dbLayer.letter_spacing || 0,
+          textTransform: (dbLayer.text_transform as 'none' | 'uppercase' | 'lowercase' | 'capitalize') || 'none',
+          maxLength: dbLayer.max_length || 500
+        }),
+        ...(dbLayer.type === 'image' && {
+          src: dbLayer.image_src || undefined
+        })
+      }));
+
       const slide: Slide = {
-        id: `slide-${Date.now()}`,
-        name: file.name.replace('.psd', ''),
-        width: psd.width || 1080,
-        height: psd.height || 1080,
-        layers,
+        id: slideData.id,
+        name: slideData.name,
+        width: slideData.width,
+        height: slideData.height,
+        layers: dbLayers
       };
 
       const template: Template = {
-        id: `template-${Date.now()}`,
-        name: file.name.replace('.psd', ''),
+        id: templateData.id,
+        name: templateData.name,
         slides: [slide],
+        saved: templateData.is_published
       };
 
       setIsLoading(false);
@@ -216,13 +355,43 @@ export const usePsdParser = () => {
     setError(null);
 
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User must be authenticated to upload templates');
+      }
+
+      const psdFiles = files.filter(file => file.name.toLowerCase().endsWith('.psd'));
+      
+      if (psdFiles.length === 0) {
+        throw new Error('No valid PSD files found');
+      }
+
+      // Use first file name as template name
+      const templateName = psdFiles[0].name.replace('.psd', '');
+      const timestamp = Date.now();
+
+      // Insert template into database first
+      const { data: templateData, error: templateError } = await supabase
+        .from('templates')
+        .insert({
+          name: templateName,
+          created_by: user.id,
+          is_published: false
+        })
+        .select()
+        .single();
+
+      if (templateError || !templateData) {
+        throw new Error(`Failed to create template: ${templateError?.message}`);
+      }
+
       const slides: Slide[] = [];
       
-      for (const file of files) {
-        if (!file.name.toLowerCase().endsWith('.psd')) {
-          continue;
-        }
+      for (let fileIndex = 0; fileIndex < psdFiles.length; fileIndex++) {
+        const file = psdFiles[fileIndex];
 
+        // Parse PSD
         const buffer = await file.arrayBuffer();
         const psd = readPsd(buffer);
 
@@ -233,25 +402,138 @@ export const usePsdParser = () => {
 
         const layers = psd.children ? flattenLayers(psd.children as PsdLayer[]).reverse() : [];
 
+        // Upload PSD file to storage
+        const storagePath = `templates/${templateData.id}/${file.name}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('psd-files')
+          .upload(storagePath, file, {
+            contentType: 'application/octet-stream',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error(`Failed to upload ${file.name}:`, uploadError);
+          continue;
+        }
+
+        // Insert slide into database
+        const { data: slideData, error: slideError } = await supabase
+          .from('slides')
+          .insert({
+            template_id: templateData.id,
+            name: file.name.replace('.psd', ''),
+            width: psd.width || 1080,
+            height: psd.height || 1080,
+            order_index: fileIndex
+          })
+          .select()
+          .single();
+
+        if (slideError || !slideData) {
+          console.error(`Failed to create slide for ${file.name}:`, slideError);
+          continue;
+        }
+
+        // Insert layers into database
+        const layersToInsert = layers.map((layer, index) => ({
+          slide_id: slideData.id,
+          type: layer.type,
+          name: layer.name,
+          visible: layer.visible,
+          locked: layer.locked,
+          z_index: index,
+          x: layer.x,
+          y: layer.y,
+          width: layer.width,
+          height: layer.height,
+          opacity: layer.opacity,
+          rotation: layer.rotation,
+          text_content: layer.text || null,
+          font_family: layer.fontFamily || null,
+          font_size: layer.fontSize || null,
+          color: layer.color || null,
+          text_align: layer.align || null,
+          line_height: layer.lineHeight || null,
+          letter_spacing: layer.letterSpacing || null,
+          text_transform: layer.textTransform || null,
+          max_length: layer.maxLength || null,
+          image_src: layer.src || null
+        }));
+
+        const { data: layersData, error: layersError } = await supabase
+          .from('layers')
+          .insert(layersToInsert)
+          .select();
+
+        if (layersError || !layersData) {
+          console.error(`Failed to create layers for ${file.name}:`, layersError);
+          continue;
+        }
+
+        // Track PSD upload
+        await supabase
+          .from('psd_uploads')
+          .insert({
+            template_id: templateData.id,
+            file_name: file.name,
+            file_size: file.size,
+            storage_path: storagePath,
+            uploaded_by: user.id
+          });
+
+        // Build slide object with database IDs
+        const dbLayers: Layer[] = layersData.map((dbLayer) => ({
+          id: dbLayer.id,
+          type: dbLayer.type as 'text' | 'image' | 'shape',
+          name: dbLayer.name,
+          visible: dbLayer.visible,
+          locked: dbLayer.locked,
+          zIndex: dbLayer.z_index,
+          x: dbLayer.x,
+          y: dbLayer.y,
+          width: dbLayer.width,
+          height: dbLayer.height,
+          opacity: dbLayer.opacity,
+          rotation: dbLayer.rotation,
+          ...(dbLayer.type === 'text' && {
+            text: dbLayer.text_content || '',
+            fontFamily: dbLayer.font_family || 'DM Sans',
+            fontSize: dbLayer.font_size || 16,
+            color: dbLayer.color || '#000000',
+            align: (dbLayer.text_align as 'left' | 'center' | 'right') || 'left',
+            lineHeight: dbLayer.line_height || 1.2,
+            letterSpacing: dbLayer.letter_spacing || 0,
+            textTransform: (dbLayer.text_transform as 'none' | 'uppercase' | 'lowercase' | 'capitalize') || 'none',
+            maxLength: dbLayer.max_length || 500
+          }),
+          ...(dbLayer.type === 'image' && {
+            src: dbLayer.image_src || undefined
+          })
+        }));
+
         const slide: Slide = {
-          id: `slide-${Date.now()}-${Math.random()}`,
-          name: file.name.replace('.psd', ''),
-          width: psd.width || 1080,
-          height: psd.height || 1080,
-          layers,
+          id: slideData.id,
+          name: slideData.name,
+          width: slideData.width,
+          height: slideData.height,
+          layers: dbLayers
         };
 
         slides.push(slide);
       }
 
       if (slides.length === 0) {
-        throw new Error('No valid PSD files found');
+        // Clean up template if no slides were created
+        await supabase.from('templates').delete().eq('id', templateData.id);
+        throw new Error('Failed to parse any PSD files');
       }
 
       const template: Template = {
-        id: `template-${Date.now()}`,
-        name: slides[0].name,
+        id: templateData.id,
+        name: templateData.name,
         slides,
+        saved: templateData.is_published
       };
 
       setIsLoading(false);
