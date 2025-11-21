@@ -1,7 +1,6 @@
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
 import { FormGenerator } from "./FormGenerator";
-import { FontUploader } from "./FontUploader";
 import { SlideNavigation } from "@/components/editor/SlideNavigation";
 import { useExport } from "@/hooks/useExport";
 import { Button } from "@/components/ui/button";
@@ -108,11 +107,6 @@ export const HRInterface = () => {
                 </Button>
               )}
             </div>
-          </div>
-        
-        <div className="p-5 space-y-4">
-          <FontUploader />
-          <Separator />
         </div>
         
         <FormGenerator />
