@@ -42,13 +42,24 @@ const Login = () => {
 
         if (signUpError) throw signUpError;
 
-        if (authData.user) {
-          // Insert user role
-          const { error: roleError } = await supabase
-            .from('user_roles')
-            .insert({ user_id: authData.user.id, role });
+        const user = authData.user;
 
-          if (roleError) throw roleError;
+        if (user) {
+          // Ensure user has a role
+          const { data: existingRoles, error: fetchRoleError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id);
+
+          if (fetchRoleError) throw fetchRoleError;
+
+          if (!existingRoles || existingRoles.length === 0) {
+            const { error: roleError } = await supabase
+              .from('user_roles')
+              .insert({ user_id: user.id, role });
+
+            if (roleError) throw roleError;
+          }
 
           toast({
             title: "Success",
@@ -57,12 +68,31 @@ const Login = () => {
           navigate('/');
         }
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (signInError) throw signInError;
+
+        const user = signInData.user;
+
+        if (user) {
+          const { data: existingRoles, error: fetchRoleError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id);
+
+          if (fetchRoleError) throw fetchRoleError;
+
+          if (!existingRoles || existingRoles.length === 0) {
+            const { error: roleError } = await supabase
+              .from('user_roles')
+              .insert({ user_id: user.id, role });
+
+            if (roleError) throw roleError;
+          }
+        }
 
         toast({
           title: "Success",
@@ -80,7 +110,6 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
       <motion.div
