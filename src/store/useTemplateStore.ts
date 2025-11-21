@@ -64,6 +64,7 @@ interface TemplateStore {
   setCurrentSlideIndex: (index: number) => void;
   nextSlide: () => void;
   previousSlide: () => void;
+  reorderSlides: (newOrder: Slide[]) => void;
   setSelectedLayer: (layerId: string | null) => void;
   updateLayer: (layerId: string, updates: Partial<Layer>) => void;
   deleteLayer: (layerId: string) => void;
@@ -136,6 +137,28 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       currentSlideIndex: prevIndex,
       currentSlide: state.currentTemplate.slides[prevIndex],
       selectedLayer: null,
+    };
+  }),
+
+  reorderSlides: (newOrder) => set((state) => {
+    if (!state.currentTemplate) return state;
+
+    const currentSlideId = state.currentSlide?.id;
+    const newIndex = newOrder.findIndex(s => s.id === currentSlideId);
+
+    const updatedTemplates = state.templates.map(template =>
+      template.id === state.currentTemplate?.id
+        ? { ...template, slides: newOrder }
+        : template
+    );
+
+    const updatedTemplate = updatedTemplates.find(t => t.id === state.currentTemplate?.id);
+
+    return {
+      templates: updatedTemplates,
+      currentTemplate: updatedTemplate || null,
+      currentSlide: newOrder[newIndex] || newOrder[0],
+      currentSlideIndex: newIndex >= 0 ? newIndex : 0,
     };
   }),
   
