@@ -16,12 +16,10 @@ export const SlideRenderer = ({
 }: SlideRendererProps) => {
   return (
     <div 
-      className="relative bg-white shadow-lg"
+      className="relative bg-white shadow-lg overflow-hidden"
       style={{
         width: slide.width,
         height: slide.height,
-        transform: `scale(${scale})`,
-        transformOrigin: 'top left',
       }}
     >
       {slide.layers
