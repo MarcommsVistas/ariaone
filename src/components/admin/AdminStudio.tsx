@@ -9,6 +9,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 
 export const AdminStudio = () => {
   const { currentSlide, setSelectedLayer } = useTemplateStore();
+  const [zoom, setZoom] = useState(100); // percentage
 
   if (!currentSlide) {
     return (
@@ -32,7 +33,6 @@ export const AdminStudio = () => {
   const scaleY = availableHeight / currentSlide.height;
   const baseScale = Math.min(scaleX, scaleY, 1);
 
-  const [zoom, setZoom] = useState(100); // percentage
   const minZoom = 25;
   const maxZoom = 200;
   const effectiveScale = baseScale * (zoom / 100);
