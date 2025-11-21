@@ -1,8 +1,10 @@
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { AIGenerationDialog } from "./AIGenerationDialog";
+import { FontUploader } from "@/components/hr/FontUploader";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { Separator } from "@/components/ui/separator";
 import { AlertCircle } from "lucide-react";
 
 export const PropertyPanel = () => {
@@ -28,7 +30,22 @@ export const PropertyPanel = () => {
         <AIGenerationDialog />
       </div>
       
-      <div className="p-4 space-y-6">
+      {/* Font Uploader Section */}
+      <div className="p-4 border-b border-border">
+        <FontUploader />
+      </div>
+      
+      {!selectedLayer ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-2 px-4">
+            <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto" />
+            <p className="text-sm text-muted-foreground">
+              Select a layer to edit properties
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 space-y-6">
         <div>
           <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
             Layer Info
@@ -303,6 +320,7 @@ export const PropertyPanel = () => {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };
