@@ -53,6 +53,7 @@ interface TemplateStore {
   templates: Template[];
   currentTemplate: Template | null;
   currentSlide: Slide | null;
+  currentSlideIndex: number;
   selectedLayer: Layer | null;
   mode: 'admin' | 'hr';
   
@@ -60,6 +61,9 @@ interface TemplateStore {
   addTemplate: (template: Template) => void;
   setCurrentTemplate: (templateId: string) => void;
   setCurrentSlide: (slideId: string) => void;
+  setCurrentSlideIndex: (index: number) => void;
+  nextSlide: () => void;
+  previousSlide: () => void;
   setSelectedLayer: (layerId: string | null) => void;
   updateLayer: (layerId: string, updates: Partial<Layer>) => void;
   deleteLayer: (layerId: string) => void;
@@ -73,6 +77,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
   templates: [],
   currentTemplate: null,
   currentSlide: null,
+  currentSlideIndex: 0,
   selectedLayer: null,
   mode: 'admin',
   
@@ -82,6 +87,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     templates: [...state.templates, template],
     currentTemplate: template,
     currentSlide: template.slides[0] || null,
+    currentSlideIndex: 0,
   })),
   
   setCurrentTemplate: (templateId) => set((state) => {
@@ -89,14 +95,46 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     return {
       currentTemplate: template || null,
       currentSlide: template?.slides[0] || null,
+      currentSlideIndex: 0,
       selectedLayer: null,
     };
   }),
   
   setCurrentSlide: (slideId) => set((state) => {
     const slide = state.currentTemplate?.slides.find(s => s.id === slideId);
+    const slideIndex = state.currentTemplate?.slides.findIndex(s => s.id === slideId) ?? 0;
     return {
       currentSlide: slide || null,
+      currentSlideIndex: slideIndex,
+      selectedLayer: null,
+    };
+  }),
+  
+  setCurrentSlideIndex: (index) => set((state) => {
+    const slide = state.currentTemplate?.slides[index];
+    return {
+      currentSlideIndex: index,
+      currentSlide: slide || null,
+      selectedLayer: null,
+    };
+  }),
+  
+  nextSlide: () => set((state) => {
+    if (!state.currentTemplate) return state;
+    const nextIndex = Math.min(state.currentSlideIndex + 1, state.currentTemplate.slides.length - 1);
+    return {
+      currentSlideIndex: nextIndex,
+      currentSlide: state.currentTemplate.slides[nextIndex],
+      selectedLayer: null,
+    };
+  }),
+  
+  previousSlide: () => set((state) => {
+    if (!state.currentTemplate) return state;
+    const prevIndex = Math.max(state.currentSlideIndex - 1, 0);
+    return {
+      currentSlideIndex: prevIndex,
+      currentSlide: state.currentTemplate.slides[prevIndex],
       selectedLayer: null,
     };
   }),
@@ -226,6 +264,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
   clearCurrentTemplate: () => set({
     currentTemplate: null,
     currentSlide: null,
+    currentSlideIndex: 0,
     selectedLayer: null,
   }),
 }));

@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export const CreativeDashboard = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { parsePsdFile, isLoading } = usePsdParser();
+  const { parsePsdFile, parsePsdFiles, isLoading } = usePsdParser();
   const { addTemplate, templates, setCurrentTemplate } = useTemplateStore();
   const { toast } = useToast();
   
@@ -20,30 +20,51 @@ export const CreativeDashboard = () => {
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-    if (!file.name.toLowerCase().endsWith('.psd')) {
+    // Check file limit
+    if (files.length > 7) {
       toast({
-        title: "Invalid file type",
-        description: "Please upload a .psd file",
+        title: "Too many files",
+        description: "Please upload a maximum of 7 PSD files",
         variant: "destructive",
       });
       return;
     }
 
-    const template = await parsePsdFile(file);
+    // Validate all files are PSDs
+    const allPsds = Array.from(files).every(file => 
+      file.name.toLowerCase().endsWith('.psd')
+    );
+
+    if (!allPsds) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload only .psd files",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Parse files
+    let template;
+    if (files.length === 1) {
+      template = await parsePsdFile(files[0]);
+    } else {
+      template = await parsePsdFiles(Array.from(files));
+    }
     
     if (template) {
       addTemplate(template);
       toast({
         title: "Template imported",
-        description: `${template.name} has been successfully imported`,
+        description: `${template.name} with ${template.slides.length} slide${template.slides.length > 1 ? 's' : ''} has been successfully imported`,
       });
     } else {
       toast({
         title: "Import failed",
-        description: "Failed to parse PSD file. Please try again.",
+        description: "Failed to parse PSD files. Please try again.",
         variant: "destructive",
       });
     }
@@ -67,6 +88,7 @@ export const CreativeDashboard = () => {
           ref={fileInputRef}
           type="file"
           accept=".psd"
+          multiple
           onChange={handleFileChange}
           className="hidden"
         />

@@ -2,14 +2,21 @@ import { useTemplateStore } from "@/store/useTemplateStore";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
 import { FormGenerator } from "./FormGenerator";
 import { FontUploader } from "./FontUploader";
+import { SlideNavigation } from "@/components/editor/SlideNavigation";
 import { useExport } from "@/hooks/useExport";
 import { Button } from "@/components/ui/button";
-import { Download, AlertCircle, Sparkles } from "lucide-react";
+import { Download, AlertCircle, Sparkles, DownloadCloud } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const HRInterface = () => {
-  const { currentSlide } = useTemplateStore();
-  const { exportAsImage, isExporting } = useExport();
+  const { currentSlide, currentTemplate, setCurrentSlideIndex } = useTemplateStore();
+  const { exportAsImage, exportAllSlides, isExporting } = useExport();
 
   if (!currentSlide) {
     return (
@@ -25,8 +32,24 @@ export const HRInterface = () => {
     );
   }
 
-  const handleExport = () => {
+  const handleExportCurrent = () => {
     exportAsImage('hr-export-canvas', currentSlide.name, 'jpeg', 0.95);
+  };
+
+  const handleExportAll = async () => {
+    if (!currentTemplate) return;
+
+    await exportAllSlides(
+      currentTemplate.slides.map(s => ({ id: s.id, name: s.name })),
+      async (slideId) => {
+        const slideIndex = currentTemplate.slides.findIndex(s => s.id === slideId);
+        setCurrentSlideIndex(slideIndex);
+      },
+      'hr-export-canvas',
+      currentTemplate.name,
+      'jpeg',
+      0.95
+    );
   };
 
   // Calculate scale
@@ -37,26 +60,55 @@ export const HRInterface = () => {
   const scaleY = availableHeight / currentSlide.height;
   const scale = Math.min(scaleX, scaleY, 1);
 
+  const hasMultipleSlides = currentTemplate && currentTemplate.slides.length > 1;
+
   return (
-    <div className="flex-1 flex overflow-hidden">
-      <div className="w-[420px] bg-panel border-r border-border overflow-auto">
-        <div className="sticky top-0 z-10 bg-panel/95 backdrop-blur-sm border-b border-border">
-          <div className="h-14 flex items-center justify-between px-5">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <h3 className="font-semibold text-foreground">Customize Template</h3>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex overflow-hidden">
+        <div className="w-[420px] bg-panel border-r border-border overflow-auto">
+          <div className="sticky top-0 z-10 bg-panel/95 backdrop-blur-sm border-b border-border">
+            <div className="h-14 flex items-center justify-between px-5">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <h3 className="font-semibold text-foreground">Customize Template</h3>
+              </div>
+              
+              {hasMultipleSlides ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      size="sm" 
+                      className="gap-2 shadow-sm"
+                      disabled={isExporting}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {isExporting ? 'Exporting...' : 'Export'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleExportCurrent}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Export Current Slide
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportAll}>
+                      <DownloadCloud className="w-4 h-4 mr-2" />
+                      Export All Slides (ZIP)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button 
+                  size="sm" 
+                  onClick={handleExportCurrent} 
+                  className="gap-2 shadow-sm"
+                  disabled={isExporting}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  {isExporting ? 'Exporting...' : 'Export'}
+                </Button>
+              )}
             </div>
-            <Button 
-              size="sm" 
-              onClick={handleExport} 
-              className="gap-2 shadow-sm"
-              disabled={isExporting}
-            >
-              <Download className="w-3.5 h-3.5" />
-              {isExporting ? 'Exporting...' : 'Export'}
-            </Button>
           </div>
-        </div>
         
         <div className="p-5 space-y-4">
           <FontUploader />
@@ -84,6 +136,8 @@ export const HRInterface = () => {
           </div>
         </div>
       </div>
+      </div>
+      <SlideNavigation />
     </div>
   );
 };
