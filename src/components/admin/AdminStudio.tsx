@@ -34,19 +34,27 @@ export const AdminStudio = () => {
     <div className="flex-1 flex overflow-hidden">
       <LayerPanel />
       
-      <div className="flex-1 bg-canvas flex items-center justify-center p-10 overflow-auto">
-        <div className="relative">
-          <SlideRenderer
-            slide={currentSlide}
-            scale={scale}
-            interactive={true}
-            onLayerClick={setSelectedLayer}
-          />
-          <InteractionOverlay
-            slideWidth={currentSlide.width}
-            slideHeight={currentSlide.height}
-            scale={scale}
-          />
+      <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto">
+        <div 
+          className="relative"
+          style={{
+            width: currentSlide.width * scale,
+            height: currentSlide.height * scale,
+          }}
+        >
+          <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+            <SlideRenderer
+              slide={currentSlide}
+              scale={1}
+              interactive={true}
+              onLayerClick={setSelectedLayer}
+            />
+            <InteractionOverlay
+              slideWidth={currentSlide.width}
+              slideHeight={currentSlide.height}
+              scale={1}
+            />
+          </div>
         </div>
       </div>
       

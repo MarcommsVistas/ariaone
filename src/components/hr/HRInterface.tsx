@@ -54,13 +54,21 @@ export const HRInterface = () => {
         <FormGenerator />
       </div>
       
-      <div className="flex-1 bg-canvas flex items-center justify-center p-10 overflow-auto">
-        <div id="hr-export-canvas">
-          <SlideRenderer
-            slide={currentSlide}
-            scale={scale}
-            interactive={false}
-          />
+      <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto">
+        <div 
+          id="hr-export-canvas"
+          style={{
+            width: currentSlide.width * scale,
+            height: currentSlide.height * scale,
+          }}
+        >
+          <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+            <SlideRenderer
+              slide={currentSlide}
+              scale={1}
+              interactive={false}
+            />
+          </div>
         </div>
       </div>
     </div>
