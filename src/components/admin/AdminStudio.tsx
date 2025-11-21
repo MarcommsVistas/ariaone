@@ -26,7 +26,7 @@ export const AdminStudio = () => {
   }
 
   // Calculate base scale to fit the canvas
-  const containerPadding = 80;
+  const containerPadding = 40;
   const availableWidth = window.innerWidth - 600 - containerPadding; // approx space for panels
   const availableHeight = window.innerHeight - 64 - containerPadding; // 64px for nav
   const scaleX = availableWidth / currentSlide.width;
@@ -52,7 +52,7 @@ export const AdminStudio = () => {
       <ResizablePanel defaultSize={55} minSize={40} className="h-full">
         <div className="h-full flex flex-col bg-canvas relative overflow-hidden">
           {/* Scrollable canvas container */}
-          <div className="flex-1 overflow-auto flex items-center justify-center">
+          <div className="flex-1 overflow-auto flex items-center justify-center py-8">
             <div 
               className="relative"
               style={{
