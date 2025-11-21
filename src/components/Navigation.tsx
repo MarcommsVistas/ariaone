@@ -1,4 +1,4 @@
-import { Layers, Users, LogOut, User } from "lucide-react";
+import { Layers, Users, LogOut, User, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -14,7 +14,7 @@ import {
 import ariaOneLogo from "@/assets/aria-one-logo.png";
 
 export const Navigation = () => {
-  const { mode, setMode } = useTemplateStore();
+  const { mode, setMode, currentTemplate, clearCurrentTemplate } = useTemplateStore();
   const { userRole, user, logout } = useAuthStore();
   const navigate = useNavigate();
 
@@ -23,10 +23,28 @@ export const Navigation = () => {
     navigate('/login');
   };
 
+  const handleGoToDashboard = () => {
+    clearCurrentTemplate();
+  };
+
   return (
     <nav className="h-16 bg-sidebar border-b border-sidebar-border flex items-center justify-between px-6">
       <div className="flex items-center gap-3">
         <img src={ariaOneLogo} alt="Aria-One" className="h-8" />
+        
+        {/* Dashboard/Home button - only show when editing a template */}
+        {currentTemplate && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleGoToDashboard}
+            className="gap-2"
+            title="Back to Dashboard"
+          >
+            <Home className="w-4 h-4" />
+            <span className="hidden sm:inline">Dashboard</span>
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
