@@ -98,15 +98,21 @@ export const LayerPanel = () => {
                 {getLayerIcon(layer.type)}
               </div>
               
-              <span className="flex-1 text-sm truncate">
-                {layer.name}
+              <span className="flex-1 min-w-0 text-sm truncate">
+                {(() => {
+                  const name = layer.name || '';
+                  const words = name.split(/\s+/);
+                  const maxWords = 4;
+                  if (words.length <= maxWords) return name;
+                  return words.slice(0, maxWords).join(' ') + '…';
+                })()}
               </span>
               
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1 ml-1">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
                     updateLayer(layer.id, { visible: !layer.visible });
@@ -122,7 +128,7 @@ export const LayerPanel = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`h-6 w-6 ${layer.locked ? 'text-primary' : ''}`}
+                  className={`h-6 w-6 ${layer.locked ? 'text-primary' : 'text-muted-foreground'} hover:text-foreground`}
                   onClick={(e) => {
                     e.stopPropagation();
                     updateLayer(layer.id, { locked: !layer.locked });

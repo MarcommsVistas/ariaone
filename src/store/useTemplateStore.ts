@@ -174,10 +174,14 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
         ),
       };
     });
+
+    const updatedTemplate = updatedTemplates.find(t => t.id === state.currentTemplate?.id);
+    const updatedSlide = updatedTemplate?.slides.find(s => s.id === slideId);
     
     return {
       templates: updatedTemplates,
-      currentTemplate: updatedTemplates.find(t => t.id === state.currentTemplate?.id) || null,
+      currentTemplate: updatedTemplate || null,
+      currentSlide: updatedSlide || null,
     };
   }),
 }));
