@@ -1,5 +1,6 @@
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
+import { InteractionOverlay } from "@/components/editor/InteractionOverlay";
 import { LayerPanel } from "./LayerPanel";
 import { PropertyPanel } from "./PropertyPanel";
 import { AlertCircle } from "lucide-react";
@@ -34,12 +35,19 @@ export const AdminStudio = () => {
       <LayerPanel />
       
       <div className="flex-1 bg-canvas flex items-center justify-center p-10 overflow-auto">
-        <SlideRenderer
-          slide={currentSlide}
-          scale={scale}
-          interactive={true}
-          onLayerClick={setSelectedLayer}
-        />
+        <div className="relative">
+          <SlideRenderer
+            slide={currentSlide}
+            scale={scale}
+            interactive={true}
+            onLayerClick={setSelectedLayer}
+          />
+          <InteractionOverlay
+            slideWidth={currentSlide.width}
+            slideHeight={currentSlide.height}
+            scale={scale}
+          />
+        </div>
       </div>
       
       <PropertyPanel />

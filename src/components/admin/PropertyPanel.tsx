@@ -1,4 +1,5 @@
 import { useTemplateStore } from "@/store/useTemplateStore";
+import { AIGenerationDialog } from "./AIGenerationDialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -22,8 +23,9 @@ export const PropertyPanel = () => {
 
   return (
     <div className="w-80 bg-panel border-l border-border overflow-auto">
-      <div className="h-12 border-b border-border flex items-center px-4">
+      <div className="h-12 border-b border-border flex items-center justify-between px-4">
         <h3 className="font-semibold text-sm text-foreground">Properties</h3>
+        <AIGenerationDialog />
       </div>
       
       <div className="p-4 space-y-6">

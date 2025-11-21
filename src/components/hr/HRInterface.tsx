@@ -1,12 +1,13 @@
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
 import { FormGenerator } from "./FormGenerator";
+import { useExport } from "@/hooks/useExport";
 import { Button } from "@/components/ui/button";
 import { Download, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
 
 export const HRInterface = () => {
   const { currentSlide } = useTemplateStore();
+  const { exportAsImage, isExporting } = useExport();
 
   if (!currentSlide) {
     return (
@@ -23,7 +24,7 @@ export const HRInterface = () => {
   }
 
   const handleExport = () => {
-    toast.info("Export functionality will be implemented with html-to-image integration");
+    exportAsImage('hr-export-canvas', currentSlide.name, 'jpeg', 0.95);
   };
 
   // Calculate scale
@@ -39,9 +40,14 @@ export const HRInterface = () => {
       <div className="w-96 bg-panel border-r border-border overflow-auto">
         <div className="h-12 border-b border-border flex items-center justify-between px-4">
           <h3 className="font-semibold text-sm text-foreground">Customize</h3>
-          <Button size="sm" onClick={handleExport} className="gap-2">
+          <Button 
+            size="sm" 
+            onClick={handleExport} 
+            className="gap-2"
+            disabled={isExporting}
+          >
             <Download className="w-3 h-3" />
-            Export
+            {isExporting ? 'Exporting...' : 'Export'}
           </Button>
         </div>
         
@@ -49,11 +55,13 @@ export const HRInterface = () => {
       </div>
       
       <div className="flex-1 bg-canvas flex items-center justify-center p-10 overflow-auto">
-        <SlideRenderer
-          slide={currentSlide}
-          scale={scale}
-          interactive={false}
-        />
+        <div id="hr-export-canvas">
+          <SlideRenderer
+            slide={currentSlide}
+            scale={scale}
+            interactive={false}
+          />
+        </div>
       </div>
     </div>
   );
