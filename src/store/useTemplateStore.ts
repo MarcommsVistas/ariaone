@@ -46,6 +46,7 @@ export interface Template {
   id: string;
   name: string;
   slides: Slide[];
+  saved?: boolean; // Whether template is published for HR use
 }
 
 interface TemplateStore {
@@ -63,6 +64,9 @@ interface TemplateStore {
   updateLayer: (layerId: string, updates: Partial<Layer>) => void;
   deleteLayer: (layerId: string) => void;
   reorderLayers: (slideId: string, newOrder: Layer[]) => void;
+  updateTemplateName: (name: string) => void;
+  saveTemplate: () => void;
+  clearCurrentTemplate: () => void;
 }
 
 export const useTemplateStore = create<TemplateStore>((set, get) => ({
@@ -183,5 +187,45 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       currentTemplate: updatedTemplate || null,
       currentSlide: updatedSlide || null,
     };
+  }),
+  
+  updateTemplateName: (name) => set((state) => {
+    if (!state.currentTemplate) return state;
+    
+    const updatedTemplates = state.templates.map(template =>
+      template.id === state.currentTemplate?.id
+        ? { ...template, name }
+        : template
+    );
+    
+    const updatedTemplate = updatedTemplates.find(t => t.id === state.currentTemplate?.id);
+    
+    return {
+      templates: updatedTemplates,
+      currentTemplate: updatedTemplate || null,
+    };
+  }),
+  
+  saveTemplate: () => set((state) => {
+    if (!state.currentTemplate) return state;
+    
+    const updatedTemplates = state.templates.map(template =>
+      template.id === state.currentTemplate?.id
+        ? { ...template, saved: true }
+        : template
+    );
+    
+    const updatedTemplate = updatedTemplates.find(t => t.id === state.currentTemplate?.id);
+    
+    return {
+      templates: updatedTemplates,
+      currentTemplate: updatedTemplate || null,
+    };
+  }),
+  
+  clearCurrentTemplate: () => set({
+    currentTemplate: null,
+    currentSlide: null,
+    selectedLayer: null,
   }),
 }));
