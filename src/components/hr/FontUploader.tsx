@@ -1,13 +1,28 @@
-import { useState } from "react";
-import { Upload, Check } from "lucide-react";
+import { useEffect } from "react";
+import { Upload, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { useFontStore } from "@/store/useFontStore";
 import { toast } from "sonner";
 
 export const FontUploader = () => {
-  const [uploadedFonts, setUploadedFonts] = useState<{ name: string; family: string }[]>([]);
+  const { uploadedFonts, addFont, removeFont } = useFontStore();
+
+  // Load all fonts on mount
+  useEffect(() => {
+    uploadedFonts.forEach((font) => {
+      // Check if font is already loaded
+      const fonts = Array.from(document.fonts);
+      const isLoaded = fonts.some(f => f.family === font.family);
+      
+      if (!isLoaded && font.family) {
+        // Font data is lost on page refresh, inform user to re-upload
+        console.log(`Font "${font.name}" needs to be re-uploaded`);
+      }
+    });
+  }, [uploadedFonts]);
 
   const handleFontUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -33,7 +48,7 @@ export const FontUploader = () => {
         
         fontFace.load().then((loadedFont) => {
           document.fonts.add(loadedFont);
-          setUploadedFonts(prev => [...prev, { name: fontName, family: fontFamily }]);
+          addFont({ name: fontName, family: fontFamily });
           toast.success(`Font "${fontName}" uploaded successfully`);
         }).catch(() => {
           toast.error(`Failed to load font "${fontName}"`);
@@ -76,10 +91,23 @@ export const FontUploader = () => {
             {uploadedFonts.map((font, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-2 text-xs bg-primary-light px-3 py-2 rounded-md"
+                className="flex items-center justify-between gap-2 text-xs bg-secondary px-3 py-2 rounded-md"
               >
-                <Check className="w-3 h-3 text-primary" />
-                <span style={{ fontFamily: font.family }}>{font.name}</span>
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <Check className="w-3 h-3 text-primary shrink-0" />
+                  <span className="truncate" style={{ fontFamily: font.family }}>{font.name}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 shrink-0"
+                  onClick={() => {
+                    removeFont(font.family);
+                    toast.success(`Font "${font.name}" removed`);
+                  }}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
               </div>
             ))}
           </div>
