@@ -216,6 +216,52 @@ export const PropertyPanel = () => {
                 />
               </div>
               
+              <div>
+                <Label className="text-xs mb-2 block">Text Transform</Label>
+                <div className="grid grid-cols-4 gap-1">
+                  <button
+                    onClick={() => updateLayer(selectedLayer.id, { textTransform: 'none' })}
+                    className={`px-2 py-1.5 text-xs rounded border transition-colors ${
+                      (selectedLayer.textTransform || 'none') === 'none'
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-input hover:bg-secondary'
+                    }`}
+                  >
+                    None
+                  </button>
+                  <button
+                    onClick={() => updateLayer(selectedLayer.id, { textTransform: 'uppercase' })}
+                    className={`px-2 py-1.5 text-xs rounded border transition-colors ${
+                      selectedLayer.textTransform === 'uppercase'
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-input hover:bg-secondary'
+                    }`}
+                  >
+                    ABC
+                  </button>
+                  <button
+                    onClick={() => updateLayer(selectedLayer.id, { textTransform: 'lowercase' })}
+                    className={`px-2 py-1.5 text-xs rounded border transition-colors ${
+                      selectedLayer.textTransform === 'lowercase'
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-input hover:bg-secondary'
+                    }`}
+                  >
+                    abc
+                  </button>
+                  <button
+                    onClick={() => updateLayer(selectedLayer.id, { textTransform: 'capitalize' })}
+                    className={`px-2 py-1.5 text-xs rounded border transition-colors ${
+                      selectedLayer.textTransform === 'capitalize'
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-input hover:bg-secondary'
+                    }`}
+                  >
+                    Abc
+                  </button>
+                </div>
+              </div>
+              
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <Label htmlFor="layer-letter-spacing" className="text-xs">Letter Spacing</Label>
