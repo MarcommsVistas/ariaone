@@ -48,6 +48,7 @@ export interface Template {
   id: string;
   name: string;
   brand?: string;
+  category?: string;
   slides: Slide[];
   saved?: boolean; // Whether template is published for HR use
 }
@@ -80,6 +81,7 @@ interface TemplateStore {
   reorderLayers: (slideId: string, newOrder: Layer[]) => void;
   updateTemplateName: (name: string) => void;
   updateTemplateBrand: (brand: string) => void;
+  updateTemplateCategory: (category: string) => void;
   saveTemplate: () => void;
   clearCurrentTemplate: () => void;
 }
@@ -124,6 +126,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
           id,
           name,
           brand,
+          category,
           is_published,
           created_at,
           updated_at
@@ -204,6 +207,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
             id: template.id,
             name: template.name,
             brand: template.brand || undefined,
+            category: template.category || undefined,
             slides,
             saved: template.is_published
           };
@@ -556,6 +560,41 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       }
     } catch (error) {
       console.error('Error syncing template brand update:', error);
+    }
+  },
+
+  updateTemplateCategory: async (category) => {
+    const state = get();
+    if (!state.currentTemplate) return;
+    
+    // Update local state first
+    set((state) => {
+      const updatedTemplates = state.templates.map(template =>
+        template.id === state.currentTemplate?.id
+          ? { ...template, category }
+          : template
+      );
+      
+      const updatedTemplate = updatedTemplates.find(t => t.id === state.currentTemplate?.id);
+      
+      return {
+        templates: updatedTemplates,
+        currentTemplate: updatedTemplate || null,
+      };
+    });
+
+    // Sync to database
+    try {
+      const { error } = await supabase
+        .from('templates')
+        .update({ category })
+        .eq('id', state.currentTemplate.id);
+
+      if (error) {
+        console.error('Error updating template category in database:', error);
+      }
+    } catch (error) {
+      console.error('Error syncing template category update:', error);
     }
   },
   

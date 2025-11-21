@@ -1,20 +1,50 @@
-import { useState } from "react";
-import { Layers, Save, Tag } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Layers, Save, Tag, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+const PRESET_CATEGORIES = [
+  "Social Media",
+  "Email",
+  "Print",
+  "Presentation",
+  "Web",
+  "Video"
+];
 
 export const TemplateHeader = () => {
-  const { currentTemplate, updateTemplateName, updateTemplateBrand, saveTemplate, clearCurrentTemplate } = useTemplateStore();
+  const { currentTemplate, updateTemplateName, updateTemplateBrand, updateTemplateCategory, saveTemplate, clearCurrentTemplate } = useTemplateStore();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingBrand, setIsEditingBrand] = useState(false);
+  const [isEditingCategory, setIsEditingCategory] = useState(false);
   const [tempName, setTempName] = useState(currentTemplate?.name || "Untitled Template");
   const [tempBrand, setTempBrand] = useState(currentTemplate?.brand || "");
+  const [tempCategory, setTempCategory] = useState(currentTemplate?.category || "");
+  const [availableCategories, setAvailableCategories] = useState<string[]>(PRESET_CATEGORIES);
   const { toast } = useToast();
+
+  // Fetch categories from database
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('name')
+        .order('name');
+      
+      if (data) {
+        setAvailableCategories(data.map(c => c.name));
+      }
+    };
+    
+    fetchCategories();
+  }, []);
 
   if (!currentTemplate) return null;
 
@@ -44,6 +74,11 @@ export const TemplateHeader = () => {
   const handleBrandSave = () => {
     updateTemplateBrand(tempBrand.trim());
     setIsEditingBrand(false);
+  };
+
+  const handleCategorySave = () => {
+    updateTemplateCategory(tempCategory);
+    setIsEditingCategory(false);
   };
 
   const handleCancel = () => {
@@ -80,6 +115,57 @@ export const TemplateHeader = () => {
           </h2>
         )}
         
+        {/* Category Badge with Edit */}
+        <Popover open={isEditingCategory} onOpenChange={setIsEditingCategory}>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-7 px-2">
+              {currentTemplate.category ? (
+                <Badge variant="default" className="cursor-pointer hover:bg-primary/80">
+                  <FolderOpen className="h-3 w-3 mr-1" />
+                  {currentTemplate.category}
+                </Badge>
+              ) : (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <FolderOpen className="h-3 w-3" />
+                  Add category
+                </span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64" align="start">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Select value={tempCategory} onValueChange={setTempCategory}>
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {availableCategories.map(cat => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditingCategory(false)}
+                >
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleCategorySave}>
+                  Save
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+
         {/* Brand Badge with Edit */}
         <Popover open={isEditingBrand} onOpenChange={setIsEditingBrand}>
           <PopoverTrigger asChild>

@@ -6,10 +6,21 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePsdParser } from "@/hooks/usePsdParser";
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+const PRESET_CATEGORIES = [
+  "Social Media",
+  "Email",
+  "Print",
+  "Presentation",
+  "Web",
+  "Video"
+];
 
 export const CreativeDashboard = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -26,16 +37,32 @@ export const CreativeDashboard = () => {
   const { userRole } = useAuthStore();
   const { toast } = useToast();
   
-  const [showBrandDialog, setShowBrandDialog] = useState(false);
+  const [showMetadataDialog, setShowMetadataDialog] = useState(false);
   const [brandName, setBrandName] = useState("");
+  const [categoryName, setCategoryName] = useState("");
   const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
+  const [availableCategories, setAvailableCategories] = useState<string[]>(PRESET_CATEGORIES);
   
   const isMarcomms = userRole === 'marcomms';
   
-  // Fetch templates and subscribe to changes on mount
+  // Fetch templates and categories on mount
   useEffect(() => {
     fetchTemplates();
     subscribeToChanges();
+    
+    // Fetch categories from database
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('name')
+        .order('name');
+      
+      if (data) {
+        setAvailableCategories(data.map(c => c.name));
+      }
+    };
+    
+    fetchCategories();
     
     return () => {
       unsubscribeFromChanges();
@@ -77,23 +104,24 @@ export const CreativeDashboard = () => {
       return;
     }
 
-    // Show brand dialog
+    // Show metadata dialog
     setPendingFiles(files);
-    setShowBrandDialog(true);
+    setShowMetadataDialog(true);
   };
 
-  const handleBrandSubmit = async () => {
+  const handleMetadataSubmit = async () => {
     if (!pendingFiles) return;
 
-    setShowBrandDialog(false);
+    setShowMetadataDialog(false);
     const brand = brandName.trim() || undefined;
+    const category = categoryName || undefined;
 
     // Parse files
     let template;
     if (pendingFiles.length === 1) {
-      template = await parsePsdFile(pendingFiles[0], brand);
+      template = await parsePsdFile(pendingFiles[0], brand, category);
     } else {
-      template = await parsePsdFiles(Array.from(pendingFiles), brand);
+      template = await parsePsdFiles(Array.from(pendingFiles), brand, category);
     }
     
     if (template) {
@@ -112,6 +140,7 @@ export const CreativeDashboard = () => {
 
     // Reset
     setBrandName("");
+    setCategoryName("");
     setPendingFiles(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -131,16 +160,32 @@ export const CreativeDashboard = () => {
           className="hidden"
         />
 
-        {/* Brand Dialog */}
-        <Dialog open={showBrandDialog} onOpenChange={setShowBrandDialog}>
+        {/* Metadata Dialog */}
+        <Dialog open={showMetadataDialog} onOpenChange={setShowMetadataDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Set Brand</DialogTitle>
+              <DialogTitle>Template Details</DialogTitle>
               <DialogDescription>
-                Specify a brand name for this template to help organize and filter templates.
+                Add metadata to help organize and filter this template.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Select value={categoryName} onValueChange={setCategoryName}>
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {availableCategories.map(cat => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="brand">Brand Name (Optional)</Label>
                 <Input
@@ -150,17 +195,17 @@ export const CreativeDashboard = () => {
                   onChange={(e) => setBrandName(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      handleBrandSubmit();
+                      handleMetadataSubmit();
                     }
                   }}
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowBrandDialog(false)}>
+              <Button variant="outline" onClick={() => setShowMetadataDialog(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleBrandSubmit}>
+              <Button onClick={handleMetadataSubmit}>
                 Continue
               </Button>
             </DialogFooter>
@@ -201,9 +246,17 @@ export const CreativeDashboard = () => {
                   <div className="text-center">
                     <Layers className="h-12 w-12 text-primary mx-auto mb-3" />
                     <p className="font-semibold text-foreground">{template.name}</p>
-                    {template.brand && (
-                      <p className="text-xs text-muted-foreground mt-1">{template.brand}</p>
-                    )}
+                    <div className="flex items-center justify-center gap-1 mt-1">
+                      {template.category && (
+                        <span className="text-xs text-primary font-medium">{template.category}</span>
+                      )}
+                      {template.category && template.brand && (
+                        <span className="text-xs text-muted-foreground">•</span>
+                      )}
+                      {template.brand && (
+                        <span className="text-xs text-muted-foreground">{template.brand}</span>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground mt-1">
                       {template.slides.length} {template.slides.length === 1 ? 'slide' : 'slides'}
                     </p>
