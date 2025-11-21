@@ -3,6 +3,7 @@ import { Navigation } from "@/components/Navigation";
 import { AdminStudio } from "@/components/admin/AdminStudio";
 import { HRInterface } from "@/components/hr/HRInterface";
 import { CreativeDashboard } from "@/components/admin/CreativeDashboard";
+import { HRDashboard } from "@/components/hr/HRDashboard";
 
 const Index = () => {
   const { mode, currentTemplate } = useTemplateStore();
@@ -11,6 +12,11 @@ const Index = () => {
     // Show dashboard if no template is selected in admin mode
     if (mode === 'admin' && !currentTemplate) {
       return <CreativeDashboard />;
+    }
+    
+    // Show HR dashboard if no template is selected in HR mode
+    if (mode === 'hr' && !currentTemplate) {
+      return <HRDashboard />;
     }
     
     // Show editor/interface when template is selected
