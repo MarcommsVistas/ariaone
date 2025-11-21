@@ -254,10 +254,17 @@ export const TemplateHeader = () => {
       </div>
 
       <div className="flex items-center gap-3">
+        <Button
+          onClick={handleSave}
+        >
+          <Save className="mr-2 h-4 w-4" />
+          Save Template
+        </Button>
+        
         {currentTemplate.saved ? (
           <Button
             onClick={handleUnpublish}
-            variant="destructive"
+            className="bg-gray-700 hover:bg-gray-800 text-white"
           >
             Unpublish
           </Button>
@@ -269,12 +276,6 @@ export const TemplateHeader = () => {
             Publish to HR
           </Button>
         )}
-        <Button
-          onClick={handleSave}
-        >
-          <Save className="mr-2 h-4 w-4" />
-          Save Template
-        </Button>
       </div>
     </div>
   );
