@@ -12,6 +12,7 @@ import { useTemplateStore } from "@/store/useTemplateStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { MarcommsTemplateCard } from "./MarcommsTemplateCard";
 
 const PRESET_CATEGORIES = [
   "Social Media",
@@ -69,8 +70,8 @@ export const CreativeDashboard = () => {
     };
   }, []);
   
-  // Only show saved templates
-  const savedTemplates = templates.filter(t => t.saved);
+  // Show all templates (both published and drafts) for marcomms
+  const displayTemplates = templates;
 
   const handleImportPSD = () => {
     fileInputRef.current?.click();
@@ -235,34 +236,13 @@ export const CreativeDashboard = () => {
         ) : (
           /* Templates Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {/* Saved Template Cards */}
-            {savedTemplates.map((template) => (
-              <Card
+            {/* Template Cards */}
+            {displayTemplates.map((template) => (
+              <MarcommsTemplateCard
                 key={template.id}
-                className="border border-border hover:border-primary/50 transition-colors cursor-pointer group"
-                onClick={() => setCurrentTemplate(template.id)}
-              >
-                <div className="aspect-square flex items-center justify-center p-8 bg-muted/30">
-                  <div className="text-center">
-                    <Layers className="h-12 w-12 text-primary mx-auto mb-3" />
-                    <p className="font-semibold text-foreground">{template.name}</p>
-                    <div className="flex items-center justify-center gap-1 mt-1">
-                      {template.category && (
-                        <span className="text-xs text-primary font-medium">{template.category}</span>
-                      )}
-                      {template.category && template.brand && (
-                        <span className="text-xs text-muted-foreground">•</span>
-                      )}
-                      {template.brand && (
-                        <span className="text-xs text-muted-foreground">{template.brand}</span>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {template.slides.length} {template.slides.length === 1 ? 'slide' : 'slides'}
-                    </p>
-                  </div>
-                </div>
-              </Card>
+                template={template}
+                onEditTemplate={setCurrentTemplate}
+              />
             ))}
             
             {/* Import PSD Card - Only visible to Marcomms */}

@@ -20,7 +20,7 @@ const PRESET_CATEGORIES = [
 ];
 
 export const TemplateHeader = () => {
-  const { currentTemplate, updateTemplateName, updateTemplateBrand, updateTemplateCategory, saveTemplate, clearCurrentTemplate } = useTemplateStore();
+  const { currentTemplate, updateTemplateName, updateTemplateBrand, updateTemplateCategory, saveTemplate, publishTemplate, unpublishTemplate, clearCurrentTemplate } = useTemplateStore();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingBrand, setIsEditingBrand] = useState(false);
   const [isEditingCategory, setIsEditingCategory] = useState(false);
@@ -90,8 +90,40 @@ export const TemplateHeader = () => {
     saveTemplate();
     toast({
       title: "Template saved",
-      description: `${currentTemplate.name} is now available for HR to use`,
+      description: "All changes have been saved",
     });
+  };
+
+  const handlePublish = async () => {
+    try {
+      await publishTemplate();
+      toast({
+        title: "Template published",
+        description: `${currentTemplate.name} is now visible to HR`,
+      });
+    } catch (error) {
+      toast({
+        title: "Publish failed",
+        description: "Failed to publish template. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUnpublish = async () => {
+    try {
+      await unpublishTemplate();
+      toast({
+        title: "Template unpublished",
+        description: `${currentTemplate.name} is now hidden from HR`,
+      });
+    } catch (error) {
+      toast({
+        title: "Unpublish failed",
+        description: "Failed to unpublish template. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -224,9 +256,23 @@ export const TemplateHeader = () => {
         >
           Cancel
         </Button>
+        {currentTemplate.saved ? (
+          <Button
+            onClick={handleUnpublish}
+            variant="destructive"
+          >
+            Unpublish
+          </Button>
+        ) : (
+          <Button
+            onClick={handlePublish}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            Publish to HR
+          </Button>
+        )}
         <Button
           onClick={handleSave}
-          className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
         >
           <Save className="mr-2 h-4 w-4" />
           Save Template
