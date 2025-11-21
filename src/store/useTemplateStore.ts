@@ -76,9 +76,9 @@ interface TemplateStore {
   previousSlide: () => void;
   reorderSlides: (newOrder: Slide[]) => Promise<void>;
   setSelectedLayer: (layerId: string | null) => void;
-  updateLayer: (layerId: string, updates: Partial<Layer>) => void;
-  deleteLayer: (layerId: string) => void;
-  reorderLayers: (slideId: string, newOrder: Layer[]) => void;
+  updateLayer: (layerId: string, updates: Partial<Layer>) => Promise<void>;
+  deleteLayer: (layerId: string) => Promise<void>;
+  reorderLayers: (slideId: string, newOrder: Layer[]) => Promise<void>;
   updateTemplateName: (name: string) => void;
   updateTemplateBrand: (brand: string) => void;
   updateTemplateCategory: (category: string) => void;
@@ -89,17 +89,51 @@ interface TemplateStore {
   clearCurrentTemplate: () => void;
 }
 
-export const useTemplateStore = create<TemplateStore>((set, get) => ({
-  templates: [],
-  currentTemplate: null,
-  currentSlide: null,
-  currentSlideIndex: 0,
-  selectedLayer: null,
-  mode: 'admin',
-  isLoading: false,
-  realtimeChannel: null,
-  
-  setMode: (mode) => set({ mode }),
+export const useTemplateStore = create<TemplateStore>((set, get) => {
+  // Helper function to mark template as unpublished when edited
+  const markTemplateAsUnpublished = async (templateId: string) => {
+    const state = get();
+    const template = state.templates.find(t => t.id === templateId);
+    if (!template?.saved) return; // Already unpublished
+    
+    // Update local state
+    set((state) => {
+      const updatedTemplates = state.templates.map(t =>
+        t.id === templateId ? { ...t, saved: false } : t
+      );
+      
+      const updatedTemplate = updatedTemplates.find(t => t.id === templateId);
+      
+      return {
+        templates: updatedTemplates,
+        currentTemplate: state.currentTemplate?.id === templateId 
+          ? updatedTemplate || null 
+          : state.currentTemplate,
+      };
+    });
+
+    // Sync to database
+    try {
+      await supabase
+        .from('templates')
+        .update({ is_published: false })
+        .eq('id', templateId);
+    } catch (error) {
+      console.error('Error unpublishing template:', error);
+    }
+  };
+
+  return {
+    templates: [],
+    currentTemplate: null,
+    currentSlide: null,
+    currentSlideIndex: 0,
+    selectedLayer: null,
+    mode: 'admin',
+    isLoading: false,
+    realtimeChannel: null,
+    
+    setMode: (mode) => set({ mode }),
   
   fetchTemplates: async () => {
     set({ isLoading: true });
@@ -371,6 +405,9 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       );
 
       await Promise.all(updates);
+      
+      // Mark template as unpublished after reordering slides
+      await markTemplateAsUnpublished(state.currentTemplate.id);
     } catch (error) {
       console.error('Error syncing slide order to database:', error);
     }
@@ -464,37 +501,63 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
 
       if (error) {
         console.error('Error updating layer in database:', error);
+      } else {
+        // Mark template as unpublished after updating layer
+        await markTemplateAsUnpublished(state.currentTemplate.id);
       }
     } catch (error) {
       console.error('Error syncing layer update:', error);
     }
   },
   
-  deleteLayer: (layerId) => set((state) => {
-    if (!state.currentTemplate || !state.currentSlide) return state;
+  deleteLayer: async (layerId) => {
+    const state = get();
+    if (!state.currentTemplate || !state.currentSlide) return;
     
-    const updatedTemplates = state.templates.map(template => {
-      if (template.id !== state.currentTemplate?.id) return template;
+    // Update local state first
+    set((state) => {
+      if (!state.currentTemplate || !state.currentSlide) return state;
+      
+      const updatedTemplates = state.templates.map(template => {
+        if (template.id !== state.currentTemplate?.id) return template;
+        
+        return {
+          ...template,
+          slides: template.slides.map(slide => {
+            if (slide.id !== state.currentSlide?.id) return slide;
+            
+            return {
+              ...slide,
+              layers: slide.layers.filter(layer => layer.id !== layerId),
+            };
+          }),
+        };
+      });
       
       return {
-        ...template,
-        slides: template.slides.map(slide => {
-          if (slide.id !== state.currentSlide?.id) return slide;
-          
-          return {
-            ...slide,
-            layers: slide.layers.filter(layer => layer.id !== layerId),
-          };
-        }),
+        templates: updatedTemplates,
+        currentTemplate: updatedTemplates.find(t => t.id === state.currentTemplate?.id) || null,
+        selectedLayer: null,
       };
     });
-    
-    return {
-      templates: updatedTemplates,
-      currentTemplate: updatedTemplates.find(t => t.id === state.currentTemplate?.id) || null,
-      selectedLayer: null,
-    };
-  }),
+
+    // Delete from database
+    try {
+      const { error } = await supabase
+        .from('layers')
+        .delete()
+        .eq('id', layerId);
+
+      if (error) {
+        console.error('Error deleting layer from database:', error);
+      } else {
+        // Mark template as unpublished after successful deletion
+        await markTemplateAsUnpublished(state.currentTemplate.id);
+      }
+    } catch (error) {
+      console.error('Error deleting layer:', error);
+    }
+  },
   
   reorderLayers: async (slideId, newOrder) => {
     const state = get();
@@ -538,6 +601,9 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       const errors = results.filter(r => r.error);
       if (errors.length > 0) {
         console.error('Error updating layer z-indexes in database:', errors);
+      } else {
+        // Mark template as unpublished after reordering layers
+        await markTemplateAsUnpublished(state.currentTemplate.id);
       }
     } catch (error) {
       console.error('Error syncing layer reorder:', error);
@@ -573,6 +639,9 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
 
       if (error) {
         console.error('Error updating template name in database:', error);
+      } else {
+        // Mark template as unpublished after updating name
+        await markTemplateAsUnpublished(state.currentTemplate.id);
       }
     } catch (error) {
       console.error('Error syncing template name update:', error);
@@ -608,6 +677,9 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
 
       if (error) {
         console.error('Error updating template brand in database:', error);
+      } else {
+        // Mark template as unpublished after updating brand
+        await markTemplateAsUnpublished(state.currentTemplate.id);
       }
     } catch (error) {
       console.error('Error syncing template brand update:', error);
@@ -643,6 +715,9 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
 
       if (error) {
         console.error('Error updating template category in database:', error);
+      } else {
+        // Mark template as unpublished after updating category
+        await markTemplateAsUnpublished(state.currentTemplate.id);
       }
     } catch (error) {
       console.error('Error syncing template category update:', error);
@@ -789,4 +864,5 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     currentSlideIndex: 0,
     selectedLayer: null,
   }),
-}));
+  };
+});
