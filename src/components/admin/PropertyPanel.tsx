@@ -10,7 +10,7 @@ export const PropertyPanel = () => {
 
   if (!selectedLayer) {
     return (
-      <div className="w-80 bg-panel border-l border-border flex items-center justify-center">
+      <div className="h-full w-full bg-panel border-l border-border flex items-center justify-center">
         <div className="text-center space-y-2 px-4">
           <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto" />
           <p className="text-sm text-muted-foreground">
@@ -22,8 +22,8 @@ export const PropertyPanel = () => {
   }
 
   return (
-    <div className="w-80 bg-panel border-l border-border overflow-auto">
-      <div className="h-12 border-b border-border flex items-center justify-between px-4">
+    <div className="h-full w-full bg-panel border-l border-border overflow-auto flex flex-col">
+      <div className="h-12 border-b border-border flex items-center justify-between px-4 flex-shrink-0">
         <h3 className="font-semibold text-sm text-foreground">Properties</h3>
         <AIGenerationDialog />
       </div>

@@ -42,69 +42,72 @@ export const AdminStudio = () => {
   const handleZoomReset = () => setZoom(100);
 
   return (
-    <div className="flex-1 flex overflow-hidden">
-      <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden">
-        <ResizablePanel defaultSize={20} minSize={14} maxSize={35}>
-          <LayerPanel />
-        </ResizablePanel>
+    <ResizablePanelGroup direction="horizontal" className="h-full w-full">
+      <ResizablePanel defaultSize={20} minSize={14} maxSize={35} className="h-full">
+        <LayerPanel />
+      </ResizablePanel>
 
-        <ResizableHandle withHandle />
+      <ResizableHandle withHandle />
 
-        <ResizablePanel defaultSize={55} minSize={40}>
-          <div className="flex h-full overflow-hidden">
-            <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto relative">
-              <div 
-                className="relative"
-                style={{
-                  width: currentSlide.width * effectiveScale,
-                  height: currentSlide.height * effectiveScale,
-                }}
-              >
-                <div style={{ transform: `scale(${effectiveScale})`, transformOrigin: 'top left' }}>
-                  <SlideRenderer
-                    slide={currentSlide}
-                    scale={effectiveScale}
-                    interactive={true}
-                    onLayerClick={setSelectedLayer}
-                  />
-                  <InteractionOverlay
-                    slideWidth={currentSlide.width}
-                    slideHeight={currentSlide.height}
-                    scale={effectiveScale}
-                  />
-                </div>
-              </div>
-
-              {/* Zoom controls */}
-              <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-panel/90 border border-border rounded-full px-3 py-1.5 shadow-md backdrop-blur-sm">
-                <button
-                  type="button"
-                  onClick={handleZoomOut}
-                  className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
-                >
-                  <Minus className="w-3 h-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleZoomReset}
-                  className="text-xs font-medium text-muted-foreground min-w-[52px] text-center"
-                >
-                  {Math.round(zoom)}%
-                </button>
-                <button
-                  type="button"
-                  onClick={handleZoomIn}
-                  className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
-                >
-                  <Plus className="w-3 h-3" />
-                </button>
+      <ResizablePanel defaultSize={55} minSize={40} className="h-full">
+        <div className="h-full flex flex-col bg-canvas relative overflow-hidden">
+          {/* Scrollable canvas container */}
+          <div className="flex-1 overflow-auto flex items-center justify-center">
+            <div 
+              className="relative"
+              style={{
+                width: currentSlide.width * effectiveScale,
+                height: currentSlide.height * effectiveScale,
+              }}
+            >
+              <div style={{ transform: `scale(${effectiveScale})`, transformOrigin: 'top left' }}>
+                <SlideRenderer
+                  slide={currentSlide}
+                  scale={effectiveScale}
+                  interactive={true}
+                  onLayerClick={setSelectedLayer}
+                />
+                <InteractionOverlay
+                  slideWidth={currentSlide.width}
+                  slideHeight={currentSlide.height}
+                  scale={effectiveScale}
+                />
               </div>
             </div>
-
-            <PropertyPanel />
           </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
-    </div>
+
+          {/* Zoom controls - fixed position */}
+          <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-panel/95 border border-border rounded-full px-3 py-1.5 shadow-lg backdrop-blur-sm z-50">
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
+            >
+              <Minus className="w-3 h-3" />
+            </button>
+            <button
+              type="button"
+              onClick={handleZoomReset}
+              className="text-xs font-medium text-muted-foreground min-w-[52px] text-center hover:text-foreground transition-colors"
+            >
+              {Math.round(zoom)}%
+            </button>
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      </ResizablePanel>
+
+      <ResizableHandle withHandle />
+
+      <ResizablePanel defaultSize={25} minSize={20} maxSize={35} className="h-full">
+        <PropertyPanel />
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 };
