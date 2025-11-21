@@ -1,16 +1,26 @@
 import { useTemplateStore } from "@/store/useTemplateStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { SlideRenderer } from "./SlideRenderer";
 import { useEffect, useRef, useState } from "react";
+import { useAddSlideToTemplate } from "@/hooks/usePsdParser";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 
 export const SlideNavigation = () => {
-  const { currentTemplate, currentSlideIndex, setCurrentSlideIndex, nextSlide, previousSlide, reorderSlides, mode } = useTemplateStore();
+  const { currentTemplate, currentSlideIndex, setCurrentSlideIndex, nextSlide, previousSlide, reorderSlides, mode, addSlide } = useTemplateStore();
+  const { userRole } = useAuthStore();
   const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
+  const { addSlideToTemplate, isLoading, progress, progressStatus } = useAddSlideToTemplate();
+  const { toast } = useToast();
 
   const isAdminMode = mode === 'admin';
+  const isMarcomms = userRole === 'marcomms';
 
   useEffect(() => {
     // Scroll active slide into view
@@ -40,7 +50,7 @@ export const SlideNavigation = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [nextSlide, previousSlide]);
 
-  if (!currentTemplate || currentTemplate.slides.length <= 1) {
+  if (!currentTemplate) {
     return null;
   }
 
@@ -84,25 +94,96 @@ export const SlideNavigation = () => {
     setDraggedOverIndex(null);
   };
 
-  return (
-    <div className="bg-panel border-t border-border">
-      <div className="flex items-center gap-3 px-4 py-3">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={previousSlide}
-          disabled={!canGoPrevious}
-          className="shrink-0"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
+  const handleAddSlideClick = () => {
+    fileInputRef.current?.click();
+  };
 
-        <div 
-          ref={containerRef}
-          className="flex-1 overflow-x-auto"
-        >
-          <div className="flex gap-2 min-w-min pb-1">
-            {currentTemplate.slides.map((slide, index) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !currentTemplate) return;
+
+    if (!file.name.toLowerCase().endsWith('.psd')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a .psd file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newSlide = await addSlideToTemplate(file, currentTemplate.id);
+    
+    if (newSlide) {
+      addSlide(newSlide);
+      toast({
+        title: "Slide added",
+        description: `${newSlide.name} has been added to the template`,
+      });
+      // Switch to the new slide
+      setCurrentSlideIndex(currentTemplate.slides.length);
+    } else {
+      toast({
+        title: "Failed to add slide",
+        description: "Could not parse PSD file. Please try again.",
+        variant: "destructive",
+      });
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <>
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".psd"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* Loading dialog */}
+      <Dialog open={isLoading}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Adding Slide</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Progress value={progress} className="h-2" />
+            <div className="text-center space-y-1">
+              <p className="text-lg font-medium text-primary">
+                {progress}%
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {progressStatus}
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <div className="bg-panel border-t border-border">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={previousSlide}
+            disabled={!canGoPrevious}
+            className="shrink-0"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+
+          <div 
+            ref={containerRef}
+            className="flex-1 overflow-x-auto"
+          >
+            <div className="flex gap-2 min-w-min pb-1">
+              {currentTemplate.slides.map((slide, index) => {
               const isActive = index === currentSlideIndex;
               const isDragging = draggedIndex === index;
               const isDraggedOver = draggedOverIndex === index && draggedIndex !== index;
@@ -157,6 +238,28 @@ export const SlideNavigation = () => {
                 </button>
               );
             })}
+            
+            {/* Add Slide Button - Only for Marcomms in Admin Mode */}
+            {isAdminMode && isMarcomms && (
+              <button
+                onClick={handleAddSlideClick}
+                disabled={isLoading}
+                className="
+                  relative shrink-0 rounded-lg overflow-hidden transition-all
+                  ring-1 ring-dashed ring-border hover:ring-primary/50
+                  bg-muted/30 hover:bg-muted/50
+                  flex items-center justify-center
+                  cursor-pointer
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                "
+                style={{
+                  width: 80,
+                  height: 80,
+                }}
+              >
+                <Plus className="w-6 h-6 text-muted-foreground" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -175,5 +278,6 @@ export const SlideNavigation = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
