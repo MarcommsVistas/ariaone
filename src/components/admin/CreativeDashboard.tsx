@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Upload, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { usePsdParser } from "@/hooks/usePsdParser";
@@ -9,8 +9,11 @@ import { useToast } from "@/hooks/use-toast";
 export const CreativeDashboard = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { parsePsdFile, isLoading } = usePsdParser();
-  const { addTemplate } = useTemplateStore();
+  const { addTemplate, templates, setCurrentTemplate } = useTemplateStore();
   const { toast } = useToast();
+  
+  // Only show saved templates
+  const savedTemplates = templates.filter(t => t.saved);
 
   const handleImportPSD = () => {
     fileInputRef.current?.click();
@@ -90,6 +93,25 @@ export const CreativeDashboard = () => {
 
         {/* Templates Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {/* Saved Template Cards */}
+          {savedTemplates.map((template) => (
+            <Card
+              key={template.id}
+              className="border border-border hover:border-primary/50 transition-colors cursor-pointer group"
+              onClick={() => setCurrentTemplate(template.id)}
+            >
+              <div className="aspect-square flex items-center justify-center p-8 bg-muted/30">
+                <div className="text-center">
+                  <Layers className="h-12 w-12 text-primary mx-auto mb-3" />
+                  <p className="font-semibold text-foreground">{template.name}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {template.slides.length} {template.slides.length === 1 ? 'slide' : 'slides'}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          ))}
+          
           {/* Import PSD Card */}
           <Card 
             className="border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer group relative"

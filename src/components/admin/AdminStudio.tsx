@@ -4,6 +4,7 @@ import { SlideRenderer } from "@/components/editor/SlideRenderer";
 import { InteractionOverlay } from "@/components/editor/InteractionOverlay";
 import { LayerPanel } from "./LayerPanel";
 import { PropertyPanel } from "./PropertyPanel";
+import { TemplateHeader } from "./TemplateHeader";
 import { AlertCircle, Minus, Plus } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
@@ -42,10 +43,12 @@ export const AdminStudio = () => {
   const handleZoomReset = () => setZoom(100);
 
   return (
-    <ResizablePanelGroup direction="horizontal" className="h-full w-full">
-      <ResizablePanel defaultSize={20} minSize={14} maxSize={35} className="h-full">
-        <LayerPanel />
-      </ResizablePanel>
+    <div className="h-full flex flex-col">
+      <TemplateHeader />
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
+        <ResizablePanel defaultSize={20} minSize={14} maxSize={35} className="h-full">
+          <LayerPanel />
+        </ResizablePanel>
 
       <ResizableHandle withHandle />
 
@@ -109,5 +112,6 @@ export const AdminStudio = () => {
         <PropertyPanel />
       </ResizablePanel>
     </ResizablePanelGroup>
+    </div>
   );
 };
