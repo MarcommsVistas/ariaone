@@ -1,22 +1,84 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layers, Users, Briefcase } from 'lucide-react';
+import { Briefcase, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuthStore } from '@/store/useAuthStore';
 import { motion } from 'framer-motion';
 import ariaOneLogo from '@/assets/aria-one-logo.png';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import type { UserRole } from '@/store/useAuthStore';
 
 const Login = () => {
-  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
+  const { toast } = useToast();
 
-  const handleLogin = (role: 'marcomms' | 'hr') => {
-    const displayName = name.trim() || (role === 'marcomms' ? 'Marcomms User' : 'HR User');
-    login(role, displayName);
-    navigate('/');
+  const handleAuth = async (role: UserRole) => {
+    if (!email || !password) {
+      toast({
+        title: "Error",
+        description: "Please enter email and password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (isSignUp) {
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+          },
+        });
+
+        if (signUpError) throw signUpError;
+
+        if (authData.user) {
+          // Insert user role
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert({ user_id: authData.user.id, role });
+
+          if (roleError) throw roleError;
+
+          toast({
+            title: "Success",
+            description: "Account created successfully!",
+          });
+          navigate('/');
+        }
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) throw signInError;
+
+        toast({
+          title: "Success",
+          description: "Logged in successfully!",
+        });
+        navigate('/');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Authentication failed",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -31,17 +93,31 @@ const Login = () => {
           <div className="inline-flex items-center justify-center mb-4">
             <img src={ariaOneLogo} alt="Aria-One" className="h-16" />
           </div>
-          <p className="text-muted-foreground text-lg">Sign in to continue</p>
+          <p className="text-muted-foreground text-lg">
+            {isSignUp ? 'Create your account' : 'Sign in to continue'}
+          </p>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-6 space-y-4 max-w-md mx-auto">
           <Input
-            type="text"
-            placeholder="Enter your name (optional)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="max-w-md mx-auto"
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
+          <Input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={() => setIsSignUp(!isSignUp)}
+          >
+            {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+          </Button>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
@@ -76,11 +152,12 @@ const Login = () => {
                   </li>
                 </ul>
                 <Button
-                  onClick={() => handleLogin('marcomms')}
+                  onClick={() => handleAuth('marcomms')}
                   className="w-full"
                   size="lg"
+                  disabled={isLoading}
                 >
-                  Sign in as Marcomms
+                  {isSignUp ? 'Sign up' : 'Sign in'} as Marcomms
                 </Button>
               </CardContent>
             </Card>
@@ -117,12 +194,13 @@ const Login = () => {
                   </li>
                 </ul>
                 <Button
-                  onClick={() => handleLogin('hr')}
+                  onClick={() => handleAuth('hr')}
                   variant="secondary"
                   className="w-full"
                   size="lg"
+                  disabled={isLoading}
                 >
-                  Sign in as HR
+                  {isSignUp ? 'Sign up' : 'Sign in'} as HR
                 </Button>
               </CardContent>
             </Card>

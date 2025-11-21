@@ -12,7 +12,7 @@ import { useAuthStore } from "./store/useAuthStore";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -23,7 +23,7 @@ const App = () => {
           <Routes>
             <Route 
               path="/login" 
-              element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} 
+              element={user ? <Navigate to="/" replace /> : <Login />}
             />
             <Route 
               path="/" 
