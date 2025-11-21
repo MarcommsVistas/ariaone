@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { Plus, Upload, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,8 +9,26 @@ import { useToast } from "@/hooks/use-toast";
 export const CreativeDashboard = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { parsePsdFile, parsePsdFiles, isLoading } = usePsdParser();
-  const { addTemplate, templates, setCurrentTemplate } = useTemplateStore();
+  const { 
+    addTemplate, 
+    templates, 
+    setCurrentTemplate, 
+    fetchTemplates, 
+    subscribeToChanges, 
+    unsubscribeFromChanges,
+    isLoading: isFetchingTemplates 
+  } = useTemplateStore();
   const { toast } = useToast();
+  
+  // Fetch templates and subscribe to changes on mount
+  useEffect(() => {
+    fetchTemplates();
+    subscribeToChanges();
+    
+    return () => {
+      unsubscribeFromChanges();
+    };
+  }, []);
   
   // Only show saved templates
   const savedTemplates = templates.filter(t => t.saved);
@@ -98,55 +116,67 @@ export const CreativeDashboard = () => {
           </p>
         </div>
 
-        {/* Templates Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {/* Saved Template Cards */}
-          {savedTemplates.map((template) => (
-            <Card
-              key={template.id}
-              className="border border-border hover:border-primary/50 transition-colors cursor-pointer group"
-              onClick={() => setCurrentTemplate(template.id)}
-            >
-              <div className="aspect-square flex items-center justify-center p-8 bg-muted/30">
-                <div className="text-center">
-                  <Layers className="h-12 w-12 text-primary mx-auto mb-3" />
-                  <p className="font-semibold text-foreground">{template.name}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {template.slides.length} {template.slides.length === 1 ? 'slide' : 'slides'}
-                  </p>
+        {/* Loading State */}
+        {isFetchingTemplates && templates.length === 0 ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 animate-pulse mx-auto">
+                <Layers className="h-8 w-8 text-primary" />
+              </div>
+              <p className="text-muted-foreground">Loading templates...</p>
+            </div>
+          </div>
+        ) : (
+          /* Templates Grid */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {/* Saved Template Cards */}
+            {savedTemplates.map((template) => (
+              <Card
+                key={template.id}
+                className="border border-border hover:border-primary/50 transition-colors cursor-pointer group"
+                onClick={() => setCurrentTemplate(template.id)}
+              >
+                <div className="aspect-square flex items-center justify-center p-8 bg-muted/30">
+                  <div className="text-center">
+                    <Layers className="h-12 w-12 text-primary mx-auto mb-3" />
+                    <p className="font-semibold text-foreground">{template.name}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {template.slides.length} {template.slides.length === 1 ? 'slide' : 'slides'}
+                    </p>
+                  </div>
                 </div>
+              </Card>
+            ))}
+            
+            {/* Import PSD Card */}
+            <Card 
+              className="border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer group relative"
+              onClick={handleImportPSD}
+            >
+              <div className="aspect-square flex flex-col items-center justify-center p-8">
+                {isLoading ? (
+                  <>
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 animate-pulse">
+                      <Upload className="h-8 w-8 text-primary animate-bounce" />
+                    </div>
+                    <p className="text-primary font-medium">
+                      Parsing PSD...
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 rounded-full bg-muted group-hover:bg-muted/80 transition-colors flex items-center justify-center mb-4">
+                      <Plus className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-muted-foreground font-medium">
+                      Import PSD / New
+                    </p>
+                  </>
+                )}
               </div>
             </Card>
-          ))}
-          
-          {/* Import PSD Card */}
-          <Card 
-            className="border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer group relative"
-            onClick={handleImportPSD}
-          >
-            <div className="aspect-square flex flex-col items-center justify-center p-8">
-              {isLoading ? (
-                <>
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 animate-pulse">
-                    <Upload className="h-8 w-8 text-primary animate-bounce" />
-                  </div>
-                  <p className="text-primary font-medium">
-                    Parsing PSD...
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="w-16 h-16 rounded-full bg-muted group-hover:bg-muted/80 transition-colors flex items-center justify-center mb-4">
-                    <Plus className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-muted-foreground font-medium">
-                    Import PSD / New
-                  </p>
-                </>
-              )}
-            </div>
-          </Card>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
