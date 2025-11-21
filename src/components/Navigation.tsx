@@ -71,27 +71,6 @@ export const Navigation = () => {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            const { currentTemplate } = useTemplateStore.getState();
-            if (currentTemplate) {
-              const json = JSON.stringify(currentTemplate, null, 2);
-              const blob = new Blob([json], { type: 'application/json' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `${currentTemplate.name}.json`;
-              a.click();
-              URL.revokeObjectURL(url);
-              toast.success('Template saved!');
-            }
-          }}
-          disabled={!useTemplateStore.getState().currentTemplate}
-        >
-          Save Template
-        </Button>
         <input
           ref={fileInputRef}
           type="file"
