@@ -117,6 +117,22 @@ export const usePsdParser = () => {
         src = canvasToDataUrl(layer.canvas);
       }
 
+      const rawOpacity = layer.opacity;
+      let normalizedOpacity = 1;
+
+      if (rawOpacity !== undefined && rawOpacity !== null) {
+        if (rawOpacity > 0 && rawOpacity <= 1) {
+          // Opacity is already in 0-1 range
+          normalizedOpacity = rawOpacity;
+        } else if (rawOpacity > 1 && rawOpacity <= 255) {
+          // Opacity is in 0-255 range, normalize to 0-1
+          normalizedOpacity = rawOpacity / 255;
+        } else {
+          // Any other value (including 0) defaults to fully opaque
+          normalizedOpacity = 1;
+        }
+      }
+
       const newLayer: Layer = {
         id: `layer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type,
@@ -128,7 +144,7 @@ export const usePsdParser = () => {
         y: Math.round(y),
         width: Math.round(width),
         height: Math.round(height),
-        opacity: (layer.opacity !== undefined && layer.opacity !== null && layer.opacity > 0) ? layer.opacity / 255 : 1,
+        opacity: normalizedOpacity,
         rotation: 0,
         ...(type === 'text' && {
           text: textContent,
