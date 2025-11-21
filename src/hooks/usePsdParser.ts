@@ -211,5 +211,59 @@ export const usePsdParser = () => {
     }
   };
 
-  return { parsePsdFile, isLoading, error };
+  const parsePsdFiles = async (files: File[]): Promise<Template | null> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const slides: Slide[] = [];
+      
+      for (const file of files) {
+        if (!file.name.toLowerCase().endsWith('.psd')) {
+          continue;
+        }
+
+        const buffer = await file.arrayBuffer();
+        const psd = readPsd(buffer);
+
+        if (!psd) {
+          console.warn(`Failed to parse ${file.name}`);
+          continue;
+        }
+
+        const layers = psd.children ? flattenLayers(psd.children as PsdLayer[]).reverse() : [];
+
+        const slide: Slide = {
+          id: `slide-${Date.now()}-${Math.random()}`,
+          name: file.name.replace('.psd', ''),
+          width: psd.width || 1080,
+          height: psd.height || 1080,
+          layers,
+        };
+
+        slides.push(slide);
+      }
+
+      if (slides.length === 0) {
+        throw new Error('No valid PSD files found');
+      }
+
+      const template: Template = {
+        id: `template-${Date.now()}`,
+        name: slides[0].name,
+        slides,
+      };
+
+      setIsLoading(false);
+      return template;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError(errorMessage);
+      setIsLoading(false);
+      console.error('Error parsing PSD files:', err);
+      return null;
+    }
+  };
+
+  return { parsePsdFile, parsePsdFiles, isLoading, error };
 };

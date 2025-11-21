@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
 
 export const LayerPanel = () => {
-  const { currentSlide, selectedLayer, setSelectedLayer, updateLayer, reorderLayers } = useTemplateStore();
+  const { currentSlide, currentSlideIndex, currentTemplate, selectedLayer, setSelectedLayer, updateLayer, reorderLayers } = useTemplateStore();
   const [draggedLayer, setDraggedLayer] = useState<string | null>(null);
   const [draggedOver, setDraggedOver] = useState<string | null>(null);
 
@@ -64,8 +64,13 @@ export const LayerPanel = () => {
 
   return (
     <div className="h-full w-full bg-panel border-r border-border flex flex-col">
-      <div className="h-12 border-b border-border flex items-center px-4">
+      <div className="h-12 border-b border-border flex items-center justify-between px-4">
         <h3 className="font-semibold text-sm text-foreground">Layers</h3>
+        {currentTemplate && currentTemplate.slides.length > 1 && (
+          <span className="text-xs text-muted-foreground">
+            Slide {currentSlideIndex + 1}
+          </span>
+        )}
       </div>
       
       <ScrollArea className="flex-1">
