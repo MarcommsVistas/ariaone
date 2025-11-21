@@ -1,9 +1,26 @@
-import { Layers, Users } from "lucide-react";
+import { Layers, Users, LogOut, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useTemplateStore } from "@/store/useTemplateStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Navigation = () => {
   const { mode, setMode } = useTemplateStore();
+  const { userRole, userName, logout } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <nav className="h-16 bg-sidebar border-b border-sidebar-border flex items-center justify-between px-6">
@@ -14,25 +31,66 @@ export const Navigation = () => {
         <span className="text-sidebar-foreground font-semibold text-lg">Aria-One</span>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button
-          variant={mode === 'admin' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => setMode('admin')}
-          className="gap-2"
-        >
-          <Layers className="w-4 h-4" />
-          Admin Studio
-        </Button>
-        <Button
-          variant={mode === 'hr' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => setMode('hr')}
-          className="gap-2"
-        >
-          <Users className="w-4 h-4" />
-          HR Interface
-        </Button>
+      <div className="flex items-center gap-3">
+        {/* Mode Switching Buttons - Conditional based on role */}
+        {userRole === 'marcomms' && (
+          <>
+            <Button
+              variant={mode === 'admin' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setMode('admin')}
+              className="gap-2"
+            >
+              <Layers className="w-4 h-4" />
+              Admin Studio
+            </Button>
+            <Button
+              variant={mode === 'hr' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setMode('hr')}
+              className="gap-2"
+            >
+              <Users className="w-4 h-4" />
+              HR Interface
+            </Button>
+          </>
+        )}
+        
+        {userRole === 'hr' && (
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-2"
+          >
+            <Users className="w-4 h-4" />
+            HR Interface
+          </Button>
+        )}
+
+        {/* User Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-2">
+              <User className="w-4 h-4" />
+              <span className="hidden sm:inline">{userName}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium">{userName}</span>
+                <span className="text-xs text-muted-foreground capitalize">
+                  {userRole}
+                </span>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
+              <LogOut className="w-4 h-4" />
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </nav>
   );
