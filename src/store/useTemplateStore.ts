@@ -409,6 +409,12 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
         rotation: updates.rotation,
       };
 
+      // Add name update
+      if (updates.name !== undefined) dbUpdates.name = updates.name;
+
+      // Add z-index update
+      if (updates.zIndex !== undefined) dbUpdates.z_index = updates.zIndex;
+
       // Add text-specific updates
       if (updates.text !== undefined) dbUpdates.text_content = updates.text;
       if (updates.fontFamily !== undefined) dbUpdates.font_family = updates.fontFamily;
@@ -469,29 +475,53 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     };
   }),
   
-  reorderLayers: (slideId, newOrder) => set((state) => {
-    if (!state.currentTemplate) return state;
+  reorderLayers: async (slideId, newOrder) => {
+    const state = get();
+    if (!state.currentTemplate) return;
     
-    const updatedTemplates = state.templates.map(template => {
-      if (template.id !== state.currentTemplate?.id) return template;
+    // Update local state first for immediate UI feedback
+    set((state) => {
+      const updatedTemplates = state.templates.map(template => {
+        if (template.id !== state.currentTemplate?.id) return template;
+        
+        return {
+          ...template,
+          slides: template.slides.map(slide => 
+            slide.id === slideId ? { ...slide, layers: newOrder } : slide
+          ),
+        };
+      });
+
+      const updatedTemplate = updatedTemplates.find(t => t.id === state.currentTemplate?.id);
+      const updatedSlide = updatedTemplate?.slides.find(s => s.id === slideId);
       
       return {
-        ...template,
-        slides: template.slides.map(slide => 
-          slide.id === slideId ? { ...slide, layers: newOrder } : slide
-        ),
+        templates: updatedTemplates,
+        currentTemplate: updatedTemplate || null,
+        currentSlide: updatedSlide || null,
       };
     });
 
-    const updatedTemplate = updatedTemplates.find(t => t.id === state.currentTemplate?.id);
-    const updatedSlide = updatedTemplate?.slides.find(s => s.id === slideId);
-    
-    return {
-      templates: updatedTemplates,
-      currentTemplate: updatedTemplate || null,
-      currentSlide: updatedSlide || null,
-    };
-  }),
+    // Sync z-index changes to database
+    try {
+      const updatePromises = newOrder.map(layer => 
+        supabase
+          .from('layers')
+          .update({ z_index: layer.zIndex })
+          .eq('id', layer.id)
+      );
+      
+      const results = await Promise.all(updatePromises);
+      
+      // Check for errors
+      const errors = results.filter(r => r.error);
+      if (errors.length > 0) {
+        console.error('Error updating layer z-indexes in database:', errors);
+      }
+    } catch (error) {
+      console.error('Error syncing layer reorder:', error);
+    }
+  },
   
   updateTemplateName: async (name) => {
     const state = get();
