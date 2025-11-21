@@ -128,7 +128,7 @@ export const usePsdParser = () => {
         y: Math.round(y),
         width: Math.round(width),
         height: Math.round(height),
-        opacity: layer.opacity !== undefined ? layer.opacity / 255 : 1,
+        opacity: layer.opacity !== undefined && layer.opacity !== null ? layer.opacity / 255 : 1,
         rotation: 0,
         ...(type === 'text' && {
           text: textContent,
