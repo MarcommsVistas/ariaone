@@ -1,4 +1,5 @@
 import { useTemplateStore } from "@/store/useTemplateStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { Navigation } from "@/components/Navigation";
 import { AdminStudio } from "@/components/admin/AdminStudio";
 import { HRInterface } from "@/components/hr/HRInterface";
@@ -7,20 +8,28 @@ import { HRDashboard } from "@/components/hr/HRDashboard";
 
 const Index = () => {
   const { mode, currentTemplate } = useTemplateStore();
+  const { userRole } = useAuthStore();
 
   const renderContent = () => {
-    // Show dashboard if no template is selected in admin mode
-    if (mode === 'admin' && !currentTemplate) {
-      return <CreativeDashboard />;
+    // HR users can ONLY access HR interface
+    if (userRole === 'hr') {
+      return currentTemplate ? <HRInterface /> : <HRDashboard />;
     }
     
-    // Show HR dashboard if no template is selected in HR mode
-    if (mode === 'hr' && !currentTemplate) {
-      return <HRDashboard />;
+    // Marcomms users can switch between modes
+    if (userRole === 'marcomms') {
+      if (mode === 'admin') {
+        return currentTemplate ? <AdminStudio /> : <CreativeDashboard />;
+      }
+      return currentTemplate ? <HRInterface /> : <HRDashboard />;
     }
     
-    // Show editor/interface when template is selected
-    return mode === 'admin' ? <AdminStudio /> : <HRInterface />;
+    // Fallback for unknown roles
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">Invalid user role</p>
+      </div>
+    );
   };
 
   return (
