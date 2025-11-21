@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ariaOneLogo from "@/assets/aria-one-logo.png";
 
 export const Navigation = () => {
   const { mode, setMode } = useTemplateStore();
@@ -24,11 +25,8 @@ export const Navigation = () => {
 
   return (
     <nav className="h-16 bg-sidebar border-b border-sidebar-border flex items-center justify-between px-6">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-          <Layers className="w-5 h-5 text-primary-foreground" />
-        </div>
-        <span className="text-sidebar-foreground font-semibold text-lg">Aria-One</span>
+      <div className="flex items-center gap-3">
+        <img src={ariaOneLogo} alt="Aria-One" className="h-8" />
       </div>
 
       <div className="flex items-center gap-3">
