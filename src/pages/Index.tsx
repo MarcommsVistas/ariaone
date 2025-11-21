@@ -89,9 +89,11 @@ const Index = () => {
   }, [addTemplate, templates.length]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background">
       <Navigation />
-      {mode === 'admin' ? <AdminStudio /> : <HRInterface />}
+      <div className="flex-1 min-h-0">
+        {mode === 'admin' ? <AdminStudio /> : <HRInterface />}
+      </div>
     </div>
   );
 };
