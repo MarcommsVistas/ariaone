@@ -63,7 +63,7 @@ export const LayerPanel = () => {
   };
 
   return (
-    <div className="w-64 bg-panel border-r border-border flex flex-col">
+    <div className="h-full w-full bg-panel border-r border-border flex flex-col">
       <div className="h-12 border-b border-border flex items-center px-4">
         <h3 className="font-semibold text-sm text-foreground">Layers</h3>
       </div>
