@@ -1,6 +1,17 @@
 import { useState, useEffect } from "react";
-import { Layers, Save, Tag, FolderOpen } from "lucide-react";
+import { Layers, Save, Tag, FolderOpen, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -20,7 +31,8 @@ const PRESET_CATEGORIES = [
 ];
 
 export const TemplateHeader = () => {
-  const { currentTemplate, updateTemplateName, updateTemplateBrand, updateTemplateCategory, saveTemplate, publishTemplate, unpublishTemplate, clearCurrentTemplate } = useTemplateStore();
+  const { currentTemplate, updateTemplateName, updateTemplateBrand, updateTemplateCategory, saveTemplate, publishTemplate, unpublishTemplate, deleteTemplate, clearCurrentTemplate } = useTemplateStore();
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingBrand, setIsEditingBrand] = useState(false);
   const [isEditingCategory, setIsEditingCategory] = useState(false);
@@ -123,6 +135,27 @@ export const TemplateHeader = () => {
         description: "Failed to unpublish template. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!currentTemplate) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteTemplate(currentTemplate.id);
+      toast({
+        title: "Template deleted",
+        description: `${currentTemplate.name} has been permanently deleted`,
+      });
+    } catch (error) {
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete template. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -256,6 +289,36 @@ export const TemplateHeader = () => {
         >
           Cancel
         </Button>
+        
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="destructive"
+              disabled={isDeleting}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Template?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{currentTemplate.name}"? This will permanently delete the template and all its slides and layers. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {currentTemplate.saved ? (
           <Button
             onClick={handleUnpublish}

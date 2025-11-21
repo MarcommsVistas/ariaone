@@ -1,9 +1,22 @@
-import { Edit } from "lucide-react";
+import { useState } from "react";
+import { Edit, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Template } from "@/store/useTemplateStore";
+import { Template, useTemplateStore } from "@/store/useTemplateStore";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface MarcommsTemplateCardProps {
   template: Template;
@@ -13,6 +26,28 @@ interface MarcommsTemplateCardProps {
 export const MarcommsTemplateCard = ({ template, onEditTemplate }: MarcommsTemplateCardProps) => {
   const firstSlide = template.slides[0];
   const isPublished = template.saved;
+  const { deleteTemplate } = useTemplateStore();
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteTemplate(template.id);
+      toast({
+        title: "Template deleted",
+        description: `${template.name} has been permanently deleted`,
+      });
+    } catch (error) {
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete template. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <Card className="border border-border hover:border-primary/50 transition-colors overflow-hidden group">
@@ -67,14 +102,45 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate }: MarcommsTempl
           </p>
         </div>
 
-        <Button
-          onClick={() => onEditTemplate(template.id)}
-          className="w-full"
-          variant="outline"
-        >
-          <Edit className="mr-2 h-4 w-4" />
-          Edit Template
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => onEditTemplate(template.id)}
+            className="flex-1"
+            variant="outline"
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Template
+          </Button>
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                size="icon"
+                disabled={isDeleting}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Template?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete "{template.name}"? This will permanently delete the template and all its slides and layers. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </CardContent>
     </Card>
   );

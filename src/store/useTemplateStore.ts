@@ -85,6 +85,7 @@ interface TemplateStore {
   saveTemplate: () => void;
   publishTemplate: () => Promise<void>;
   unpublishTemplate: () => Promise<void>;
+  deleteTemplate: (templateId: string) => Promise<void>;
   clearCurrentTemplate: () => void;
 }
 
@@ -709,6 +710,42 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       }
     } catch (error) {
       console.error('Error unpublishing template:', error);
+      throw error;
+    }
+  },
+
+  deleteTemplate: async (templateId: string) => {
+    const state = get();
+    
+    try {
+      // Delete from database (cascades to slides, layers, psd_uploads)
+      const { error } = await supabase
+        .from('templates')
+        .delete()
+        .eq('id', templateId);
+
+      if (error) {
+        console.error('Error deleting template:', error);
+        throw error;
+      }
+
+      // Update local state
+      set((state) => {
+        const updatedTemplates = state.templates.filter(t => t.id !== templateId);
+        
+        // If we deleted the current template, clear it
+        const shouldClearCurrent = state.currentTemplate?.id === templateId;
+        
+        return {
+          templates: updatedTemplates,
+          currentTemplate: shouldClearCurrent ? null : state.currentTemplate,
+          currentSlide: shouldClearCurrent ? null : state.currentSlide,
+          currentSlideIndex: shouldClearCurrent ? 0 : state.currentSlideIndex,
+          selectedLayer: shouldClearCurrent ? null : state.selectedLayer,
+        };
+      });
+    } catch (error) {
+      console.error('Error deleting template:', error);
       throw error;
     }
   },
