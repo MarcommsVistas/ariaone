@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { Layer } from '@/store/useTemplateStore';
 import { useTemplateStore } from '@/store/useTemplateStore';
 import { RotateCw } from 'lucide-react';
 
@@ -18,42 +17,8 @@ export const InteractionOverlay = ({ slideWidth, slideHeight, scale }: Interacti
   const dragStartRef = useRef({ x: 0, y: 0, layerX: 0, layerY: 0, layerWidth: 0, layerHeight: 0 });
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  if (!selectedLayer || !currentSlide) return null;
-
-  const handleBackgroundClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      setSelectedLayer(null);
-    }
-  };
-
-  const handleMouseDown = (e: React.MouseEvent, action: 'drag' | 'resize' | 'rotate', handle?: string) => {
-    if (selectedLayer.locked) return;
-    e.stopPropagation();
-
-    const rect = overlayRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    dragStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      layerX: selectedLayer.x,
-      layerY: selectedLayer.y,
-      layerWidth: selectedLayer.width,
-      layerHeight: selectedLayer.height,
-    };
-
-    if (action === 'drag') {
-      setIsDragging(true);
-    } else if (action === 'resize' && handle) {
-      setIsResizing(true);
-      setResizeHandle(handle);
-    } else if (action === 'rotate') {
-      setIsRotating(true);
-    }
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging && !isResizing && !isRotating) return;
+  const handleMouseMove = React.useCallback((e: MouseEvent) => {
+    if ((!isDragging && !isResizing && !isRotating) || !selectedLayer) return;
 
     const deltaX = (e.clientX - dragStartRef.current.x) / scale;
     const deltaY = (e.clientY - dragStartRef.current.y) / scale;
@@ -84,7 +49,6 @@ export const InteractionOverlay = ({ slideWidth, slideHeight, scale }: Interacti
         rotation: Math.round(newRotation),
       });
       
-      // Update drag start for continuous rotation
       dragStartRef.current.x = e.clientX;
       dragStartRef.current.y = e.clientY;
     } else if (isResizing) {
@@ -137,16 +101,16 @@ export const InteractionOverlay = ({ slideWidth, slideHeight, scale }: Interacti
         y: Math.round(newY),
       });
     }
-  };
+  }, [isDragging, isResizing, isRotating, selectedLayer, scale, resizeHandle, updateLayer]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = React.useCallback(() => {
     setIsDragging(false);
     setIsResizing(false);
     setIsRotating(false);
     setResizeHandle('');
-  };
+  }, []);
 
-  // Add/remove global mouse listeners
+  // Add/remove global mouse listeners - MUST be before any conditional returns
   React.useEffect(() => {
     if (isDragging || isResizing || isRotating) {
       window.addEventListener('mousemove', handleMouseMove);
@@ -156,7 +120,39 @@ export const InteractionOverlay = ({ slideWidth, slideHeight, scale }: Interacti
         window.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, isRotating, selectedLayer]);
+  }, [isDragging, isResizing, isRotating, handleMouseMove, handleMouseUp]);
+
+  // Early return AFTER all hooks
+  if (!selectedLayer || !currentSlide) return null;
+
+  const handleMouseDown = (e: React.MouseEvent, action: 'drag' | 'resize' | 'rotate', handle?: string) => {
+    if (selectedLayer.locked) return;
+    e.stopPropagation();
+
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      layerX: selectedLayer.x,
+      layerY: selectedLayer.y,
+      layerWidth: selectedLayer.width,
+      layerHeight: selectedLayer.height,
+    };
+
+    if (action === 'drag') {
+      setIsDragging(true);
+    } else if (action === 'resize' && handle) {
+      setIsResizing(true);
+      setResizeHandle(handle);
+    } else if (action === 'rotate') {
+      setIsRotating(true);
+    }
+  };
+
+  const handleBackgroundClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      setSelectedLayer(null);
+    }
+  };
 
   const handleSize = 10;
   const rotateHandleDistance = 30;
