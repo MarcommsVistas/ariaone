@@ -83,6 +83,8 @@ interface TemplateStore {
   updateTemplateBrand: (brand: string) => void;
   updateTemplateCategory: (category: string) => void;
   saveTemplate: () => void;
+  publishTemplate: () => Promise<void>;
+  unpublishTemplate: () => Promise<void>;
   clearCurrentTemplate: () => void;
 }
 
@@ -632,7 +634,16 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     const state = get();
     if (!state.currentTemplate) return;
     
-    // Update local state first
+    // Note: saveTemplate only saves changes, it does NOT publish
+    // Use publishTemplate() to make visible to HR
+    console.log('Template saved (not published)');
+  },
+
+  publishTemplate: async () => {
+    const state = get();
+    if (!state.currentTemplate) return;
+    
+    // Update local state
     set((state) => {
       const updatedTemplates = state.templates.map(template =>
         template.id === state.currentTemplate?.id
@@ -648,7 +659,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       };
     });
 
-    // Sync to database (publish template)
+    // Publish to database
     try {
       const { error } = await supabase
         .from('templates')
@@ -656,10 +667,49 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
         .eq('id', state.currentTemplate.id);
 
       if (error) {
-        console.error('Error publishing template in database:', error);
+        console.error('Error publishing template:', error);
+        throw error;
       }
     } catch (error) {
-      console.error('Error syncing template publish:', error);
+      console.error('Error publishing template:', error);
+      throw error;
+    }
+  },
+
+  unpublishTemplate: async () => {
+    const state = get();
+    if (!state.currentTemplate) return;
+    
+    // Update local state
+    set((state) => {
+      const updatedTemplates = state.templates.map(template =>
+        template.id === state.currentTemplate?.id
+          ? { ...template, saved: false }
+          : template
+      );
+      
+      const updatedTemplate = updatedTemplates.find(t => t.id === state.currentTemplate?.id);
+      
+      return {
+        templates: updatedTemplates,
+        currentTemplate: updatedTemplate || null,
+      };
+    });
+
+    // Unpublish in database
+    try {
+      const { error } = await supabase
+        .from('templates')
+        .update({ is_published: false })
+        .eq('id', state.currentTemplate.id);
+
+      if (error) {
+        console.error('Error unpublishing template:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error unpublishing template:', error);
+      throw error;
     }
   },
   
