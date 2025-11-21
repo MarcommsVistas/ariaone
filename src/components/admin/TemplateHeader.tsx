@@ -98,12 +98,20 @@ export const TemplateHeader = () => {
     clearCurrentTemplate();
   };
 
-  const handleSave = () => {
-    saveTemplate();
-    toast({
-      title: "Template saved",
-      description: "All changes have been saved",
-    });
+  const handleSave = async () => {
+    try {
+      await saveTemplate();
+      toast({
+        title: "Template saved",
+        description: "All changes have been saved",
+      });
+    } catch (error) {
+      toast({
+        title: "Save failed",
+        description: "Failed to save template. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePublish = async () => {

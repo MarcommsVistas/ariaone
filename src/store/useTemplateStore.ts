@@ -74,7 +74,7 @@ interface TemplateStore {
   setCurrentSlideIndex: (index: number) => void;
   nextSlide: () => void;
   previousSlide: () => void;
-  reorderSlides: (newOrder: Slide[]) => void;
+  reorderSlides: (newOrder: Slide[]) => Promise<void>;
   setSelectedLayer: (layerId: string | null) => void;
   updateLayer: (layerId: string, updates: Partial<Layer>) => void;
   deleteLayer: (layerId: string) => void;
@@ -82,7 +82,7 @@ interface TemplateStore {
   updateTemplateName: (name: string) => void;
   updateTemplateBrand: (brand: string) => void;
   updateTemplateCategory: (category: string) => void;
-  saveTemplate: () => void;
+  saveTemplate: () => Promise<void>;
   publishTemplate: () => Promise<void>;
   unpublishTemplate: () => Promise<void>;
   deleteTemplate: (templateId: string) => Promise<void>;
@@ -336,27 +336,45 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     };
   }),
 
-  reorderSlides: (newOrder) => set((state) => {
-    if (!state.currentTemplate) return state;
+  reorderSlides: async (newOrder) => {
+    const state = get();
+    if (!state.currentTemplate) return;
 
     const currentSlideId = state.currentSlide?.id;
     const newIndex = newOrder.findIndex(s => s.id === currentSlideId);
 
-    const updatedTemplates = state.templates.map(template =>
-      template.id === state.currentTemplate?.id
-        ? { ...template, slides: newOrder }
-        : template
-    );
+    // Update local state first for immediate UI feedback
+    set((state) => {
+      const updatedTemplates = state.templates.map(template =>
+        template.id === state.currentTemplate?.id
+          ? { ...template, slides: newOrder }
+          : template
+      );
 
-    const updatedTemplate = updatedTemplates.find(t => t.id === state.currentTemplate?.id);
+      const updatedTemplate = updatedTemplates.find(t => t.id === state.currentTemplate?.id);
 
-    return {
-      templates: updatedTemplates,
-      currentTemplate: updatedTemplate || null,
-      currentSlide: newOrder[newIndex] || newOrder[0],
-      currentSlideIndex: newIndex >= 0 ? newIndex : 0,
-    };
-  }),
+      return {
+        templates: updatedTemplates,
+        currentTemplate: updatedTemplate || null,
+        currentSlide: newOrder[newIndex] || newOrder[0],
+        currentSlideIndex: newIndex >= 0 ? newIndex : 0,
+      };
+    });
+
+    // Sync order_index to database
+    try {
+      const updates = newOrder.map((slide, index) => 
+        supabase
+          .from('slides')
+          .update({ order_index: index })
+          .eq('id', slide.id)
+      );
+
+      await Promise.all(updates);
+    } catch (error) {
+      console.error('Error syncing slide order to database:', error);
+    }
+  },
   
   setSelectedLayer: (layerId) => set((state) => {
     const layer = state.currentSlide?.layers.find(l => l.id === layerId);
@@ -635,9 +653,24 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     const state = get();
     if (!state.currentTemplate) return;
     
-    // Note: saveTemplate only saves changes, it does NOT publish
-    // Use publishTemplate() to make visible to HR
-    console.log('Template saved (not published)');
+    // Sync slide order to database
+    try {
+      const updates = state.currentTemplate.slides.map((slide, index) => 
+        supabase
+          .from('slides')
+          .update({ order_index: index })
+          .eq('id', slide.id)
+      );
+
+      await Promise.all(updates);
+      
+      // Note: saveTemplate only saves changes, it does NOT publish
+      // Use publishTemplate() to make visible to HR
+      console.log('Template saved (including slide order)');
+    } catch (error) {
+      console.error('Error saving template:', error);
+      throw error;
+    }
   },
 
   publishTemplate: async () => {
