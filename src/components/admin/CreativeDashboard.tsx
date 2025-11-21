@@ -75,11 +75,6 @@ export const CreativeDashboard = () => {
     }
   };
 
-  const handleNewTemplate = () => {
-    // TODO: Implement new template creation
-    console.log("New Template clicked");
-  };
-
   return (
     <div className="h-full overflow-auto bg-background">
       <div className="container mx-auto px-8 py-12">
@@ -94,23 +89,13 @@ export const CreativeDashboard = () => {
         />
 
         {/* Header */}
-        <div className="flex items-start justify-between mb-12">
-          <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">
-              Creative Dashboard
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              Manage smart templates and generate assets.
-            </p>
-          </div>
-          <Button 
-            onClick={handleNewTemplate}
-            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-            size="lg"
-          >
-            <Plus className="mr-2 h-5 w-5" />
-            New Template
-          </Button>
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
+            Creative Dashboard
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Manage smart templates and generate assets.
+          </p>
         </div>
 
         {/* Templates Grid */}
