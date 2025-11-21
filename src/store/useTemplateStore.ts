@@ -66,6 +66,7 @@ interface TemplateStore {
   subscribeToChanges: () => void;
   unsubscribeFromChanges: () => void;
   addTemplate: (template: Template) => void;
+  addSlide: (slide: Slide) => void;
   setCurrentTemplate: (templateId: string) => void;
   setCurrentSlide: (slideId: string) => void;
   setCurrentSlideIndex: (index: number) => void;
@@ -258,6 +259,22 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     currentSlide: template.slides[0] || null,
     currentSlideIndex: 0,
   })),
+  
+  addSlide: (slide) => set((state) => {
+    if (!state.currentTemplate) return state;
+    
+    const updatedTemplate = {
+      ...state.currentTemplate,
+      slides: [...state.currentTemplate.slides, slide]
+    };
+    
+    return {
+      templates: state.templates.map(t => 
+        t.id === state.currentTemplate?.id ? updatedTemplate : t
+      ),
+      currentTemplate: updatedTemplate,
+    };
+  }),
   
   setCurrentTemplate: (templateId) => set((state) => {
     const template = state.templates.find(t => t.id === templateId);
