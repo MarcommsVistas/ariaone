@@ -1,17 +1,21 @@
 import { useState } from "react";
-import { Layers, Save } from "lucide-react";
+import { Layers, Save, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTemplateStore } from "@/store/useTemplateStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useToast } from "@/hooks/use-toast";
 
 export const TemplateHeader = () => {
   const { currentTemplate, updateTemplateName, saveTemplate, clearCurrentTemplate } = useTemplateStore();
+  const { userRole } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [tempName, setTempName] = useState(currentTemplate?.name || "Untitled Template");
   const { toast } = useToast();
 
   if (!currentTemplate) return null;
+
+  const isHR = userRole === 'hr';
 
   const handleNameClick = () => {
     setIsEditing(true);
@@ -42,10 +46,16 @@ export const TemplateHeader = () => {
 
   const handleSave = () => {
     saveTemplate();
-    toast({
-      title: "Template saved",
-      description: `${currentTemplate.name} is now available for HR to use`,
-    });
+    const message = isHR
+      ? {
+          title: "Submitted for review",
+          description: `Your customized ${currentTemplate.name} has been submitted`,
+        }
+      : {
+          title: "Template saved",
+          description: `${currentTemplate.name} is now available for HR to use`,
+        };
+    toast(message);
   };
 
   return (
@@ -82,8 +92,17 @@ export const TemplateHeader = () => {
           onClick={handleSave}
           className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
         >
-          <Save className="mr-2 h-4 w-4" />
-          Save Template
+          {isHR ? (
+            <>
+              <Send className="mr-2 h-4 w-4" />
+              Submit for Review
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Save Template
+            </>
+          )}
         </Button>
       </div>
     </div>
