@@ -14,16 +14,240 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      layers: {
+        Row: {
+          color: string | null
+          created_at: string
+          font_family: string | null
+          font_size: number | null
+          font_weight: number | null
+          height: number
+          id: string
+          image_src: string | null
+          letter_spacing: number | null
+          line_height: number | null
+          locked: boolean
+          max_length: number | null
+          name: string
+          opacity: number
+          rotation: number
+          slide_id: string
+          text_align: string | null
+          text_content: string | null
+          text_transform: string | null
+          type: string
+          visible: boolean
+          width: number
+          x: number
+          y: number
+          z_index: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          font_family?: string | null
+          font_size?: number | null
+          font_weight?: number | null
+          height?: number
+          id?: string
+          image_src?: string | null
+          letter_spacing?: number | null
+          line_height?: number | null
+          locked?: boolean
+          max_length?: number | null
+          name: string
+          opacity?: number
+          rotation?: number
+          slide_id: string
+          text_align?: string | null
+          text_content?: string | null
+          text_transform?: string | null
+          type: string
+          visible?: boolean
+          width?: number
+          x?: number
+          y?: number
+          z_index?: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          font_family?: string | null
+          font_size?: number | null
+          font_weight?: number | null
+          height?: number
+          id?: string
+          image_src?: string | null
+          letter_spacing?: number | null
+          line_height?: number | null
+          locked?: boolean
+          max_length?: number | null
+          name?: string
+          opacity?: number
+          rotation?: number
+          slide_id?: string
+          text_align?: string | null
+          text_content?: string | null
+          text_transform?: string | null
+          type?: string
+          visible?: boolean
+          width?: number
+          x?: number
+          y?: number
+          z_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "layers_slide_id_fkey"
+            columns: ["slide_id"]
+            isOneToOne: false
+            referencedRelation: "slides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      psd_uploads: {
+        Row: {
+          file_name: string
+          file_size: number
+          id: string
+          storage_path: string
+          template_id: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          file_name: string
+          file_size: number
+          id?: string
+          storage_path: string
+          template_id: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          file_name?: string
+          file_size?: number
+          id?: string
+          storage_path?: string
+          template_id?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "psd_uploads_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      slides: {
+        Row: {
+          created_at: string
+          height: number
+          id: string
+          name: string
+          order_index: number
+          template_id: string
+          width: number
+        }
+        Insert: {
+          created_at?: string
+          height: number
+          id?: string
+          name: string
+          order_index?: number
+          template_id: string
+          width: number
+        }
+        Update: {
+          created_at?: string
+          height?: number
+          id?: string
+          name?: string
+          order_index?: number
+          template_id?: string
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slides_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_published: boolean
+          name: string
+          psd_file_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean
+          name: string
+          psd_file_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean
+          name?: string
+          psd_file_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "marcomms" | "hr"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +374,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["marcomms", "hr"],
+    },
   },
 } as const
