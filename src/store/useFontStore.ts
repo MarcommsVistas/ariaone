@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 export interface CustomFont {
   name: string;
   family: string;
+  dataUrl: string; // Store the font data URL for export
 }
 
 interface FontStore {
