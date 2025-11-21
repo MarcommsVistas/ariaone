@@ -22,6 +22,7 @@ export interface Layer {
   text?: string;
   fontFamily?: string;
   fontSize?: number;
+  fontWeight?: number;
   color?: string;
   align?: 'left' | 'center' | 'right';
   lineHeight?: number;

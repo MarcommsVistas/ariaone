@@ -154,6 +154,25 @@ export const PropertyPanel = () => {
                 />
               </div>
               
+              <div>
+                <Label htmlFor="layer-font-family" className="text-xs">Font Family</Label>
+                <select
+                  id="layer-font-family"
+                  value={selectedLayer.fontFamily || 'DM Sans'}
+                  onChange={(e) => updateLayer(selectedLayer.id, { fontFamily: e.target.value })}
+                  className="w-full h-8 text-sm mt-1 border border-input rounded-md px-2"
+                >
+                  <option value="DM Sans">DM Sans</option>
+                  <option value="Inter">Inter</option>
+                  <option value="Poppins">Poppins</option>
+                  <option value="Roboto">Roboto</option>
+                  <option value="Arial">Arial</option>
+                  <option value="Helvetica">Helvetica</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                </select>
+              </div>
+              
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label htmlFor="layer-font-size" className="text-xs">Font Size</Label>
@@ -166,14 +185,72 @@ export const PropertyPanel = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="layer-color" className="text-xs">Color</Label>
+                  <Label htmlFor="layer-font-weight" className="text-xs">Font Weight</Label>
+                  <select
+                    id="layer-font-weight"
+                    value={selectedLayer.fontWeight || 400}
+                    onChange={(e) => updateLayer(selectedLayer.id, { fontWeight: Number(e.target.value) })}
+                    className="w-full h-8 text-sm mt-1 border border-input rounded-md px-2"
+                  >
+                    <option value="100">Thin</option>
+                    <option value="200">Extra Light</option>
+                    <option value="300">Light</option>
+                    <option value="400">Regular</option>
+                    <option value="500">Medium</option>
+                    <option value="600">Semi Bold</option>
+                    <option value="700">Bold</option>
+                    <option value="800">Extra Bold</option>
+                    <option value="900">Black</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="layer-color" className="text-xs">Color</Label>
+                <Input
+                  id="layer-color"
+                  type="color"
+                  value={selectedLayer.color || '#000000'}
+                  onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
+                  className="h-8 mt-1"
+                />
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label htmlFor="layer-letter-spacing" className="text-xs">Letter Spacing</Label>
                   <Input
-                    id="layer-color"
-                    type="color"
-                    value={selectedLayer.color || '#000000'}
-                    onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
-                    className="h-8 mt-1"
+                    id="layer-letter-spacing"
+                    type="number"
+                    step="0.1"
+                    value={selectedLayer.letterSpacing || 0}
+                    onChange={(e) => updateLayer(selectedLayer.id, { letterSpacing: Number(e.target.value) })}
+                    className="h-8 text-sm mt-1"
                   />
+                </div>
+                <div>
+                  <Label htmlFor="layer-line-height" className="text-xs">Line Height</Label>
+                  <Input
+                    id="layer-line-height"
+                    type="number"
+                    step="0.1"
+                    value={selectedLayer.lineHeight || 1.2}
+                    onChange={(e) => updateLayer(selectedLayer.id, { lineHeight: Number(e.target.value) })}
+                    className="h-8 text-sm mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="layer-text-align" className="text-xs">Align</Label>
+                  <select
+                    id="layer-text-align"
+                    value={selectedLayer.align || 'left'}
+                    onChange={(e) => updateLayer(selectedLayer.id, { align: e.target.value as 'left' | 'center' | 'right' })}
+                    className="w-full h-8 text-sm mt-1 border border-input rounded-md px-2"
+                  >
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                  </select>
                 </div>
               </div>
             </div>
