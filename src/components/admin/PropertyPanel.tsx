@@ -1,4 +1,5 @@
 import { useTemplateStore } from "@/store/useTemplateStore";
+import { useFontStore } from "@/store/useFontStore";
 import { AIGenerationDialog } from "./AIGenerationDialog";
 import { FontUploader } from "@/components/hr/FontUploader";
 import { Label } from "@/components/ui/label";
@@ -9,6 +10,19 @@ import { AlertCircle } from "lucide-react";
 
 export const PropertyPanel = () => {
   const { selectedLayer, updateLayer } = useTemplateStore();
+  const { uploadedFonts } = useFontStore();
+
+  // Default system fonts
+  const systemFonts = [
+    'DM Sans',
+    'Inter',
+    'Poppins',
+    'Roboto',
+    'Arial',
+    'Helvetica',
+    'Georgia',
+    'Times New Roman',
+  ];
 
   if (!selectedLayer) {
     return (
@@ -177,16 +191,25 @@ export const PropertyPanel = () => {
                   id="layer-font-family"
                   value={selectedLayer.fontFamily || 'DM Sans'}
                   onChange={(e) => updateLayer(selectedLayer.id, { fontFamily: e.target.value })}
-                  className="w-full h-8 text-sm mt-1 border border-input rounded-md px-2"
+                  className="w-full h-8 text-sm mt-1 border border-input bg-background rounded-md px-2 z-50"
                 >
-                  <option value="DM Sans">DM Sans</option>
-                  <option value="Inter">Inter</option>
-                  <option value="Poppins">Poppins</option>
-                  <option value="Roboto">Roboto</option>
-                  <option value="Arial">Arial</option>
-                  <option value="Helvetica">Helvetica</option>
-                  <option value="Georgia">Georgia</option>
-                  <option value="Times New Roman">Times New Roman</option>
+                  {/* System fonts */}
+                  <optgroup label="System Fonts">
+                    {systemFonts.map(font => (
+                      <option key={font} value={font}>{font}</option>
+                    ))}
+                  </optgroup>
+                  
+                  {/* Custom uploaded fonts */}
+                  {uploadedFonts.length > 0 && (
+                    <optgroup label="Custom Fonts">
+                      {uploadedFonts.map(font => (
+                        <option key={font.family} value={font.family}>
+                          {font.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
               
