@@ -5,12 +5,27 @@ import { AdminStudio } from "@/components/admin/AdminStudio";
 import { HRInterface } from "@/components/hr/HRInterface";
 import { CreativeDashboard } from "@/components/admin/CreativeDashboard";
 import { HRDashboard } from "@/components/hr/HRDashboard";
+import { Layers } from "lucide-react";
 
 const Index = () => {
   const { mode, currentTemplate } = useTemplateStore();
-  const { userRole } = useAuthStore();
+  const { userRole, isLoading } = useAuthStore();
 
   const renderContent = () => {
+    // Show loading state while auth is initializing
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 animate-pulse mx-auto">
+              <Layers className="h-8 w-8 text-primary" />
+            </div>
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      );
+    }
+
     // HR users can ONLY access HR interface
     if (userRole === 'hr') {
       return currentTemplate ? <HRInterface /> : <HRDashboard />;
