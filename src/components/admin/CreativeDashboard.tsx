@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { usePsdParser } from "@/hooks/usePsdParser";
 import { useTemplateStore } from "@/store/useTemplateStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useToast } from "@/hooks/use-toast";
 
 export const CreativeDashboard = () => {
@@ -19,7 +20,10 @@ export const CreativeDashboard = () => {
     unsubscribeFromChanges,
     isLoading: isFetchingTemplates 
   } = useTemplateStore();
+  const { userRole } = useAuthStore();
   const { toast } = useToast();
+  
+  const isMarcomms = userRole === 'marcomms';
   
   // Fetch templates and subscribe to changes on mount
   useEffect(() => {
@@ -149,41 +153,43 @@ export const CreativeDashboard = () => {
               </Card>
             ))}
             
-            {/* Import PSD Card */}
-            <Card 
-              className="border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer group relative"
-              onClick={!isLoading ? handleImportPSD : undefined}
-            >
-              <div className="aspect-square flex flex-col items-center justify-center p-8">
-                {isLoading ? (
-                  <div className="w-full space-y-4">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto animate-pulse">
-                      <Upload className="h-8 w-8 text-primary animate-bounce" />
-                    </div>
-                    <div className="space-y-2">
-                      <Progress value={progress} className="h-2" />
-                      <div className="text-center space-y-1">
-                        <p className="text-primary font-medium text-sm">
-                          {progress}%
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {progressStatus}
-                        </p>
+            {/* Import PSD Card - Only visible to Marcomms */}
+            {isMarcomms && (
+              <Card 
+                className="border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer group relative"
+                onClick={!isLoading ? handleImportPSD : undefined}
+              >
+                <div className="aspect-square flex flex-col items-center justify-center p-8">
+                  {isLoading ? (
+                    <div className="w-full space-y-4">
+                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto animate-pulse">
+                        <Upload className="h-8 w-8 text-primary animate-bounce" />
+                      </div>
+                      <div className="space-y-2">
+                        <Progress value={progress} className="h-2" />
+                        <div className="text-center space-y-1">
+                          <p className="text-primary font-medium text-sm">
+                            {progress}%
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {progressStatus}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="w-16 h-16 rounded-full bg-muted group-hover:bg-muted/80 transition-colors flex items-center justify-center mb-4">
-                      <Plus className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <p className="text-muted-foreground font-medium">
-                      Import PSD / New
-                    </p>
-                  </>
-                )}
-              </div>
-            </Card>
+                  ) : (
+                    <>
+                      <div className="w-16 h-16 rounded-full bg-muted group-hover:bg-muted/80 transition-colors flex items-center justify-center mb-4">
+                        <Plus className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <p className="text-muted-foreground font-medium">
+                        Import PSD / New
+                      </p>
+                    </>
+                  )}
+                </div>
+              </Card>
+            )}
           </div>
         )}
       </div>
