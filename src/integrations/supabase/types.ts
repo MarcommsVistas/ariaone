@@ -32,6 +32,27 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       layers: {
         Row: {
           color: string | null
@@ -203,6 +224,7 @@ export type Database = {
       templates: {
         Row: {
           brand: string | null
+          category: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -213,6 +235,7 @@ export type Database = {
         }
         Insert: {
           brand?: string | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -223,6 +246,7 @@ export type Database = {
         }
         Update: {
           brand?: string | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           id?: string

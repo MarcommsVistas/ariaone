@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { TemplateCard } from "./TemplateCard";
-import { Search, Layers, Filter } from "lucide-react";
+import { Search, Layers, Filter, Tag } from "lucide-react";
 
 export const HRDashboard = () => {
   const { 
@@ -17,6 +17,7 @@ export const HRDashboard = () => {
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBrand, setSelectedBrand] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
   
   // Fetch templates and subscribe to changes on mount
@@ -32,7 +33,7 @@ export const HRDashboard = () => {
   // Only show saved templates
   const savedTemplates = templates.filter(t => t.saved);
   
-  // Extract unique brands
+  // Extract unique brands and categories
   const brands = useMemo(() => {
     const brandSet = new Set<string>();
     savedTemplates.forEach(template => {
@@ -41,6 +42,16 @@ export const HRDashboard = () => {
       }
     });
     return Array.from(brandSet).sort();
+  }, [savedTemplates]);
+
+  const categories = useMemo(() => {
+    const categorySet = new Set<string>();
+    savedTemplates.forEach(template => {
+      if (template.category) {
+        categorySet.add(template.category);
+      }
+    });
+    return Array.from(categorySet).sort();
   }, [savedTemplates]);
 
   // Filter and sort templates
@@ -52,13 +63,19 @@ export const HRDashboard = () => {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(t => 
         t.name.toLowerCase().includes(query) ||
-        t.brand?.toLowerCase().includes(query)
+        t.brand?.toLowerCase().includes(query) ||
+        t.category?.toLowerCase().includes(query)
       );
     }
 
     // Filter by brand
     if (selectedBrand !== "all") {
       filtered = filtered.filter(t => t.brand === selectedBrand);
+    }
+
+    // Filter by category
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(t => t.category === selectedCategory);
     }
 
     // Sort templates
@@ -70,11 +87,17 @@ export const HRDashboard = () => {
         const brandB = b.brand || "";
         return brandA.localeCompare(brandB);
       });
+    } else if (sortBy === "category") {
+      filtered.sort((a, b) => {
+        const catA = a.category || "";
+        const catB = b.category || "";
+        return catA.localeCompare(catB);
+      });
     }
     // "recent" is already sorted by created_at from the database
 
     return filtered;
-  }, [savedTemplates, searchQuery, selectedBrand, sortBy]);
+  }, [savedTemplates, searchQuery, selectedBrand, selectedCategory, sortBy]);
 
   const handleOpenStudio = (templateId: string) => {
     setCurrentTemplate(templateId);
@@ -94,9 +117,9 @@ export const HRDashboard = () => {
         </div>
 
         {/* Filters */}
-        <div className="mb-8 flex flex-col sm:flex-row gap-4">
+        <div className="mb-8 flex flex-col gap-4">
           {/* Search */}
-          <div className="relative flex-1">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search templates..."
@@ -106,33 +129,53 @@ export const HRDashboard = () => {
             />
           </div>
 
-          {/* Brand Filter */}
-          <Select value={selectedBrand} onValueChange={setSelectedBrand}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="All Brands" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Brands</SelectItem>
-              {brands.map(brand => (
-                <SelectItem key={brand} value={brand}>
-                  {brand}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Filter Row */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Category Filter */}
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <Tag className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          {/* Sort */}
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recent">Most Recent</SelectItem>
-              <SelectItem value="name">Name A-Z</SelectItem>
-              <SelectItem value="brand">Brand</SelectItem>
-            </SelectContent>
-          </Select>
+            {/* Brand Filter */}
+            <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="All Brands" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Brands</SelectItem>
+                {brands.map(brand => (
+                  <SelectItem key={brand} value={brand}>
+                    {brand}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Sort */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">Most Recent</SelectItem>
+                <SelectItem value="name">Name A-Z</SelectItem>
+                <SelectItem value="category">Category</SelectItem>
+                <SelectItem value="brand">Brand</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Content */}
@@ -148,12 +191,12 @@ export const HRDashboard = () => {
         ) : filteredTemplates.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground text-lg">
-              {searchQuery || selectedBrand !== "all" 
+              {searchQuery || selectedBrand !== "all" || selectedCategory !== "all"
                 ? "No templates match your filters"
                 : "No templates available yet"
               }
             </p>
-            {!searchQuery && selectedBrand === "all" && (
+            {!searchQuery && selectedBrand === "all" && selectedCategory === "all" && (
               <p className="text-muted-foreground text-sm mt-2">
                 Contact your admin to create templates
               </p>

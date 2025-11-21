@@ -55,11 +55,18 @@ export const TemplateCard = ({ template, onOpenStudio }: TemplateCardProps) => {
             <h3 className="text-lg font-semibold text-foreground line-clamp-2 flex-1">
               {template.name}
             </h3>
-            {template.brand && (
-              <Badge variant="secondary" className="shrink-0">
-                {template.brand}
-              </Badge>
-            )}
+            <div className="flex flex-col gap-1 shrink-0">
+              {template.category && (
+                <Badge variant="default" className="text-xs">
+                  {template.category}
+                </Badge>
+              )}
+              {template.brand && (
+                <Badge variant="secondary" className="text-xs">
+                  {template.brand}
+                </Badge>
+              )}
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">
             {template.slides.length} {template.slides.length === 1 ? 'Slide' : 'Slides'}
