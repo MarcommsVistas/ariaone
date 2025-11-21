@@ -31,7 +31,7 @@ const PRESET_CATEGORIES = [
 ];
 
 export const TemplateHeader = () => {
-  const { currentTemplate, updateTemplateName, updateTemplateBrand, updateTemplateCategory, saveTemplate, publishTemplate, unpublishTemplate, deleteTemplate, clearCurrentTemplate } = useTemplateStore();
+  const { currentTemplate, updateTemplateName, updateTemplateBrand, updateTemplateCategory, saveTemplate, publishTemplate, unpublishTemplate, deleteTemplate } = useTemplateStore();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingBrand, setIsEditingBrand] = useState(false);
@@ -92,10 +92,6 @@ export const TemplateHeader = () => {
     const categoryToSave = (tempCategory && tempCategory !== "none") ? tempCategory : "";
     updateTemplateCategory(categoryToSave);
     setIsEditingCategory(false);
-  };
-
-  const handleCancel = () => {
-    clearCurrentTemplate();
   };
 
   const handleSave = async () => {
@@ -291,13 +287,6 @@ export const TemplateHeader = () => {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          onClick={handleCancel}
-        >
-          Cancel
-        </Button>
-        
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
