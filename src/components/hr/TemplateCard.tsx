@@ -40,7 +40,6 @@ export const TemplateCard = ({ template, existingInstance, onCreateCopy, onOpenS
             >
               <SlideRenderer
                 slide={firstSlide}
-                scale={360 / Math.max(firstSlide.width, firstSlide.height)}
                 interactive={false}
               />
             </div>

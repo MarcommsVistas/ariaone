@@ -32,6 +32,7 @@ export const MyProjectsCard = ({
 }: MyProjectsCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const firstSlide = instance.slides[0];
+  const thumbnailScale = firstSlide ? 160 / Math.max(firstSlide.width, firstSlide.height) : 1;
 
   const handleDelete = () => {
     onDelete(instance.id);
@@ -46,20 +47,27 @@ export const MyProjectsCard = ({
           <div className="relative aspect-[16/10] bg-canvas overflow-hidden border-b border-border">
             {firstSlide ? (
               <div className="absolute inset-0 flex items-center justify-center p-4">
-                <div 
-                  style={{ 
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
+                <div
+                  className="relative bg-white shadow-md rounded-sm overflow-hidden"
+                  style={{
+                    width: firstSlide.width * thumbnailScale,
+                    height: firstSlide.height * thumbnailScale,
                   }}
                 >
-                  <SlideRenderer 
-                    slide={firstSlide}
-                    scale={0.2}
-                    interactive={false}
-                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      transform: `scale(${thumbnailScale})`,
+                      transformOrigin: "top left",
+                      width: firstSlide.width,
+                      height: firstSlide.height,
+                    }}
+                  >
+                    <SlideRenderer
+                      slide={firstSlide}
+                      interactive={false}
+                    />
+                  </div>
                 </div>
               </div>
             ) : (

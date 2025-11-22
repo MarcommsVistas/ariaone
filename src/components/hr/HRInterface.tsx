@@ -143,11 +143,13 @@ export const HRInterface = () => {
         >
           <div 
             id="hr-export-canvas"
-            style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'center center' }}
+            style={{ 
+              transform: `scale(${baseScale * (zoom / 100)})`, 
+              transformOrigin: 'center center' 
+            }}
           >
             <SlideRenderer
               slide={currentSlide}
-              scale={baseScale}
               interactive={false}
             />
           </div>
