@@ -124,14 +124,16 @@ export const HRInterface = () => {
       
       <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto p-8 relative">
         <div 
-          id="hr-export-canvas"
-          className="shadow-lg rounded-lg overflow-hidden"
+          className="relative"
           style={{
             width: currentSlide.width * effectiveScale,
             height: currentSlide.height * effectiveScale,
           }}
         >
-          <div style={{ transform: `scale(${effectiveScale})`, transformOrigin: 'top left' }}>
+          <div 
+            id="hr-export-canvas"
+            style={{ transform: `scale(${effectiveScale})`, transformOrigin: 'top left' }}
+          >
             <SlideRenderer
               slide={currentSlide}
               scale={1}
