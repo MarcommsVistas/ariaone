@@ -111,6 +111,7 @@ interface TemplateStore {
   fetchUserInstances: () => Promise<void>;
   setCurrentInstance: (instanceId: string) => void;
   deleteInstance: (instanceId: string) => Promise<void>;
+  updateInstanceName: (instanceId: string, name: string) => Promise<void>;
   clearCurrentInstance: () => void;
 }
 
@@ -1141,6 +1142,34 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
       }));
     } catch (error) {
       console.error('Error deleting instance:', error);
+      throw error;
+    }
+  },
+
+  updateInstanceName: async (instanceId: string, name: string) => {
+    try {
+      const { error } = await supabase
+        .from('template_instances')
+        .update({ 
+          name,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', instanceId);
+
+      if (error) throw error;
+
+      set((state) => ({
+        instances: state.instances.map(i => 
+          i.id === instanceId 
+            ? { ...i, name, updated_at: new Date().toISOString() } 
+            : i
+        ),
+        currentInstance: state.currentInstance?.id === instanceId
+          ? { ...state.currentInstance, name, updated_at: new Date().toISOString() }
+          : state.currentInstance,
+      }));
+    } catch (error) {
+      console.error('Error updating instance name:', error);
       throw error;
     }
   },

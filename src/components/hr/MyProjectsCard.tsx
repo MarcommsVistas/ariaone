@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
 import { Pencil, Trash2, Calendar, Layers } from "lucide-react";
 import { TemplateInstance, Template } from "@/store/useTemplateStore";
@@ -22,15 +23,19 @@ interface MyProjectsCardProps {
   originalTemplate?: Template;
   onOpenStudio: (instanceId: string) => void;
   onDelete: (instanceId: string) => void;
+  onRename: (instanceId: string, newName: string) => void;
 }
 
 export const MyProjectsCard = ({ 
   instance, 
   originalTemplate,
   onOpenStudio, 
-  onDelete 
+  onDelete,
+  onRename
 }: MyProjectsCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(instance.name);
   const firstSlide = instance.slides[0];
   const thumbnailScale = firstSlide ? 160 / Math.max(firstSlide.width, firstSlide.height) : 1;
 
@@ -80,9 +85,44 @@ export const MyProjectsCard = ({
           {/* Content */}
           <div className="p-4 space-y-3">
             <div>
-              <h3 className="font-semibold text-foreground mb-1 line-clamp-1">
-                {instance.name}
-              </h3>
+              {isEditing ? (
+                <Input
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      onRename(instance.id, editedName);
+                      setIsEditing(false);
+                    } else if (e.key === 'Escape') {
+                      setEditedName(instance.name);
+                      setIsEditing(false);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (editedName !== instance.name && editedName.trim()) {
+                      onRename(instance.id, editedName);
+                    } else {
+                      setEditedName(instance.name);
+                    }
+                    setIsEditing(false);
+                  }}
+                  className="h-8 font-semibold mb-1"
+                  autoFocus
+                />
+              ) : (
+                <div className="flex items-center gap-2 group/name mb-1">
+                  <h3 className="font-semibold text-foreground line-clamp-1 flex-1">
+                    {instance.name}
+                  </h3>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="opacity-0 group-hover/name:opacity-100 transition-opacity p-1 hover:bg-accent rounded"
+                    aria-label="Rename project"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
               {originalTemplate && (
                 <p className="text-xs text-muted-foreground">
                   From: {originalTemplate.name}
