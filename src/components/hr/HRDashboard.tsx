@@ -4,11 +4,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { TemplateCard } from "./TemplateCard";
 import { Search, Layers, Filter, Tag } from "lucide-react";
+import { toast } from "sonner";
 
 export const HRDashboard = () => {
   const { 
     templates, 
-    setCurrentTemplate, 
+    createInstanceFromTemplate,
+    setCurrentInstance,
     fetchTemplates, 
     subscribeToChanges, 
     unsubscribeFromChanges,
@@ -99,8 +101,18 @@ export const HRDashboard = () => {
     return filtered;
   }, [savedTemplates, searchQuery, selectedBrand, selectedCategory, sortBy]);
 
-  const handleOpenStudio = (templateId: string) => {
-    setCurrentTemplate(templateId);
+  const handleOpenStudio = async (templateId: string) => {
+    try {
+      toast.loading("Creating your copy...");
+      const instanceId = await createInstanceFromTemplate(templateId);
+      setCurrentInstance(instanceId);
+      toast.dismiss();
+      toast.success("Template ready - you're working on your own copy");
+    } catch (error) {
+      toast.dismiss();
+      toast.error("Failed to load template");
+      console.error(error);
+    }
   };
 
   return (

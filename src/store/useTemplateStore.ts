@@ -55,6 +55,18 @@ export interface Template {
   updated_at?: string;
 }
 
+export interface TemplateInstance {
+  id: string;
+  originalTemplateId: string;
+  name: string;
+  brand?: string;
+  category?: string;
+  slides: Slide[];
+  created_at?: string;
+  updated_at?: string;
+  isInstance: true;
+}
+
 interface TemplateStore {
   templates: Template[];
   currentTemplate: Template | null;
@@ -64,6 +76,10 @@ interface TemplateStore {
   mode: 'admin' | 'hr';
   isLoading: boolean;
   realtimeChannel: RealtimeChannel | null;
+  
+  // Instance-specific
+  instances: TemplateInstance[];
+  currentInstance: TemplateInstance | null;
   
   setMode: (mode: 'admin' | 'hr') => void;
   fetchTemplates: () => Promise<void>;
@@ -89,6 +105,12 @@ interface TemplateStore {
   unpublishTemplate: () => Promise<void>;
   deleteTemplate: (templateId: string) => Promise<void>;
   clearCurrentTemplate: () => void;
+  
+  // Instance methods
+  createInstanceFromTemplate: (templateId: string) => Promise<string>;
+  fetchUserInstances: () => Promise<void>;
+  setCurrentInstance: (instanceId: string) => void;
+  deleteInstance: (instanceId: string) => Promise<void>;
 }
 
 export const useTemplateStore = create<TemplateStore>((set, get) => {
@@ -134,6 +156,8 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
     mode: 'admin',
     isLoading: false,
     realtimeChannel: null,
+    instances: [],
+    currentInstance: null,
     
     setMode: (mode) => set({ mode }),
   
@@ -424,38 +448,74 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
   
   updateLayer: async (layerId, updates) => {
     const state = get();
-    if (!state.currentTemplate || !state.currentSlide) return;
+    const isWorkingOnInstance = !!state.currentInstance;
+    
+    if (!isWorkingOnInstance && !state.currentTemplate) return;
+    if (!state.currentSlide) return;
     
     // Update local state first for immediate UI feedback
     set((state) => {
-      const updatedTemplates = state.templates.map(template => {
-        if (template.id !== state.currentTemplate?.id) return template;
+      if (state.currentInstance) {
+        // Update instance
+        const updatedInstances = state.instances.map(instance => {
+          if (instance.id !== state.currentInstance?.id) return instance;
+          
+          return {
+            ...instance,
+            slides: instance.slides.map(slide => {
+              if (slide.id !== state.currentSlide?.id) return slide;
+              
+              return {
+                ...slide,
+                layers: slide.layers.map(layer => 
+                  layer.id === layerId ? { ...layer, ...updates } : layer
+                ),
+              };
+            }),
+          };
+        });
+        
+        const updatedInstance = updatedInstances.find(i => i.id === state.currentInstance?.id);
+        const updatedSlide = updatedInstance?.slides.find(s => s.id === state.currentSlide?.id);
+        const updatedLayer = updatedSlide?.layers.find(l => l.id === layerId);
         
         return {
-          ...template,
-          slides: template.slides.map(slide => {
-            if (slide.id !== state.currentSlide?.id) return slide;
-            
-            return {
-              ...slide,
-              layers: slide.layers.map(layer => 
-                layer.id === layerId ? { ...layer, ...updates } : layer
-              ),
-            };
-          }),
+          instances: updatedInstances,
+          currentInstance: updatedInstance || null,
+          currentSlide: updatedSlide || null,
+          selectedLayer: updatedLayer || null,
         };
-      });
-      
-      const updatedTemplate = updatedTemplates.find(t => t.id === state.currentTemplate?.id);
-      const updatedSlide = updatedTemplate?.slides.find(s => s.id === state.currentSlide?.id);
-      const updatedLayer = updatedSlide?.layers.find(l => l.id === layerId);
-      
-      return {
-        templates: updatedTemplates,
-        currentTemplate: updatedTemplate || null,
-        currentSlide: updatedSlide || null,
-        selectedLayer: updatedLayer || null,
-      };
+      } else {
+        // Update template
+        const updatedTemplates = state.templates.map(template => {
+          if (template.id !== state.currentTemplate?.id) return template;
+          
+          return {
+            ...template,
+            slides: template.slides.map(slide => {
+              if (slide.id !== state.currentSlide?.id) return slide;
+              
+              return {
+                ...slide,
+                layers: slide.layers.map(layer => 
+                  layer.id === layerId ? { ...layer, ...updates } : layer
+                ),
+              };
+            }),
+          };
+        });
+        
+        const updatedTemplate = updatedTemplates.find(t => t.id === state.currentTemplate?.id);
+        const updatedSlide = updatedTemplate?.slides.find(s => s.id === state.currentSlide?.id);
+        const updatedLayer = updatedSlide?.layers.find(l => l.id === layerId);
+        
+        return {
+          templates: updatedTemplates,
+          currentTemplate: updatedTemplate || null,
+          currentSlide: updatedSlide || null,
+          selectedLayer: updatedLayer || null,
+        };
+      }
     });
 
     // Sync to database
@@ -868,5 +928,216 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
     currentSlideIndex: 0,
     selectedLayer: null,
   }),
+
+  // Instance methods
+  createInstanceFromTemplate: async (templateId: string) => {
+    const state = get();
+    const template = state.templates.find(t => t.id === templateId);
+    if (!template) throw new Error('Template not found');
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    try {
+      // 1. Create template instance record
+      const { data: instance, error: instanceError } = await supabase
+        .from('template_instances')
+        .insert({
+          original_template_id: templateId,
+          name: `${template.name} - Copy`,
+          brand: template.brand,
+          category: template.category,
+          created_by: user.id
+        })
+        .select()
+        .single();
+
+      if (instanceError) throw instanceError;
+
+      // 2. Copy all slides and layers
+      for (const slide of template.slides) {
+        const { data: newSlide, error: slideError } = await supabase
+          .from('slides')
+          .insert({
+            instance_id: instance.id,
+            name: slide.name,
+            width: slide.width,
+            height: slide.height,
+            order_index: template.slides.indexOf(slide)
+          })
+          .select()
+          .single();
+
+        if (slideError) throw slideError;
+
+        // 3. Copy all layers for this slide
+        const layerInserts = slide.layers.map(layer => ({
+          slide_id: newSlide.id,
+          name: layer.name,
+          type: layer.type,
+          x: layer.x,
+          y: layer.y,
+          width: layer.width,
+          height: layer.height,
+          z_index: layer.zIndex,
+          visible: layer.visible,
+          locked: layer.locked,
+          opacity: layer.opacity,
+          rotation: layer.rotation,
+          text_content: layer.text,
+          font_family: layer.fontFamily,
+          font_size: layer.fontSize,
+          color: layer.color,
+          text_align: layer.align,
+          line_height: layer.lineHeight,
+          letter_spacing: layer.letterSpacing,
+          text_transform: layer.textTransform,
+          max_length: layer.maxLength,
+          image_src: layer.src
+        }));
+
+        const { error: layersError } = await supabase
+          .from('layers')
+          .insert(layerInserts);
+
+        if (layersError) throw layersError;
+      }
+
+      // 4. Fetch instances to update local state
+      await get().fetchUserInstances();
+      
+      return instance.id;
+    } catch (error) {
+      console.error('Error creating instance:', error);
+      throw error;
+    }
+  },
+
+  fetchUserInstances: async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch instances
+      const { data: instancesData, error: instancesError } = await supabase
+        .from('template_instances')
+        .select('*')
+        .eq('created_by', user.id)
+        .order('created_at', { ascending: false });
+
+      if (instancesError) throw instancesError;
+
+      // Fetch slides and layers for each instance
+      const instances: TemplateInstance[] = await Promise.all(
+        (instancesData || []).map(async (instance) => {
+          const { data: slidesData } = await supabase
+            .from('slides')
+            .select('*')
+            .eq('instance_id', instance.id)
+            .order('order_index', { ascending: true });
+
+          const slides: Slide[] = await Promise.all(
+            (slidesData || []).map(async (slide) => {
+              const { data: layersData } = await supabase
+                .from('layers')
+                .select('*')
+                .eq('slide_id', slide.id)
+                .order('z_index', { ascending: true });
+
+              const layers: Layer[] = (layersData || []).map(dbLayer => ({
+                id: dbLayer.id,
+                type: dbLayer.type as 'text' | 'image' | 'shape',
+                name: dbLayer.name,
+                visible: dbLayer.visible,
+                locked: dbLayer.locked,
+                zIndex: dbLayer.z_index,
+                x: dbLayer.x,
+                y: dbLayer.y,
+                width: dbLayer.width,
+                height: dbLayer.height,
+                opacity: dbLayer.opacity,
+                rotation: dbLayer.rotation,
+                ...(dbLayer.type === 'text' && {
+                  text: dbLayer.text_content || '',
+                  fontFamily: dbLayer.font_family || 'DM Sans',
+                  fontSize: dbLayer.font_size || 16,
+                  fontWeight: 400,
+                  color: dbLayer.color || '#000000',
+                  align: (dbLayer.text_align as 'left' | 'center' | 'right') || 'left',
+                  lineHeight: dbLayer.line_height || 1.2,
+                  letterSpacing: dbLayer.letter_spacing || 0,
+                  textTransform: (dbLayer.text_transform as 'none' | 'uppercase' | 'lowercase' | 'capitalize') || 'none',
+                  maxLength: dbLayer.max_length || 500
+                }),
+                ...(dbLayer.type === 'image' && {
+                  src: dbLayer.image_src || undefined
+                })
+              }));
+
+              return {
+                id: slide.id,
+                name: slide.name,
+                width: slide.width,
+                height: slide.height,
+                layers
+              };
+            })
+          );
+
+          return {
+            id: instance.id,
+            originalTemplateId: instance.original_template_id,
+            name: instance.name,
+            brand: instance.brand || undefined,
+            category: instance.category || undefined,
+            slides,
+            created_at: instance.created_at,
+            updated_at: instance.updated_at,
+            isInstance: true as const
+          };
+        })
+      );
+
+      set({ instances });
+    } catch (error) {
+      console.error('Error fetching instances:', error);
+    }
+  },
+
+  setCurrentInstance: (instanceId: string) => {
+    const state = get();
+    const instance = state.instances.find(i => i.id === instanceId);
+    if (!instance) return;
+
+    set({
+      currentInstance: instance,
+      currentTemplate: null, // Clear template when working with instance
+      currentSlide: instance.slides[0] || null,
+      currentSlideIndex: 0,
+      selectedLayer: null,
+    });
+  },
+
+  deleteInstance: async (instanceId: string) => {
+    try {
+      const { error } = await supabase
+        .from('template_instances')
+        .delete()
+        .eq('id', instanceId);
+
+      if (error) throw error;
+
+      set((state) => ({
+        instances: state.instances.filter(i => i.id !== instanceId),
+        currentInstance: state.currentInstance?.id === instanceId ? null : state.currentInstance,
+        currentSlide: state.currentInstance?.id === instanceId ? null : state.currentSlide,
+        currentSlideIndex: state.currentInstance?.id === instanceId ? 0 : state.currentSlideIndex,
+        selectedLayer: state.currentInstance?.id === instanceId ? null : state.selectedLayer,
+      }));
+    } catch (error) {
+      console.error('Error deleting instance:', error);
+      throw error;
+    }
+  },
   };
 });
