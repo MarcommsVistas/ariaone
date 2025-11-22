@@ -123,7 +123,7 @@ const Login = () => {
             <img src={ariaOneLogo} alt="Aria-One" className="h-16" />
           </div>
           <p className="text-muted-foreground text-lg">
-            {isSignUp ? 'Create your account' : 'Sign in to continue'}
+            {isSignUp ? 'Create your account' : 'Comms Automation | Version 1.1'}
           </p>
         </div>
 
