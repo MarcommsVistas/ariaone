@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Progress } from "@/components/ui/progress";
 
 export const SlideNavigation = () => {
-  const { currentTemplate, currentSlideIndex, setCurrentSlideIndex, nextSlide, previousSlide, reorderSlides, mode, addSlide } = useTemplateStore();
+  const { currentTemplate, currentInstance, currentSlideIndex, setCurrentSlideIndex, nextSlide, previousSlide, reorderSlides, mode, addSlide } = useTemplateStore();
   const { userRole } = useAuthStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,12 +50,14 @@ export const SlideNavigation = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [nextSlide, previousSlide]);
 
-  if (!currentTemplate) {
+  const workingContext = currentInstance || currentTemplate;
+  
+  if (!workingContext) {
     return null;
   }
 
   const canGoPrevious = currentSlideIndex > 0;
-  const canGoNext = currentSlideIndex < currentTemplate.slides.length - 1;
+  const canGoNext = currentSlideIndex < workingContext.slides.length - 1;
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     if (!isAdminMode) return;
@@ -80,7 +82,7 @@ export const SlideNavigation = () => {
       return;
     }
 
-    const newOrder = [...currentTemplate.slides];
+    const newOrder = [...workingContext.slides];
     const [draggedSlide] = newOrder.splice(draggedIndex, 1);
     newOrder.splice(targetIndex, 0, draggedSlide);
 
@@ -100,7 +102,7 @@ export const SlideNavigation = () => {
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !currentTemplate) return;
+    if (!file || !workingContext) return;
 
     if (!file.name.toLowerCase().endsWith('.psd')) {
       toast({
@@ -111,7 +113,7 @@ export const SlideNavigation = () => {
       return;
     }
 
-    const newSlide = await addSlideToTemplate(file, currentTemplate.id);
+    const newSlide = await addSlideToTemplate(file, workingContext.id);
     
     if (newSlide) {
       addSlide(newSlide);
@@ -120,7 +122,7 @@ export const SlideNavigation = () => {
         description: `${newSlide.name} has been added to the template`,
       });
       // Switch to the new slide
-      setCurrentSlideIndex(currentTemplate.slides.length);
+      setCurrentSlideIndex(workingContext.slides.length);
     } else {
       toast({
         title: "Failed to add slide",
@@ -183,7 +185,7 @@ export const SlideNavigation = () => {
             className="flex-1 overflow-x-auto"
           >
             <div className="flex gap-2 min-w-min pb-1">
-              {currentTemplate.slides.map((slide, index) => {
+              {workingContext.slides.map((slide, index) => {
               const isActive = index === currentSlideIndex;
               const isDragging = draggedIndex === index;
               const isDraggedOver = draggedOverIndex === index && draggedIndex !== index;
@@ -274,7 +276,7 @@ export const SlideNavigation = () => {
         </Button>
 
         <div className="text-xs text-muted-foreground shrink-0 min-w-[80px] text-right">
-          Slide {currentSlideIndex + 1} of {currentTemplate.slides.length}
+          Slide {currentSlideIndex + 1} of {workingContext.slides.length}
         </div>
       </div>
     </div>
