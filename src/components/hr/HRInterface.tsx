@@ -4,7 +4,7 @@ import { FormGenerator } from "./FormGenerator";
 import { SlideNavigation } from "@/components/editor/SlideNavigation";
 import { useExport } from "@/hooks/useExport";
 import { Button } from "@/components/ui/button";
-import { Download, AlertCircle, Sparkles, DownloadCloud } from "lucide-react";
+import { Download, AlertCircle, Sparkles, DownloadCloud, Minus, Plus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
@@ -12,10 +12,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 
 export const HRInterface = () => {
   const { currentSlide, currentTemplate, setCurrentSlideIndex } = useTemplateStore();
   const { exportAsImage, exportAllSlides, isExporting } = useExport();
+  const [zoom, setZoom] = useState(100); // percentage
 
   if (!currentSlide) {
     return (
@@ -57,7 +59,15 @@ export const HRInterface = () => {
   const availableHeight = window.innerHeight - 64 - containerPadding;
   const scaleX = availableWidth / currentSlide.width;
   const scaleY = availableHeight / currentSlide.height;
-  const scale = Math.min(scaleX, scaleY, 1);
+  const baseScale = Math.min(scaleX, scaleY, 1);
+
+  const minZoom = 25;
+  const maxZoom = 200;
+  const effectiveScale = baseScale * (zoom / 100);
+
+  const handleZoomIn = () => setZoom((z) => Math.min(maxZoom, z + 10));
+  const handleZoomOut = () => setZoom((z) => Math.max(minZoom, z - 10));
+  const handleZoomReset = () => setZoom(100);
 
   const hasMultipleSlides = currentTemplate && currentTemplate.slides.length > 1;
 
@@ -112,22 +122,47 @@ export const HRInterface = () => {
         <FormGenerator />
       </div>
       
-      <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto p-8">
+      <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto p-8 relative">
         <div 
           id="hr-export-canvas"
           className="shadow-lg rounded-lg overflow-hidden"
           style={{
-            width: currentSlide.width * scale,
-            height: currentSlide.height * scale,
+            width: currentSlide.width * effectiveScale,
+            height: currentSlide.height * effectiveScale,
           }}
         >
-          <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+          <div style={{ transform: `scale(${effectiveScale})`, transformOrigin: 'top left' }}>
             <SlideRenderer
               slide={currentSlide}
               scale={1}
               interactive={false}
             />
           </div>
+        </div>
+
+        {/* Zoom controls - fixed position */}
+        <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-panel/95 border border-border rounded-full px-3 py-1.5 shadow-lg backdrop-blur-sm z-50">
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
+          >
+            <Minus className="w-3 h-3" />
+          </button>
+          <button
+            type="button"
+            onClick={handleZoomReset}
+            className="text-xs font-medium text-muted-foreground min-w-[52px] text-center hover:text-foreground transition-colors"
+          >
+            {Math.round(zoom)}%
+          </button>
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+          </button>
         </div>
       </div>
       </div>
