@@ -361,8 +361,9 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
   }),
   
   setCurrentSlide: (slideId) => set((state) => {
-    const slide = state.currentTemplate?.slides.find(s => s.id === slideId);
-    const slideIndex = state.currentTemplate?.slides.findIndex(s => s.id === slideId) ?? 0;
+    const workingContext = state.currentInstance || state.currentTemplate;
+    const slide = workingContext?.slides.find(s => s.id === slideId);
+    const slideIndex = workingContext?.slides.findIndex(s => s.id === slideId) ?? 0;
     return {
       currentSlide: slide || null,
       currentSlideIndex: slideIndex,
@@ -371,7 +372,8 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
   }),
   
   setCurrentSlideIndex: (index) => set((state) => {
-    const slide = state.currentTemplate?.slides[index];
+    const workingContext = state.currentInstance || state.currentTemplate;
+    const slide = workingContext?.slides[index];
     return {
       currentSlideIndex: index,
       currentSlide: slide || null,
@@ -380,21 +382,23 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
   }),
   
   nextSlide: () => set((state) => {
-    if (!state.currentTemplate) return state;
-    const nextIndex = Math.min(state.currentSlideIndex + 1, state.currentTemplate.slides.length - 1);
+    const workingContext = state.currentInstance || state.currentTemplate;
+    if (!workingContext) return state;
+    const nextIndex = Math.min(state.currentSlideIndex + 1, workingContext.slides.length - 1);
     return {
       currentSlideIndex: nextIndex,
-      currentSlide: state.currentTemplate.slides[nextIndex],
+      currentSlide: workingContext.slides[nextIndex],
       selectedLayer: null,
     };
   }),
   
   previousSlide: () => set((state) => {
-    if (!state.currentTemplate) return state;
+    const workingContext = state.currentInstance || state.currentTemplate;
+    if (!workingContext) return state;
     const prevIndex = Math.max(state.currentSlideIndex - 1, 0);
     return {
       currentSlideIndex: prevIndex,
-      currentSlide: state.currentTemplate.slides[prevIndex],
+      currentSlide: workingContext.slides[prevIndex],
       selectedLayer: null,
     };
   }),
