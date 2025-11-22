@@ -5,6 +5,8 @@ export interface CustomFont {
   name: string;
   family: string;
   dataUrl: string; // Store the font data URL for export
+  weight?: number; // Font weight (e.g., 400, 700)
+  style?: 'normal' | 'italic'; // Font style
 }
 
 interface FontStore {
