@@ -84,7 +84,7 @@ export const HRInterface = () => {
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary" />
-                  <h3 className="font-semibold text-foreground">Customize Template</h3>
+                  <h3 className="font-semibold text-foreground">{workingContext?.name || 'Customize Template'}</h3>
                 </div>
                 {isWorkingOnInstance && workingContext && (
                   <p className="text-xs text-muted-foreground">
