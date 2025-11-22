@@ -53,6 +53,45 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_fonts: {
+        Row: {
+          created_at: string | null
+          family: string
+          file_name: string
+          file_size: number
+          id: string
+          name: string
+          storage_path: string
+          style: string | null
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          family: string
+          file_name: string
+          file_size: number
+          id?: string
+          name: string
+          storage_path: string
+          style?: string | null
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          family?: string
+          file_name?: string
+          file_size?: number
+          id?: string
+          name?: string
+          storage_path?: string
+          style?: string | null
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
       layers: {
         Row: {
           color: string | null

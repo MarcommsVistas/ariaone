@@ -3,28 +3,55 @@ import { toPng, toJpeg } from 'html-to-image';
 import { toast } from 'sonner';
 import JSZip from 'jszip';
 import { useFontStore } from '@/store/useFontStore';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useExport = () => {
   const [isExporting, setIsExporting] = useState(false);
   const { uploadedFonts } = useFontStore();
 
-  const injectFontsToElement = (element: HTMLElement) => {
-    // Create a style element with embedded fonts
-    const styleEl = document.createElement('style');
-    const fontFaceRules = uploadedFonts.map(font => {
-      return `
-        @font-face {
-          font-family: '${font.family}';
-          src: url('${font.dataUrl}');
-          font-display: block;
-        }
-      `;
-    }).join('\n');
+  const injectCustomFonts = async () => {
+    const fontStyle = document.createElement('style');
+    fontStyle.id = 'custom-fonts-for-export';
     
-    styleEl.textContent = fontFaceRules;
-    element.appendChild(styleEl);
+    // Fetch font data from Supabase Storage and convert to base64
+    for (const font of uploadedFonts) {
+      try {
+        const { data, error } = await supabase.storage
+          .from('custom-fonts')
+          .createSignedUrl(font.storage_path, 60); // 1 minute expiry for export
+
+        if (error) throw error;
+        if (!data?.signedUrl) continue;
+
+        // Fetch the font file and convert to base64
+        const response = await fetch(data.signedUrl);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        
+        const dataUrl = await new Promise<string>((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+
+        const fontFaceRule = `
+          @font-face {
+            font-family: '${font.family}';
+            src: url('${dataUrl}');
+            font-weight: ${font.weight || 400};
+            font-style: ${font.style || 'normal'};
+          }
+        `;
+        fontStyle.appendChild(document.createTextNode(fontFaceRule));
+      } catch (error) {
+        console.error(`Failed to fetch font ${font.name} for export:`, error);
+      }
+    }
     
-    return styleEl;
+    document.head.appendChild(fontStyle);
+    
+    // Wait for fonts to load
+    await document.fonts.ready;
+    await new Promise(resolve => setTimeout(resolve, 100));
   };
 
   const exportAsImage = async (
@@ -41,8 +68,8 @@ export const useExport = () => {
         throw new Error('Element not found');
       }
 
-      // Inject fonts into the element
-      const styleEl = injectFontsToElement(element);
+      // Inject fonts
+      await injectCustomFonts();
 
       // Wait for all custom fonts to be loaded
       if (uploadedFonts.length > 0) {
@@ -73,15 +100,13 @@ export const useExport = () => {
       const exportFunction = format === 'png' ? toPng : toJpeg;
       const dataUrl = await exportFunction(element, {
         quality,
-        pixelRatio: 2, // 2x for retina quality
+        pixelRatio: 2,
         cacheBust: true,
-        fontEmbedCSS: uploadedFonts.map(font => 
-          `@font-face { font-family: '${font.family}'; src: url('${font.dataUrl}'); }`
-        ).join('\n'),
       });
 
-      // Clean up injected style
-      styleEl.remove();
+      // Clean up injected fonts
+      const fontStyle = document.getElementById('custom-fonts-for-export');
+      if (fontStyle) fontStyle.remove();
 
       // Create download link
       const link = document.createElement('a');
@@ -126,8 +151,8 @@ export const useExport = () => {
           throw new Error('Element not found');
         }
 
-        // Inject fonts into the element
-        const styleEl = injectFontsToElement(element);
+        // Inject fonts
+        await injectCustomFonts();
 
         // Wait for all custom fonts to be loaded
         if (uploadedFonts.length > 0) {
@@ -160,13 +185,11 @@ export const useExport = () => {
           quality,
           pixelRatio: 2,
           cacheBust: true,
-          fontEmbedCSS: uploadedFonts.map(font => 
-            `@font-face { font-family: '${font.family}'; src: url('${font.dataUrl}'); }`
-          ).join('\n'),
         });
 
-        // Clean up injected style
-        styleEl.remove();
+        // Clean up injected fonts
+        const fontStyle = document.getElementById('custom-fonts-for-export');
+        if (fontStyle) fontStyle.remove();
 
         // Convert data URL to blob
         const base64Data = dataUrl.split(',')[1];
