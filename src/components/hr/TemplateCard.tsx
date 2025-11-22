@@ -2,14 +2,18 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
-import { Template } from "@/store/useTemplateStore";
+import { Template, TemplateInstance } from "@/store/useTemplateStore";
+import { Copy, FileEdit } from "lucide-react";
+import { format } from "date-fns";
 
 interface TemplateCardProps {
   template: Template;
-  onOpenStudio: (templateId: string) => void;
+  existingInstance?: TemplateInstance | null;
+  onCreateCopy: (templateId: string) => void;
+  onOpenStudio: (instanceId: string) => void;
 }
 
-export const TemplateCard = ({ template, onOpenStudio }: TemplateCardProps) => {
+export const TemplateCard = ({ template, existingInstance, onCreateCopy, onOpenStudio }: TemplateCardProps) => {
   const firstSlide = template.slides[0];
 
   return (
@@ -73,14 +77,32 @@ export const TemplateCard = ({ template, onOpenStudio }: TemplateCardProps) => {
           </p>
         </div>
 
-        <Button
-          className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-          variant="outline"
-          size="lg"
-          onClick={() => onOpenStudio(template.id)}
-        >
-          Open Studio
-        </Button>
+        {existingInstance ? (
+          <>
+            <Button
+              className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+              variant="default"
+              size="lg"
+              onClick={() => onOpenStudio(existingInstance.id)}
+            >
+              <FileEdit className="mr-2 h-4 w-4" />
+              Open Studio
+            </Button>
+            <div className="text-xs text-muted-foreground text-center mt-1">
+              Last edited: {format(new Date(existingInstance.updated_at), 'MMM d, yyyy')}
+            </div>
+          </>
+        ) : (
+          <Button
+            className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+            variant="outline"
+            size="lg"
+            onClick={() => onCreateCopy(template.id)}
+          >
+            <Copy className="mr-2 h-4 w-4" />
+            Create a Copy
+          </Button>
+        )}
       </div>
     </Card>
   );
