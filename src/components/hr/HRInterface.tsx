@@ -15,9 +15,13 @@ import {
 import { useState } from "react";
 
 export const HRInterface = () => {
-  const { currentSlide, currentTemplate, setCurrentSlideIndex } = useTemplateStore();
+  const { currentSlide, currentTemplate, currentInstance, setCurrentSlideIndex } = useTemplateStore();
   const { exportAsImage, exportAllSlides, isExporting } = useExport();
   const [zoom, setZoom] = useState(100); // percentage
+
+  // Get current working context (instance or template)
+  const workingContext = currentInstance || currentTemplate;
+  const isWorkingOnInstance = !!currentInstance;
 
   if (!currentSlide) {
     return (
@@ -38,16 +42,16 @@ export const HRInterface = () => {
   };
 
   const handleExportAll = async () => {
-    if (!currentTemplate) return;
+    if (!workingContext) return;
 
     await exportAllSlides(
-      currentTemplate.slides.map(s => ({ id: s.id, name: s.name })),
+      workingContext.slides.map(s => ({ id: s.id, name: s.name })),
       async (slideId) => {
-        const slideIndex = currentTemplate.slides.findIndex(s => s.id === slideId);
+        const slideIndex = workingContext.slides.findIndex(s => s.id === slideId);
         setCurrentSlideIndex(slideIndex);
       },
       'hr-export-canvas',
-      currentTemplate.name,
+      workingContext.name,
       'jpeg',
       0.95
     );
@@ -69,7 +73,7 @@ export const HRInterface = () => {
   const handleZoomOut = () => setZoom((z) => Math.max(minZoom, z - 10));
   const handleZoomReset = () => setZoom(100);
 
-  const hasMultipleSlides = currentTemplate && currentTemplate.slides.length > 1;
+  const hasMultipleSlides = workingContext && workingContext.slides.length > 1;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -77,9 +81,16 @@ export const HRInterface = () => {
         <div className="w-[420px] bg-panel border-r border-border overflow-auto">
           <div className="sticky top-0 z-10 bg-panel/95 backdrop-blur-sm border-b border-border">
             <div className="h-14 flex items-center justify-between px-5">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <h3 className="font-semibold text-foreground">Customize Template</h3>
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <h3 className="font-semibold text-foreground">Customize Template</h3>
+                </div>
+                {isWorkingOnInstance && workingContext && (
+                  <p className="text-xs text-muted-foreground">
+                    Working on: {workingContext.name}
+                  </p>
+                )}
               </div>
               
               {hasMultipleSlides ? (

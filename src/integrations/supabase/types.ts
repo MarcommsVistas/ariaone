@@ -188,33 +188,84 @@ export type Database = {
           created_at: string
           height: number
           id: string
+          instance_id: string | null
           name: string
           order_index: number
-          template_id: string
+          template_id: string | null
           width: number
         }
         Insert: {
           created_at?: string
           height: number
           id?: string
+          instance_id?: string | null
           name: string
           order_index?: number
-          template_id: string
+          template_id?: string | null
           width: number
         }
         Update: {
           created_at?: string
           height?: number
           id?: string
+          instance_id?: string | null
           name?: string
           order_index?: number
-          template_id?: string
+          template_id?: string | null
           width?: number
         }
         Relationships: [
           {
+            foreignKeyName: "slides_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "template_instances"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "slides_template_id_fkey"
             columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_instances: {
+        Row: {
+          brand: string | null
+          category: string | null
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          original_template_id: string
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          original_template_id: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          original_template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_instances_original_template_id_fkey"
+            columns: ["original_template_id"]
             isOneToOne: false
             referencedRelation: "templates"
             referencedColumns: ["id"]
