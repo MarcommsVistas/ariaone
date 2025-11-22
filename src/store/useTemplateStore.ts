@@ -111,6 +111,7 @@ interface TemplateStore {
   fetchUserInstances: () => Promise<void>;
   setCurrentInstance: (instanceId: string) => void;
   deleteInstance: (instanceId: string) => Promise<void>;
+  clearCurrentInstance: () => void;
 }
 
 export const useTemplateStore = create<TemplateStore>((set, get) => {
@@ -1139,5 +1140,13 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
       throw error;
     }
   },
+
+  clearCurrentInstance: () => set({
+    currentInstance: null,
+    currentTemplate: null,
+    currentSlide: null,
+    currentSlideIndex: 0,
+    selectedLayer: null,
+  }),
   };
 });

@@ -4,8 +4,9 @@ import { FormGenerator } from "./FormGenerator";
 import { SlideNavigation } from "@/components/editor/SlideNavigation";
 import { useExport } from "@/hooks/useExport";
 import { Button } from "@/components/ui/button";
-import { Download, AlertCircle, Sparkles, DownloadCloud, Minus, Plus } from "lucide-react";
+import { Download, AlertCircle, Sparkles, DownloadCloud, Minus, Plus, ArrowLeft } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +16,7 @@ import {
 import { useState } from "react";
 
 export const HRInterface = () => {
-  const { currentSlide, currentTemplate, currentInstance, setCurrentSlideIndex } = useTemplateStore();
+  const { currentSlide, currentTemplate, currentInstance, setCurrentSlideIndex, clearCurrentInstance } = useTemplateStore();
   const { exportAsImage, exportAllSlides, isExporting } = useExport();
   const [zoom, setZoom] = useState(100); // percentage
 
@@ -81,16 +82,31 @@ export const HRInterface = () => {
         <div className="w-[420px] bg-panel border-r border-border overflow-auto">
           <div className="sticky top-0 z-10 bg-panel/95 backdrop-blur-sm border-b border-border">
             <div className="h-14 flex items-center justify-between px-5">
-              <div className="flex flex-col gap-0.5">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <h3 className="font-semibold text-foreground">Customize Template</h3>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    clearCurrentInstance();
+                    toast.info("Returned to dashboard");
+                  }}
+                  className="gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
+                </Button>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    <h3 className="font-semibold text-foreground">Customize Template</h3>
+                  </div>
+                  {isWorkingOnInstance && workingContext && (
+                    <p className="text-xs text-muted-foreground">
+                      Working on: {workingContext.name}
+                    </p>
+                  )}
                 </div>
-                {isWorkingOnInstance && workingContext && (
-                  <p className="text-xs text-muted-foreground">
-                    Working on: {workingContext.name}
-                  </p>
-                )}
               </div>
               
               {hasMultipleSlides ? (
