@@ -68,7 +68,6 @@ export const AdminStudio = () => {
               <div style={{ transform: `scale(${effectiveScale})`, transformOrigin: 'top left' }}>
                 <SlideRenderer
                   slide={currentSlide}
-                  scale={effectiveScale}
                   interactive={true}
                   onLayerClick={setSelectedLayer}
                 />

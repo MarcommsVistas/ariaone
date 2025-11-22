@@ -222,7 +222,6 @@ export const SlideNavigation = () => {
                   >
                     <SlideRenderer
                       slide={slide}
-                      scale={thumbnailScale}
                       interactive={false}
                     />
                   </div>
