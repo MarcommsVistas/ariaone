@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuthStore } from "./store/useAuthStore";
+import { FontManager } from "./components/FontManager";
 
 const queryClient = new QueryClient();
 
@@ -17,6 +18,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <FontManager />
         <Toaster />
         <Sonner />
         <BrowserRouter>

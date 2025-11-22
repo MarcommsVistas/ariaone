@@ -10,19 +10,7 @@ import { toast } from "sonner";
 export const FontUploader = () => {
   const { uploadedFonts, addFont, removeFont } = useFontStore();
 
-  // Load all fonts on mount
-  useEffect(() => {
-    uploadedFonts.forEach((font) => {
-      // Check if font is already loaded
-      const fonts = Array.from(document.fonts);
-      const isLoaded = fonts.some(f => f.family === font.family);
-      
-      if (!isLoaded && font.family) {
-        // Font data is lost on page refresh, inform user to re-upload
-        console.log(`Font "${font.name}" needs to be re-uploaded`);
-      }
-    });
-  }, [uploadedFonts]);
+  // Font loading is now handled globally by FontManager component
 
   const handleFontUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -43,15 +31,33 @@ export const FontUploader = () => {
         const fontName = file.name.replace(/\.(ttf|otf|woff|woff2)$/i, '');
         const fontFamily = fontName.replace(/[^a-zA-Z0-9]/g, '');
 
+        // Parse weight from filename
+        let weight = 400;
+        const lowerName = fontName.toLowerCase();
+        if (lowerName.includes('bold')) weight = 700;
+        else if (lowerName.includes('light')) weight = 300;
+        else if (lowerName.includes('medium')) weight = 500;
+        else if (lowerName.includes('semibold')) weight = 600;
+        else if (lowerName.includes('black')) weight = 900;
+
+        // Parse style from filename
+        const style = lowerName.includes('italic') ? 'italic' : 'normal';
+
         // Create a new font face
-        const fontFace = new FontFace(fontFamily, `url(${fontData})`);
+        const fontFace = new FontFace(
+          fontFamily, 
+          `url(${fontData})`,
+          { weight: weight.toString(), style }
+        );
         
         fontFace.load().then((loadedFont) => {
           document.fonts.add(loadedFont);
           addFont({ 
             name: fontName, 
             family: fontFamily,
-            dataUrl: fontData as string 
+            dataUrl: fontData as string,
+            weight,
+            style
           });
           toast.success(`Font "${fontName}" uploaded successfully`);
         }).catch(() => {
