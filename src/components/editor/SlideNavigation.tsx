@@ -166,7 +166,7 @@ export const SlideNavigation = () => {
         </DialogContent>
       </Dialog>
 
-      <div className="bg-panel border-t border-border">
+      <div className="fixed bottom-0 left-0 right-0 bg-panel border-t border-border z-40">
         <div className="flex items-center gap-3 px-4 py-3">
           <Button
             variant="outline"
