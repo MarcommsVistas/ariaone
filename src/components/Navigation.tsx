@@ -14,7 +14,7 @@ import {
 import ariaOneLogo from "@/assets/aria-one-logo.png";
 
 export const Navigation = () => {
-  const { mode, setMode, currentTemplate, clearCurrentTemplate } = useTemplateStore();
+  const { mode, setMode, currentTemplate, currentInstance, clearCurrentTemplate, clearCurrentInstance } = useTemplateStore();
   const { userRole, user, logout } = useAuthStore();
   const navigate = useNavigate();
 
@@ -25,6 +25,7 @@ export const Navigation = () => {
 
   const handleGoToDashboard = () => {
     clearCurrentTemplate();
+    clearCurrentInstance();
   };
 
   return (
@@ -32,8 +33,8 @@ export const Navigation = () => {
       <div className="flex items-center gap-3">
         <img src={ariaOneLogo} alt="Aria-One" className="h-8" />
         
-        {/* Dashboard/Home button - only show when editing a template */}
-        {currentTemplate && (
+        {/* Dashboard/Home button - only show when editing a template or instance */}
+        {(currentTemplate || currentInstance) && (
           <Button
             variant="ghost"
             size="sm"
