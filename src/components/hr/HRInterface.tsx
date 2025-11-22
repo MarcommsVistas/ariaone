@@ -126,8 +126,8 @@ export const HRInterface = () => {
         <div 
           className="relative"
           style={{
-            width: currentSlide.width * effectiveScale,
-            height: currentSlide.height * effectiveScale,
+            width: currentSlide.width * baseScale,
+            height: currentSlide.height * baseScale,
           }}
         >
           <div 
