@@ -15,6 +15,7 @@ export const HRDashboard = () => {
     createInstanceFromTemplate,
     setCurrentInstance,
     deleteInstance,
+    updateInstanceName,
     fetchTemplates,
     fetchUserInstances,
     subscribeToChanges, 
@@ -216,6 +217,21 @@ export const HRDashboard = () => {
     } catch (error) {
       toast.dismiss();
       toast.error("Failed to delete project");
+      console.error(error);
+    }
+  };
+
+  const handleRenameProject = async (instanceId: string, newName: string) => {
+    if (!newName.trim()) {
+      toast.error("Project name cannot be empty");
+      return;
+    }
+    
+    try {
+      await updateInstanceName(instanceId, newName);
+      toast.success("Project renamed successfully");
+    } catch (error) {
+      toast.error("Failed to rename project");
       console.error(error);
     }
   };
@@ -433,6 +449,7 @@ export const HRDashboard = () => {
                     originalTemplate={templateMap.get(instance.originalTemplateId)}
                     onOpenStudio={handleOpenStudio}
                     onDelete={handleDeleteProject}
+                    onRename={handleRenameProject}
                   />
                 ))}
               </div>
