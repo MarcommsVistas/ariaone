@@ -8,7 +8,7 @@ import { HRDashboard } from "@/components/hr/HRDashboard";
 import { Layers } from "lucide-react";
 
 const Index = () => {
-  const { mode, currentTemplate } = useTemplateStore();
+  const { mode, currentTemplate, currentInstance } = useTemplateStore();
   const { userRole, isLoading } = useAuthStore();
 
   const renderContent = () => {
@@ -27,9 +27,9 @@ const Index = () => {
     }
 
     // HR users can ONLY access HR interface
-    if (userRole === 'hr') {
-      return currentTemplate ? <HRInterface /> : <HRDashboard />;
-    }
+  if (userRole === 'hr') {
+    return (currentTemplate || currentInstance) ? <HRInterface /> : <HRDashboard />;
+  }
     
     // Marcomms users can switch between modes
     if (userRole === 'marcomms') {

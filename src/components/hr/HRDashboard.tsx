@@ -8,10 +8,12 @@ import { toast } from "sonner";
 
 export const HRDashboard = () => {
   const { 
-    templates, 
+    templates,
+    instances,
     createInstanceFromTemplate,
     setCurrentInstance,
-    fetchTemplates, 
+    fetchTemplates,
+    fetchUserInstances,
     subscribeToChanges, 
     unsubscribeFromChanges,
     isLoading 
@@ -25,6 +27,7 @@ export const HRDashboard = () => {
   // Fetch templates and subscribe to changes on mount
   useEffect(() => {
     fetchTemplates();
+    fetchUserInstances();
     subscribeToChanges();
     
     return () => {
@@ -34,6 +37,18 @@ export const HRDashboard = () => {
   
   // Only show saved templates
   const savedTemplates = templates.filter(t => t.saved);
+
+  // Map templates to their most recent instances
+  const templateInstanceMap = useMemo(() => {
+    const map = new Map<string, typeof instances[0]>();
+    instances.forEach(instance => {
+      const existing = map.get(instance.originalTemplateId);
+      if (!existing || instance.updated_at > existing.updated_at) {
+        map.set(instance.originalTemplateId, instance);
+      }
+    });
+    return map;
+  }, [instances]);
   
   // Extract unique brands and categories
   const brands = useMemo(() => {
@@ -101,16 +116,26 @@ export const HRDashboard = () => {
     return filtered;
   }, [savedTemplates, searchQuery, selectedBrand, selectedCategory, sortBy]);
 
-  const handleOpenStudio = async (templateId: string) => {
+  const handleCreateCopy = async (templateId: string) => {
     try {
       toast.loading("Creating your copy...");
       const instanceId = await createInstanceFromTemplate(templateId);
-      setCurrentInstance(instanceId);
+      await fetchUserInstances();
       toast.dismiss();
-      toast.success("Template ready - you're working on your own copy");
+      toast.success("Copy created! Click 'Open Studio' to start editing.");
     } catch (error) {
       toast.dismiss();
-      toast.error("Failed to load template");
+      toast.error("Failed to create copy");
+      console.error(error);
+    }
+  };
+
+  const handleOpenStudio = async (instanceId: string) => {
+    try {
+      setCurrentInstance(instanceId);
+      toast.success("Opening your workspace...");
+    } catch (error) {
+      toast.error("Failed to open studio");
       console.error(error);
     }
   };
@@ -220,6 +245,8 @@ export const HRDashboard = () => {
               <TemplateCard
                 key={template.id}
                 template={template}
+                existingInstance={templateInstanceMap.get(template.id)}
+                onCreateCopy={handleCreateCopy}
                 onOpenStudio={handleOpenStudio}
               />
             ))}
