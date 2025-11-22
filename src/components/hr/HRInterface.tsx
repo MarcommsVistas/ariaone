@@ -17,7 +17,7 @@ import { useState } from "react";
 export const HRInterface = () => {
   const { currentSlide, currentTemplate, currentInstance, setCurrentSlideIndex, clearCurrentInstance, templates } = useTemplateStore();
   const { exportAsImage, exportAllSlides, isExporting } = useExport();
-  const [zoom, setZoom] = useState(100); // percentage
+  const [zoom, setZoom] = useState(80); // percentage - default 80%
 
   // Get current working context (instance or template)
   const workingContext = currentInstance || currentTemplate;
