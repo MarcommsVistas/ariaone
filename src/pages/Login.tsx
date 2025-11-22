@@ -57,7 +57,7 @@ const Login = () => {
             <Button 
               size="lg"
               onClick={() => setRequestAccessOpen(true)}
-              className="mb-6"
+              className="mb-6 bg-muted text-white hover:bg-muted/90"
             >
               Request Access
             </Button>
