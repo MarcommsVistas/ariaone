@@ -4,6 +4,7 @@ import { Briefcase, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import ariaOneLogo from '@/assets/aria-one-logo.png';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,11 +17,17 @@ const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleAuth = async (role: UserRole) => {
-    if (!email || !password) {
+  const openModal = (role: UserRole) => {
+    setSelectedRole(role);
+    setIsModalOpen(true);
+  };
+
+  const handleAuth = async () => {
+    if (!email || !password || !selectedRole) {
       toast({
         title: "Error",
         description: "Please enter email and password",
@@ -56,7 +63,7 @@ const Login = () => {
           if (!existingRoles || existingRoles.length === 0) {
             const { error: roleError } = await supabase
               .from('user_roles')
-              .insert({ user_id: user.id, role });
+              .insert({ user_id: user.id, role: selectedRole });
 
             if (roleError) throw roleError;
           }
@@ -88,7 +95,7 @@ const Login = () => {
           if (!existingRoles || existingRoles.length === 0) {
             const { error: roleError } = await supabase
               .from('user_roles')
-              .insert({ user_id: user.id, role });
+              .insert({ user_id: user.id, role: selectedRole });
 
             if (roleError) throw roleError;
           }
@@ -98,6 +105,7 @@ const Login = () => {
           title: "Success",
           description: "Logged in successfully!",
         });
+        setIsModalOpen(false);
         navigate('/');
       }
     } catch (error: any) {
@@ -110,6 +118,7 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
       <motion.div
@@ -123,30 +132,8 @@ const Login = () => {
             <img src={ariaOneLogo} alt="Aria-One" className="h-16" />
           </div>
           <p className="text-muted-foreground text-lg">
-            {isSignUp ? 'Create your account' : 'Comms Automation | Version 1.1'}
+            Comms Automation | Version 1.1
           </p>
-        </div>
-
-        <div className="mb-6 space-y-4 max-w-md mx-auto">
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <Button
-            variant="ghost"
-            className="w-full"
-            onClick={() => setIsSignUp(!isSignUp)}
-          >
-            {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-          </Button>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
@@ -181,12 +168,11 @@ const Login = () => {
                   </li>
                 </ul>
                 <Button
-                  onClick={() => handleAuth('marcomms')}
+                  onClick={() => openModal('marcomms')}
                   className="w-full"
                   size="lg"
-                  disabled={isLoading}
                 >
-                  {isSignUp ? 'Sign up' : 'Sign in'} as Marcomms
+                  Sign in as Marcomms
                 </Button>
               </CardContent>
             </Card>
@@ -223,19 +209,64 @@ const Login = () => {
                   </li>
                 </ul>
                 <Button
-                  onClick={() => handleAuth('hr')}
+                  onClick={() => openModal('hr')}
                   variant="secondary"
                   className="w-full"
                   size="lg"
-                  disabled={isLoading}
                 >
-                  {isSignUp ? 'Sign up' : 'Sign in'} as HR
+                  Sign in as HR
                 </Button>
               </CardContent>
             </Card>
           </motion.div>
         </div>
+
+        <div className="text-center mt-6">
+          <Button
+            variant="ghost"
+            className="text-muted-foreground"
+            onClick={() => setIsSignUp(!isSignUp)}
+          >
+            {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Request Account"}
+          </Button>
+        </div>
       </motion.div>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {isSignUp ? 'Create your account' : 'Sign in'} as {selectedRole === 'marcomms' ? 'Marcomms' : 'HR'}
+            </DialogTitle>
+            <DialogDescription>
+              {isSignUp ? 'Enter your details to create an account' : 'Enter your credentials to sign in'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+            />
+            <Button
+              onClick={handleAuth}
+              className="w-full"
+              size="lg"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Loading...' : (isSignUp ? 'Sign up' : 'Sign in')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
