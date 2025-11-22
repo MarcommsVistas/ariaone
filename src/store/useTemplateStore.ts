@@ -51,6 +51,8 @@ export interface Template {
   category?: string;
   slides: Slide[];
   saved?: boolean; // Whether template is published for HR use
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface TemplateStore {
@@ -246,7 +248,9 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
             brand: template.brand || undefined,
             category: template.category || undefined,
             slides,
-            saved: template.is_published
+            saved: template.is_published,
+            created_at: template.created_at,
+            updated_at: template.updated_at
           };
         })
       );

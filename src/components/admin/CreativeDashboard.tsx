@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { Plus, Upload, Layers } from "lucide-react";
+import { Plus, Upload, Layers, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -43,6 +43,11 @@ export const CreativeDashboard = () => {
   const [categoryName, setCategoryName] = useState("");
   const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
   const [availableCategories, setAvailableCategories] = useState<string[]>(PRESET_CATEGORIES);
+  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedBrand, setSelectedBrand] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("recent");
   
   const isMarcomms = userRole === 'marcomms';
   
@@ -51,7 +56,7 @@ export const CreativeDashboard = () => {
     fetchTemplates();
     subscribeToChanges();
     
-    // Fetch categories from database
+    // Fetch categories and brands from database
     const fetchCategories = async () => {
       const { data } = await supabase
         .from('categories')
@@ -63,15 +68,55 @@ export const CreativeDashboard = () => {
       }
     };
     
+    const fetchBrands = async () => {
+      const { data } = await supabase
+        .from('brands')
+        .select('name')
+        .order('name');
+      
+      if (data) {
+        setAvailableBrands(data.map(b => b.name));
+      }
+    };
+    
     fetchCategories();
+    fetchBrands();
     
     return () => {
       unsubscribeFromChanges();
     };
   }, []);
   
-  // Show all templates (both published and drafts) for marcomms
-  const displayTemplates = templates;
+  // Filter and sort templates
+  const displayTemplates = templates
+    .filter(template => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = template.name.toLowerCase().includes(query);
+        const matchesBrand = template.brand?.toLowerCase().includes(query);
+        const matchesCategory = template.category?.toLowerCase().includes(query);
+        if (!matchesName && !matchesBrand && !matchesCategory) return false;
+      }
+      
+      // Category filter
+      if (selectedCategory !== "all" && template.category !== selectedCategory) {
+        return false;
+      }
+      
+      // Brand filter
+      if (selectedBrand !== "all" && template.brand !== selectedBrand) {
+        return false;
+      }
+      
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === "recent") {
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      }
+      return 0;
+    });
 
   const handleImportPSD = () => {
     fileInputRef.current?.click();
@@ -214,13 +259,65 @@ export const CreativeDashboard = () => {
         </Dialog>
 
         {/* Header */}
-        <div className="mb-12">
+        <div className="mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-2">
             Creative Dashboard
           </h1>
           <p className="text-muted-foreground text-lg">
             Manage smart templates and generate assets.
           </p>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="mb-8 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search templates..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          
+          <div className="flex flex-wrap gap-4">
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {availableCategories.map(cat => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All Brands" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Brands</SelectItem>
+                {availableBrands.map(brand => (
+                  <SelectItem key={brand} value={brand}>
+                    {brand}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">Most Recent</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Loading State */}
