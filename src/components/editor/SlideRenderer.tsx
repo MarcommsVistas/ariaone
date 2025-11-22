@@ -20,6 +20,8 @@ export const SlideRenderer = ({
       style={{
         width: slide.width,
         height: slide.height,
+        transform: scale !== 1 ? `scale(${scale})` : undefined,
+        transformOrigin: 'center',
       }}
     >
       {slide.layers
