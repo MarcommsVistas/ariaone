@@ -15,13 +15,18 @@ import {
 import { useState } from "react";
 
 export const HRInterface = () => {
-  const { currentSlide, currentTemplate, currentInstance, setCurrentSlideIndex, clearCurrentInstance } = useTemplateStore();
+  const { currentSlide, currentTemplate, currentInstance, setCurrentSlideIndex, clearCurrentInstance, templates } = useTemplateStore();
   const { exportAsImage, exportAllSlides, isExporting } = useExport();
   const [zoom, setZoom] = useState(100); // percentage
 
   // Get current working context (instance or template)
   const workingContext = currentInstance || currentTemplate;
   const isWorkingOnInstance = !!currentInstance;
+  
+  // Get original template name when working on an instance
+  const originalTemplate = isWorkingOnInstance && currentInstance 
+    ? templates.find(t => t.id === currentInstance.originalTemplateId)
+    : null;
 
   if (!currentSlide) {
     return (
@@ -86,9 +91,9 @@ export const HRInterface = () => {
                   <Sparkles className="w-4 h-4 text-primary" />
                   <h3 className="font-semibold text-foreground">{workingContext?.name || 'Customize Template'}</h3>
                 </div>
-                {isWorkingOnInstance && workingContext && (
+                {isWorkingOnInstance && originalTemplate && (
                   <p className="text-xs text-muted-foreground">
-                    Working on: {workingContext.name}
+                    Working on: {originalTemplate.name}
                   </p>
                 )}
               </div>
