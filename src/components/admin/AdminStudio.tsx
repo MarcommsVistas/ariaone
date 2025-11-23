@@ -105,8 +105,8 @@ export const AdminStudio = () => {
             </button>
           </div>
 
-          {/* Slide Navigation - positioned at bottom inside canvas */}
-          <div className="absolute bottom-4 left-4 right-20 z-40">
+          {/* Slide Navigation - positioned at top inside canvas */}
+          <div className="absolute top-4 left-4 right-4 z-40">
             <SlideNavigation />
           </div>
         </div>
