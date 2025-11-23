@@ -1,14 +1,21 @@
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Sparkles, ArrowLeft, ChevronDown } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationBell } from "./NotificationBell";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const NavigationV2 = () => {
   const { userRole, logout, user } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const handleSwitchToV1 = async () => {
@@ -49,6 +56,34 @@ export const NavigationV2 = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          {userRole === 'marcomms' && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2">
+                  Admin
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => navigate("/v2/admin")}>
+                  Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/v2/admin/templates")}>
+                  Templates
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/v2/admin/brand-voice")}>
+                  Brand Voice
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/v2/admin/reviews")}>
+                  Review Queue
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/v2/admin/categories")}>
+                  Categories
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           <Button
             variant="ghost"
             size="sm"
