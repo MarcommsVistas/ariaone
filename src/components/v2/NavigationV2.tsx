@@ -4,6 +4,7 @@ import { Sparkles, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { NotificationBell } from "./NotificationBell";
 
 export const NavigationV2 = () => {
   const { userRole, logout, user } = useAuthStore();
@@ -57,6 +58,8 @@ export const NavigationV2 = () => {
             <ArrowLeft className="h-4 w-4" />
             Switch to V1
           </Button>
+
+          <NotificationBell />
 
           {userRole && (
             <div className="px-3 py-1 rounded-full bg-muted text-xs font-medium capitalize">

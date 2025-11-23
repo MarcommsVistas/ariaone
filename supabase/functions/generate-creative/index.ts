@@ -247,10 +247,62 @@ serve(async (req) => {
       }
     }
 
-    // Mark instance as AI generated
+    // Fetch brand TOV for caption generation
+    let brandTOV = "";
+    if (instance.brand) {
+      const { data: brandData } = await supabase
+        .from('brands')
+        .select('tov_guidelines')
+        .eq('name', instance.brand)
+        .single();
+      
+      if (brandData?.tov_guidelines) {
+        brandTOV = brandData.tov_guidelines;
+      }
+    }
+
+    // Generate caption copy
+    let captionCopy = "";
+    try {
+      const captionPrompt = `Write a 2-3 sentence engaging social media caption for a job posting.
+Job Title: ${jobDesc.title || "Unknown Position"}
+Location: ${jobDesc.location || ""}
+Company: ${instance.brand || ""}
+${brandTOV ? `Tone of Voice: ${brandTOV}` : ""}
+
+The caption should be professional yet inviting, and include 2-3 relevant hashtags. Keep it concise and compelling.`;
+
+      const captionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: "You are a professional copywriter creating engaging social media content." },
+            { role: "user", content: captionPrompt }
+          ],
+        }),
+      });
+
+      if (captionResponse.ok) {
+        const captionData = await captionResponse.json();
+        captionCopy = captionData.choices?.[0]?.message?.content || "";
+        console.log("Generated caption:", captionCopy);
+      }
+    } catch (captionError) {
+      console.error("Error generating caption:", captionError);
+    }
+
+    // Mark instance as AI generated and save caption
     const { error: updateInstanceError } = await supabase
       .from('template_instances')
-      .update({ ai_generated: true })
+      .update({ 
+        ai_generated: true,
+        caption_copy: captionCopy 
+      })
       .eq('id', instanceId);
 
     if (updateInstanceError) {
@@ -264,6 +316,7 @@ serve(async (req) => {
         success: true, 
         updatedLayers: updatedLayers.length,
         message: `Generated content for ${updatedLayers.length} layers`,
+        caption: captionCopy,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

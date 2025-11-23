@@ -34,6 +34,13 @@ export interface Layer {
   
   // Image specific
   src?: string;
+  
+  // AI configuration
+  aiEditable?: boolean;
+  aiContentType?: string;
+  aiPromptTemplate?: string;
+  hrVisible?: boolean;
+  hrEditable?: boolean;
 }
 
 export interface Slide {
@@ -242,6 +249,11 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
                 height: dbLayer.height,
                 opacity: dbLayer.opacity,
                 rotation: dbLayer.rotation,
+                aiEditable: dbLayer.ai_editable || false,
+                aiContentType: dbLayer.ai_content_type || undefined,
+                aiPromptTemplate: dbLayer.ai_prompt_template || undefined,
+                hrVisible: dbLayer.hr_visible !== false,
+                hrEditable: dbLayer.hr_editable || false,
                 ...(dbLayer.type === 'text' && {
                   text: dbLayer.text_content || '',
                   fontFamily: dbLayer.font_family || 'DM Sans',
@@ -628,6 +640,13 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
 
       // Add image-specific updates
       if (updates.src !== undefined) dbUpdates.image_src = updates.src;
+
+      // Add AI configuration updates
+      if (updates.aiEditable !== undefined) dbUpdates.ai_editable = updates.aiEditable;
+      if (updates.aiContentType !== undefined) dbUpdates.ai_content_type = updates.aiContentType;
+      if (updates.aiPromptTemplate !== undefined) dbUpdates.ai_prompt_template = updates.aiPromptTemplate;
+      if (updates.hrVisible !== undefined) dbUpdates.hr_visible = updates.hrVisible;
+      if (updates.hrEditable !== undefined) dbUpdates.hr_editable = updates.hrEditable;
 
       // Remove undefined values
       Object.keys(dbUpdates).forEach(key => {
