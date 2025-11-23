@@ -11,7 +11,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 
 export const AdminStudio = () => {
   const { currentSlide, setSelectedLayer } = useTemplateStore();
-  const [zoom, setZoom] = useState(100); // percentage
+  const [zoom, setZoom] = useState(80); // percentage - default 80% like HR
 
   if (!currentSlide) {
     return (
@@ -41,7 +41,7 @@ export const AdminStudio = () => {
 
   const handleZoomIn = () => setZoom((z) => Math.min(maxZoom, z + 10));
   const handleZoomOut = () => setZoom((z) => Math.max(minZoom, z - 10));
-  const handleZoomReset = () => setZoom(100);
+  const handleZoomReset = () => setZoom(80);
 
   return (
     <div className="h-full flex flex-col">
@@ -104,6 +104,11 @@ export const AdminStudio = () => {
               <Plus className="w-3 h-3" />
             </button>
           </div>
+
+          {/* Slide Navigation - positioned at bottom inside canvas */}
+          <div className="absolute bottom-4 left-4 right-20 z-40">
+            <SlideNavigation />
+          </div>
         </div>
       </ResizablePanel>
 
@@ -114,7 +119,6 @@ export const AdminStudio = () => {
       </ResizablePanel>
     </ResizablePanelGroup>
       </div>
-      <SlideNavigation />
     </div>
   );
 };
