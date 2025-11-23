@@ -64,7 +64,11 @@ export const Navigation = () => {
             <Button
               variant={mode === 'hr' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setMode('hr')}
+              onClick={() => {
+                setMode('hr');
+                clearCurrentTemplate();
+                clearCurrentInstance();
+              }}
               className="gap-2"
             >
               <Users className="w-4 h-4" />
