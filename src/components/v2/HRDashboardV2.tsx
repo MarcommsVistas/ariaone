@@ -4,7 +4,8 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Search, Plus, FileText, Clock, CheckCircle, AlertCircle, Settings } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sparkles, Search, Plus, FileText, Clock, CheckCircle, AlertCircle, Settings, Layers, FolderOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { InstanceThumbnail } from "./InstanceThumbnail";
@@ -150,7 +151,12 @@ export const HRDashboardV2 = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Sparkles className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">AI-Powered Creative Studio</h1>
+            <div>
+              <h1 className="text-3xl font-bold">AI-Powered Creative Studio</h1>
+              <p className="text-muted-foreground">
+                Generate job advertisements in seconds with AI assistance
+              </p>
+            </div>
           </div>
           {userRole === "marcomms" && (
             <Button variant="outline" onClick={() => navigate("/v2/admin/brand-voice")}>
@@ -159,120 +165,149 @@ export const HRDashboardV2 = () => {
             </Button>
           )}
         </div>
-        <p className="text-muted-foreground">
-          Generate job advertisements in seconds with AI assistance
-        </p>
       </div>
 
-      {/* My Projects Section */}
-      {instances.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold">My Projects</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {instances.map((instance) => {
-              const review = reviews[instance.id];
-              return (
-                <Card key={instance.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <InstanceThumbnail instanceId={instance.id} />
+      {/* Tabs */}
+      <Tabs defaultValue="templates" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="templates" className="gap-2">
+            <Layers className="w-4 h-4" />
+            Available Templates
+          </TabsTrigger>
+          <TabsTrigger value="projects" className="gap-2">
+            <FolderOpen className="w-4 h-4" />
+            My Projects
+            {instances.length > 0 && (
+              <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
+                {instances.length}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Available Templates Tab */}
+        <TabsContent value="templates" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">Browse Templates</h2>
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search templates..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
+
+          {filteredTemplates.length === 0 ? (
+            <Card className="p-12">
+              <div className="text-center space-y-3">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto" />
+                <p className="text-muted-foreground">
+                  {searchQuery ? "No templates found" : "No templates available yet"}
+                </p>
+              </div>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredTemplates.map((template) => (
+                <Card key={template.id} className="hover:shadow-lg transition-shadow">
+                  <TemplateThumbnail templateId={template.id} />
                   <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg">{instance.name}</CardTitle>
-                      {getStatusIcon(review?.status)}
-                    </div>
+                    <CardTitle className="text-lg">{template.name}</CardTitle>
                     <CardDescription className="flex items-center gap-2">
-                      {instance.brand && (
+                      {template.brand && (
                         <span className="px-2 py-1 rounded-full bg-muted text-xs">
-                          {instance.brand}
+                          {template.brand}
                         </span>
                       )}
-                      {instance.category && (
+                      {template.category && (
                         <span className="px-2 py-1 rounded-full bg-muted text-xs">
-                          {instance.category}
+                          {template.category}
                         </span>
                       )}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <FileText className="h-4 w-4" />
-                      <span>{getStatusText(review?.status)}</span>
-                    </div>
-                    {review?.review_notes && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {review.review_notes}
-                      </p>
-                    )}
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => navigate(`/v2/preview/${instance.id}`)}
-                    >
-                      View Project
+                  <CardContent>
+                    <Button className="w-full gap-2" onClick={() => navigate(`/v2/generate/${template.id}`)}>
+                      <Plus className="h-4 w-4" />
+                      Generate Creative
                     </Button>
                   </CardContent>
                 </Card>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Templates Section */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Available Templates</h2>
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search templates..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-        </div>
-
-        {filteredTemplates.length === 0 ? (
-          <Card className="p-12">
-            <div className="text-center space-y-3">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto" />
-              <p className="text-muted-foreground">
-                {searchQuery ? "No templates found" : "No templates available yet"}
-              </p>
+              ))}
             </div>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredTemplates.map((template) => (
-              <Card key={template.id} className="hover:shadow-lg transition-shadow">
-                <TemplateThumbnail templateId={template.id} />
-                <CardHeader>
-                  <CardTitle className="text-lg">{template.name}</CardTitle>
-                  <CardDescription className="flex items-center gap-2">
-                    {template.brand && (
-                      <span className="px-2 py-1 rounded-full bg-muted text-xs">
-                        {template.brand}
-                      </span>
-                    )}
-                    {template.category && (
-                      <span className="px-2 py-1 rounded-full bg-muted text-xs">
-                        {template.category}
-                      </span>
-                    )}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full gap-2" onClick={() => navigate(`/v2/generate/${template.id}`)}>
-                    <Plus className="h-4 w-4" />
-                    Generate Creative
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
+          )}
+        </TabsContent>
+
+        {/* My Projects Tab */}
+        <TabsContent value="projects" className="space-y-6">
+          <h2 className="text-2xl font-semibold">My Projects</h2>
+          
+          {instances.length === 0 ? (
+            <Card className="p-12">
+              <div className="text-center space-y-3">
+                <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto" />
+                <p className="text-muted-foreground text-lg mb-2">
+                  You haven't created any projects yet
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  Browse templates to get started
+                </p>
+              </div>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {instances.map((instance) => {
+                const review = reviews[instance.id];
+                return (
+                  <Card key={instance.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                    <InstanceThumbnail instanceId={instance.id} />
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <CardTitle className="text-lg">{instance.name}</CardTitle>
+                        {getStatusIcon(review?.status)}
+                      </div>
+                      <CardDescription className="flex items-center gap-2">
+                        {instance.brand && (
+                          <span className="px-2 py-1 rounded-full bg-muted text-xs">
+                            {instance.brand}
+                          </span>
+                        )}
+                        {instance.category && (
+                          <span className="px-2 py-1 rounded-full bg-muted text-xs">
+                            {instance.category}
+                          </span>
+                        )}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <FileText className="h-4 w-4" />
+                        <span>{getStatusText(review?.status)}</span>
+                      </div>
+                      {review?.review_notes && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {review.review_notes}
+                        </p>
+                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={() => navigate(`/v2/preview/${instance.id}`)}
+                      >
+                        View Project
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
