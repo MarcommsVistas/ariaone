@@ -63,7 +63,7 @@ export type Database = {
           name: string
           storage_path: string
           style: string | null
-          user_id: string
+          user_id: string | null
           weight: number | null
         }
         Insert: {
@@ -75,7 +75,7 @@ export type Database = {
           name: string
           storage_path: string
           style?: string | null
-          user_id: string
+          user_id?: string | null
           weight?: number | null
         }
         Update: {
@@ -87,7 +87,7 @@ export type Database = {
           name?: string
           storage_path?: string
           style?: string | null
-          user_id?: string
+          user_id?: string | null
           weight?: number | null
         }
         Relationships: []
