@@ -280,6 +280,7 @@ export type Database = {
           name: string
           original_template_id: string
           updated_at: string
+          workflow_version: string | null
         }
         Insert: {
           brand?: string | null
@@ -290,6 +291,7 @@ export type Database = {
           name: string
           original_template_id: string
           updated_at?: string
+          workflow_version?: string | null
         }
         Update: {
           brand?: string | null
@@ -300,6 +302,7 @@ export type Database = {
           name?: string
           original_template_id?: string
           updated_at?: string
+          workflow_version?: string | null
         }
         Relationships: [
           {
@@ -351,18 +354,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          preferred_version: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          preferred_version?: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          preferred_version?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
