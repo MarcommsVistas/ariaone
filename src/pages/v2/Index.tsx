@@ -32,12 +32,12 @@ const V2Index = () => {
           <div className="flex items-center justify-center h-full">
             <div className="text-center space-y-4">
               <Sparkles className="h-12 w-12 text-primary mx-auto" />
-              <h2 className="text-2xl font-bold">Admin Review Queue</h2>
+              <h2 className="text-2xl font-bold">Welcome to V2 Admin</h2>
               <p className="text-muted-foreground max-w-md">
-                Review and approve AI-generated creative submissions from the HR team
+                Access all admin features from the dashboard
               </p>
-              <Button size="lg" onClick={() => navigate("/v2/admin/reviews")}>
-                Go to Review Queue
+              <Button size="lg" onClick={() => navigate("/v2/admin")}>
+                Go to Admin Dashboard
               </Button>
             </div>
           </div>

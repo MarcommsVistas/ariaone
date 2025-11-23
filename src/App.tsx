@@ -7,6 +7,10 @@ import Index from "./pages/Index";
 import V2Index from "./pages/v2/Index";
 import Generate from "./pages/v2/Generate";
 import Preview from "./pages/v2/Preview";
+import AdminIndex from "./pages/v2/admin/Index";
+import Templates from "./pages/v2/admin/Templates";
+import Studio from "./pages/v2/admin/Studio";
+import Categories from "./pages/v2/admin/Categories";
 import Reviews from "./pages/v2/admin/Reviews";
 import ReviewStudio from "./pages/v2/admin/ReviewStudio";
 import BrandVoice from "./pages/v2/admin/BrandVoice";
@@ -78,6 +82,38 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <ReviewStudio />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/v2/admin" 
+              element={
+                <ProtectedRoute>
+                  <AdminIndex />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/v2/admin/templates" 
+              element={
+                <ProtectedRoute>
+                  <Templates />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/v2/admin/studio/:templateId" 
+              element={
+                <ProtectedRoute>
+                  <Studio />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/v2/admin/categories" 
+              element={
+                <ProtectedRoute>
+                  <Categories />
                 </ProtectedRoute>
               } 
             />
