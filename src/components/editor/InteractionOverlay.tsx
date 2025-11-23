@@ -1,15 +1,36 @@
 import React, { useState, useRef } from 'react';
-import { useTemplateStore } from '@/store/useTemplateStore';
+import { useTemplateStore, Layer } from '@/store/useTemplateStore';
 import { RotateCw } from 'lucide-react';
 
 interface InteractionOverlayProps {
   slideWidth: number;
   slideHeight: number;
   scale: number;
+  selectedLayer?: Layer | null;
+  onUpdateLayer?: (layerId: string, updates: Partial<Layer>) => void;
+  onDeselectLayer?: () => void;
 }
 
-export const InteractionOverlay = ({ slideWidth, slideHeight, scale }: InteractionOverlayProps) => {
-  const { selectedLayer, updateLayer, currentSlide, setSelectedLayer } = useTemplateStore();
+export const InteractionOverlay = ({ 
+  slideWidth, 
+  slideHeight, 
+  scale,
+  selectedLayer: selectedLayerProp,
+  onUpdateLayer,
+  onDeselectLayer
+}: InteractionOverlayProps) => {
+  const { 
+    selectedLayer: storeSelectedLayer, 
+    updateLayer: storeUpdateLayer, 
+    setSelectedLayer: storeSetSelectedLayer 
+  } = useTemplateStore();
+  
+  const selectedLayer = selectedLayerProp ?? storeSelectedLayer;
+  const updateLayer = onUpdateLayer ?? storeUpdateLayer;
+  const clearSelection = () => {
+    if (onDeselectLayer) onDeselectLayer();
+    else storeSetSelectedLayer(null);
+  };
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
@@ -123,7 +144,7 @@ export const InteractionOverlay = ({ slideWidth, slideHeight, scale }: Interacti
   }, [isDragging, isResizing, isRotating, handleMouseMove, handleMouseUp]);
 
   // Early return AFTER all hooks
-  if (!selectedLayer || !currentSlide) return null;
+  if (!selectedLayer) return null;
 
   const handleMouseDown = (e: React.MouseEvent, action: 'drag' | 'resize' | 'rotate', handle?: string) => {
     if (selectedLayer.locked) return;
@@ -150,7 +171,7 @@ export const InteractionOverlay = ({ slideWidth, slideHeight, scale }: Interacti
 
   const handleBackgroundClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
-      setSelectedLayer(null);
+      clearSelection();
     }
   };
 

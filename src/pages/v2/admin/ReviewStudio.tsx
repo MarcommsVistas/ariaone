@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useTemplateStore } from "@/store/useTemplateStore";
 import { NavigationV2 } from "@/components/v2/NavigationV2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
 import { InteractionOverlay } from "@/components/editor/InteractionOverlay";
 import { PropertyPanel } from "@/components/admin/PropertyPanel";
+import { Layer } from "@/store/useTemplateStore";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,23 +49,24 @@ export default function ReviewStudio() {
   const [captionApproved, setCaptionApproved] = useState(false);
   const [editedCaption, setEditedCaption] = useState("");
   const [isJdOpen, setIsJdOpen] = useState(true);
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const { setSelectedLayer, selectedLayer, updateLayer, setCurrentSlide } = useTemplateStore();
+  const currentSlide = slides[currentSlideIdx];
+  const selectedLayer = currentSlide 
+    ? currentSlide.layers.find((l: any) => l.id === selectedLayerId) || null
+    : null;
+
+  // Clear selection when slide changes
+  useEffect(() => {
+    setSelectedLayerId(null);
+  }, [currentSlideIdx]);
 
   useEffect(() => {
     if (!instanceId) return;
     fetchData();
   }, [instanceId]);
-
-  // Sync selected layer with store when slides or currentSlideIdx changes
-  useEffect(() => {
-    const currentSlide = slides[currentSlideIdx];
-    if (currentSlide) {
-      setCurrentSlide(currentSlide.id);
-    }
-  }, [currentSlideIdx, slides, setCurrentSlide]);
 
   const fetchData = async () => {
     try {
@@ -194,15 +195,6 @@ export default function ReviewStudio() {
       });
     }
   };
-
-  // Override the store's updateLayer to use our function
-  useEffect(() => {
-    const originalUpdateLayer = updateLayer;
-    (window as any).reviewStudioUpdateLayer = updateLayerProperty;
-    return () => {
-      delete (window as any).reviewStudioUpdateLayer;
-    };
-  }, [slides, updateLayerProperty]);
 
   const handleApprove = async () => {
     if (!review) return;
@@ -396,7 +388,6 @@ export default function ReviewStudio() {
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 10, 150));
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 10, 30));
 
-  const currentSlide = slides[currentSlideIdx];
   const jobDescription = instance?.job_description;
 
   if (isLoading) {
@@ -593,9 +584,9 @@ export default function ReviewStudio() {
                 <XCircle className="h-4 w-4 mr-2" />
                 Reject
               </Button>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Main Canvas Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -612,7 +603,7 @@ export default function ReviewStudio() {
                       key={slide.id}
                       onClick={() => {
                         setCurrentSlideIdx(index);
-                        setSelectedLayer(null);
+                        setSelectedLayerId(null);
                       }}
                       className={`
                         relative shrink-0 rounded-lg overflow-hidden transition-all cursor-pointer
@@ -656,12 +647,16 @@ export default function ReviewStudio() {
                 <div className="relative">
                   <SlideRenderer
                     slide={currentSlide}
-                    interactive={false}
+                    interactive={true}
+                    onLayerClick={(layerId) => setSelectedLayerId(layerId)}
                   />
-                  <InteractionOverlay 
+                  <InteractionOverlay
                     slideWidth={currentSlide.width}
                     slideHeight={currentSlide.height}
                     scale={zoom / 100}
+                    selectedLayer={selectedLayer}
+                    onUpdateLayer={updateLayerProperty}
+                    onDeselectLayer={() => setSelectedLayerId(null)}
                   />
                 </div>
               </div>
@@ -673,10 +668,13 @@ export default function ReviewStudio() {
           </div>
         </div>
 
-        {/* Right Sidebar - Property Panel */}
-        <div className="w-[350px] flex-shrink-0">
-          <PropertyPanel />
-        </div>
+          {/* Right Sidebar - Property Panel */}
+          <div className="w-[350px] flex-shrink-0">
+            <PropertyPanel
+              selectedLayerOverride={selectedLayer}
+              onUpdateLayerOverride={updateLayerProperty}
+            />
+          </div>
       </div>
 
       {/* Dialogs */}
