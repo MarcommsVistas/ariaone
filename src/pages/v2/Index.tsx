@@ -2,9 +2,12 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { NavigationV2 } from "@/components/v2/NavigationV2";
 import { HRDashboardV2 } from "@/components/v2/HRDashboardV2";
 import { Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const V2Index = () => {
   const { userRole, isLoading } = useAuthStore();
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -29,10 +32,13 @@ const V2Index = () => {
           <div className="flex items-center justify-center h-full">
             <div className="text-center space-y-4">
               <Sparkles className="h-12 w-12 text-primary mx-auto" />
-              <h2 className="text-2xl font-bold">Admin Review Queue Coming Soon</h2>
-              <p className="text-muted-foreground">
-                The review queue for approving V2 submissions is under construction.
+              <h2 className="text-2xl font-bold">Admin Review Queue</h2>
+              <p className="text-muted-foreground max-w-md">
+                Review and approve AI-generated creative submissions from the HR team
               </p>
+              <Button size="lg" onClick={() => navigate("/v2/admin/reviews")}>
+                Go to Review Queue
+              </Button>
             </div>
           </div>
         ) : (
