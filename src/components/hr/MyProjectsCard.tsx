@@ -24,6 +24,7 @@ interface MyProjectsCardProps {
   onOpenStudio: (instanceId: string) => void;
   onDelete: (instanceId: string) => void;
   onRename: (instanceId: string, newName: string) => void;
+  viewMode?: "grid" | "list";
 }
 
 export const MyProjectsCard = ({ 
@@ -31,7 +32,8 @@ export const MyProjectsCard = ({
   originalTemplate,
   onOpenStudio, 
   onDelete,
-  onRename
+  onRename,
+  viewMode = "grid"
 }: MyProjectsCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -44,6 +46,159 @@ export const MyProjectsCard = ({
     setShowDeleteDialog(false);
   };
 
+  // List view rendering
+  if (viewMode === "list") {
+    return (
+      <>
+        <Card className="overflow-hidden hover:shadow-md transition-shadow group">
+          <div className="flex items-center gap-4 p-4">
+            {/* Thumbnail */}
+            <div className="relative w-32 h-20 bg-canvas rounded overflow-hidden border border-border flex-shrink-0">
+              {firstSlide ? (
+                <div className="absolute inset-0 flex items-center justify-center p-2">
+                  <div
+                    className="relative bg-white shadow-sm rounded-sm overflow-hidden"
+                    style={{
+                      width: firstSlide.width * thumbnailScale * 0.5,
+                      height: firstSlide.height * thumbnailScale * 0.5,
+                    }}
+                  >
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        transform: `scale(${thumbnailScale * 0.5})`,
+                        transformOrigin: "top left",
+                        width: firstSlide.width,
+                        height: firstSlide.height,
+                      }}
+                    >
+                      <SlideRenderer
+                        slide={firstSlide}
+                        interactive={false}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Layers className="w-8 h-8 text-muted-foreground/30" />
+                </div>
+              )}
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0 space-y-2">
+              {isEditing ? (
+                <Input
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      onRename(instance.id, editedName);
+                      setIsEditing(false);
+                    } else if (e.key === 'Escape') {
+                      setEditedName(instance.name);
+                      setIsEditing(false);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (editedName !== instance.name && editedName.trim()) {
+                      onRename(instance.id, editedName);
+                    } else {
+                      setEditedName(instance.name);
+                    }
+                    setIsEditing(false);
+                  }}
+                  className="h-8 font-semibold"
+                  autoFocus
+                />
+              ) : (
+                <div className="flex items-center gap-2 group/name">
+                  <h3 className="font-semibold text-foreground truncate flex-1">
+                    {instance.name}
+                  </h3>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="opacity-0 group-hover/name:opacity-100 transition-opacity p-1 hover:bg-accent rounded"
+                    aria-label="Rename project"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                {originalTemplate && (
+                  <span>From: {originalTemplate.name}</span>
+                )}
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Edited {formatDistanceToNow(new Date(instance.updated_at || instance.created_at || Date.now()), { addSuffix: true })}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {instance.category && (
+                  <Badge variant="secondary" className="text-xs">
+                    {instance.category}
+                  </Badge>
+                )}
+                {instance.brand && (
+                  <Badge variant="outline" className="text-xs">
+                    {instance.brand}
+                  </Badge>
+                )}
+                {instance.slides.length > 1 && (
+                  <Badge variant="outline" className="text-xs gap-1">
+                    <Layers className="w-3 h-3" />
+                    {instance.slides.length} slides
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 flex-shrink-0">
+              <Button 
+                onClick={() => onOpenStudio(instance.id)} 
+                className="gap-2"
+                size="sm"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Open
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Project?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{instance.name}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    );
+  }
+
+  // Grid view rendering
   return (
     <>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow group">

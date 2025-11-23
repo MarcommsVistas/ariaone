@@ -2,10 +2,11 @@ import { useEffect, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { TemplateCard } from "./TemplateCard";
 import { MyProjectsCard } from "./MyProjectsCard";
-import { Search, Layers, Filter, Tag, FolderOpen } from "lucide-react";
+import { Search, Layers, Filter, Tag, FolderOpen, Grid3x3, List } from "lucide-react";
 import { toast } from "sonner";
 
 export const HRDashboard = () => {
@@ -33,6 +34,7 @@ export const HRDashboard = () => {
   const [projectSearch, setProjectSearch] = useState("");
   const [projectBrand, setProjectBrand] = useState<string>("all");
   const [projectCategory, setProjectCategory] = useState<string>("all");
+  const [projectViewMode, setProjectViewMode] = useState<"grid" | "list">("grid");
   
   // Fetch templates and subscribe to changes on mount
   useEffect(() => {
@@ -385,39 +387,51 @@ export const HRDashboard = () => {
                 />
               </div>
 
-              {/* Filter Row */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                {/* Category Filter */}
-                <Select value={projectCategory} onValueChange={setProjectCategory}>
-                  <SelectTrigger className="w-full sm:w-[200px]">
-                    <Tag className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {projectCategories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Filter Row with View Toggle */}
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                <div className="flex flex-col sm:flex-row gap-4 flex-1">
+                  {/* Category Filter */}
+                  <Select value={projectCategory} onValueChange={setProjectCategory}>
+                    <SelectTrigger className="w-full sm:w-[200px]">
+                      <Tag className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {projectCategories.map(category => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                {/* Brand Filter */}
-                <Select value={projectBrand} onValueChange={setProjectBrand}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="All Brands" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Brands</SelectItem>
-                    {projectBrands.map(brand => (
-                      <SelectItem key={brand} value={brand}>
-                        {brand}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  {/* Brand Filter */}
+                  <Select value={projectBrand} onValueChange={setProjectBrand}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="All Brands" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Brands</SelectItem>
+                      {projectBrands.map(brand => (
+                        <SelectItem key={brand} value={brand}>
+                          {brand}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* View Toggle */}
+                <ToggleGroup type="single" value={projectViewMode} onValueChange={(value) => value && setProjectViewMode(value as "grid" | "list")}>
+                  <ToggleGroupItem value="grid" aria-label="Grid view">
+                    <Grid3x3 className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="list" aria-label="List view">
+                    <List className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
             </div>
 
@@ -440,7 +454,7 @@ export const HRDashboard = () => {
                   No projects match your filters
                 </p>
               </div>
-            ) : (
+            ) : projectViewMode === "grid" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProjects.map((instance) => (
                   <MyProjectsCard
@@ -450,6 +464,20 @@ export const HRDashboard = () => {
                     onOpenStudio={handleOpenStudio}
                     onDelete={handleDeleteProject}
                     onRename={handleRenameProject}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredProjects.map((instance) => (
+                  <MyProjectsCard
+                    key={instance.id}
+                    instance={instance}
+                    originalTemplate={templateMap.get(instance.originalTemplateId)}
+                    onOpenStudio={handleOpenStudio}
+                    onDelete={handleDeleteProject}
+                    onRename={handleRenameProject}
+                    viewMode="list"
                   />
                 ))}
               </div>
