@@ -60,41 +60,15 @@ export const TemplateCard = ({
           </p>
         </div>
 
-        {existingInstance ? (
-          <div className="space-y-2">
-            <Button 
-              className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors" 
-              variant="default" 
-              size="lg" 
-              onClick={() => onOpenStudio(existingInstance.id)}
-            >
-              <FileEdit className="mr-2 h-4 w-4" />
-              Open Studio
-            </Button>
-            <Button 
-              className="w-full" 
-              variant="outline" 
-              size="sm" 
-              onClick={() => onCreateCopy(template.id)}
-            >
-              <Copy className="mr-2 h-4 w-4" />
-              Create New Copy
-            </Button>
-            <div className="text-xs text-muted-foreground text-center">
-              Last edited: {format(new Date(existingInstance.updated_at), 'MMM d, yyyy')}
-            </div>
-          </div>
-        ) : (
-          <Button 
-            className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors" 
-            variant="outline" 
-            size="lg" 
-            onClick={() => onCreateCopy(template.id)}
-          >
-            <Copy className="mr-2 h-4 w-4" />
-            Create a Copy
-          </Button>
-        )}
+        <Button 
+          className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors" 
+          variant="outline" 
+          size="lg" 
+          onClick={() => onCreateCopy(template.id)}
+        >
+          <Copy className="mr-2 h-4 w-4" />
+          Create a Copy
+        </Button>
       </div>
     </Card>;
 };
