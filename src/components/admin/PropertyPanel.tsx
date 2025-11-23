@@ -10,7 +10,19 @@ import { AlertCircle } from "lucide-react";
 
 export const PropertyPanel = () => {
   const { selectedLayer, updateLayer } = useTemplateStore();
-  const { systemFonts, uploadedFonts } = useFontStore();
+  const { uploadedFonts } = useFontStore();
+
+  // Default system fonts
+  const systemFonts = [
+    'DM Sans',
+    'Inter',
+    'Poppins',
+    'Roboto',
+    'Arial',
+    'Helvetica',
+    'Georgia',
+    'Times New Roman',
+  ];
 
   if (!selectedLayer) {
     return (
@@ -181,22 +193,18 @@ export const PropertyPanel = () => {
                   onChange={(e) => updateLayer(selectedLayer.id, { fontFamily: e.target.value })}
                   className="w-full h-8 text-sm mt-1 border border-input bg-background rounded-md px-2 z-50"
                 >
-                  {/* System fonts from database */}
-                  {systemFonts.length > 0 && (
-                    <optgroup label="System Fonts">
-                      {systemFonts.map(font => (
-                        <option key={font.id} value={font.family}>
-                          {font.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
+                  {/* System fonts */}
+                  <optgroup label="System Fonts">
+                    {systemFonts.map(font => (
+                      <option key={font} value={font}>{font}</option>
+                    ))}
+                  </optgroup>
                   
                   {/* Custom uploaded fonts */}
                   {uploadedFonts.length > 0 && (
                     <optgroup label="Custom Fonts">
                       {uploadedFonts.map(font => (
-                        <option key={font.id} value={font.family}>
+                        <option key={font.family} value={font.family}>
                           {font.name}
                         </option>
                       ))}

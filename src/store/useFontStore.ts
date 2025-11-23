@@ -12,7 +12,6 @@ export interface CustomFont {
 }
 
 interface FontStore {
-  systemFonts: CustomFont[];
   uploadedFonts: CustomFont[];
   isLoading: boolean;
   fetchFonts: () => Promise<void>;
@@ -21,7 +20,6 @@ interface FontStore {
 }
 
 export const useFontStore = create<FontStore>((set, get) => ({
-  systemFonts: [],
   uploadedFonts: [],
   isLoading: false,
   
@@ -29,35 +27,21 @@ export const useFontStore = create<FontStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      // Fetch system fonts (user_id IS NULL)
-      const { data: systemFontsData, error: systemError } = await supabase
-        .from('custom_fonts')
-        .select('*')
-        .is('user_id', null)
-        .order('name', { ascending: true });
-
-      if (systemError) throw systemError;
-
-      // Fetch user's custom fonts
-      let userFontsData = [];
-      if (user) {
-        const { data, error } = await supabase
-          .from('custom_fonts')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        userFontsData = data || [];
+      if (!user) {
+        set({ uploadedFonts: [], isLoading: false });
+        return;
       }
 
+      const { data, error } = await supabase
+        .from('custom_fonts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
       set({ 
-        systemFonts: (systemFontsData || []).map(font => ({
-          ...font,
-          style: (font.style === 'italic' ? 'italic' : 'normal') as 'italic' | 'normal'
-        })),
-        uploadedFonts: userFontsData.map(font => ({
+        uploadedFonts: (data || []).map(font => ({
           ...font,
           style: (font.style === 'italic' ? 'italic' : 'normal') as 'italic' | 'normal'
         })),
@@ -65,7 +49,7 @@ export const useFontStore = create<FontStore>((set, get) => ({
       });
     } catch (error) {
       console.error('Error fetching fonts:', error);
-      set({ systemFonts: [], uploadedFonts: [], isLoading: false });
+      set({ uploadedFonts: [], isLoading: false });
     }
   },
 
