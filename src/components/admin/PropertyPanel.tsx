@@ -1,4 +1,4 @@
-import { useTemplateStore } from "@/store/useTemplateStore";
+import { useTemplateStore, Layer } from "@/store/useTemplateStore";
 import { useFontStore } from "@/store/useFontStore";
 import { AIGenerationDialog } from "./AIGenerationDialog";
 import { FontUploader } from "@/components/hr/FontUploader";
@@ -11,9 +11,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle } from "lucide-react";
 
-export const PropertyPanel = () => {
-  const { selectedLayer, updateLayer } = useTemplateStore();
+interface PropertyPanelProps {
+  selectedLayerOverride?: Layer | null;
+  onUpdateLayerOverride?: (layerId: string, updates: Partial<Layer>) => void;
+}
+
+export const PropertyPanel = ({
+  selectedLayerOverride,
+  onUpdateLayerOverride
+}: PropertyPanelProps = {}) => {
+  const { selectedLayer: storeSelectedLayer, updateLayer: storeUpdateLayer } = useTemplateStore();
   const { uploadedFonts } = useFontStore();
+  
+  const selectedLayer = selectedLayerOverride ?? storeSelectedLayer;
+  const updateLayer = onUpdateLayerOverride ?? storeUpdateLayer;
 
   // Default system fonts
   const systemFonts = [
