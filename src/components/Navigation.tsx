@@ -1,4 +1,4 @@
-import { Layers, Users, LogOut, User, Home } from "lucide-react";
+import { Layers, Users, LogOut, User, Home, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -11,12 +11,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import ariaOneLogo from "@/assets/aria-one-logo.png";
 
 export const Navigation = () => {
   const { mode, setMode, currentTemplate, currentInstance, clearCurrentTemplate, clearCurrentInstance } = useTemplateStore();
   const { userRole, user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleLogout = async () => {
     await logout();
@@ -26,6 +29,29 @@ export const Navigation = () => {
   const handleGoToDashboard = () => {
     clearCurrentTemplate();
     clearCurrentInstance();
+  };
+
+  const handleSwitchToV2 = async () => {
+    try {
+      // Update preferred version in database
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ preferred_version: 'v2' })
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      // Update state and navigate
+      await useAuthStore.getState().setPreferredVersion('v2');
+      navigate('/v2');
+    } catch (error) {
+      console.error("Error switching version:", error);
+      toast({
+        title: "Error",
+        description: "Failed to switch version",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -106,6 +132,10 @@ export const Navigation = () => {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSwitchToV2} className="gap-2 cursor-pointer">
+              <Sparkles className="w-4 h-4" />
+              Switch to V2 (AI)
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
               <LogOut className="w-4 h-4" />
               Logout
