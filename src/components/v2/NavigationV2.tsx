@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationBell } from "./NotificationBell";
+import ariaOneLogo from "@/assets/aria-one-logo.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,10 +46,7 @@ export const NavigationV2 = () => {
     <nav className="border-b border-border bg-card">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">ARIA ONE</span>
-          </div>
+          <img src={ariaOneLogo} alt="Aria-One" className="h-8" />
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
             <Sparkles className="h-3 w-3 text-primary" />
             <span className="text-xs font-medium text-primary">AI-Powered V2</span>
