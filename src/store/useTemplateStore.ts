@@ -93,6 +93,7 @@ interface TemplateStore {
   nextSlide: () => void;
   previousSlide: () => void;
   reorderSlides: (newOrder: Slide[]) => Promise<void>;
+  deleteSlide: (slideId: string) => Promise<void>;
   setSelectedLayer: (layerId: string | null) => void;
   updateLayer: (layerId: string, updates: Partial<Layer>) => Promise<void>;
   deleteLayer: (layerId: string) => Promise<void>;
@@ -444,6 +445,77 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
       await markTemplateAsUnpublished(state.currentTemplate.id);
     } catch (error) {
       console.error('Error syncing slide order to database:', error);
+    }
+  },
+
+  deleteSlide: async (slideId: string) => {
+    const state = get();
+    const workingContext = state.currentInstance || state.currentTemplate;
+    if (!workingContext) return;
+    
+    // Prevent deleting the last slide
+    if (workingContext.slides.length <= 1) {
+      throw new Error('Cannot delete the last slide');
+    }
+    
+    const slideIndex = workingContext.slides.findIndex(s => s.id === slideId);
+    if (slideIndex === -1) return;
+    
+    try {
+      // Delete from database (cascades to layers)
+      const { error } = await supabase
+        .from('slides')
+        .delete()
+        .eq('id', slideId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      set((state) => {
+        const workingContext = state.currentInstance || state.currentTemplate;
+        if (!workingContext) return state;
+        
+        const newSlides = workingContext.slides.filter(s => s.id !== slideId);
+        
+        // Adjust currentSlideIndex if needed
+        let newIndex = state.currentSlideIndex;
+        if (slideIndex < state.currentSlideIndex) {
+          newIndex = Math.max(0, state.currentSlideIndex - 1);
+        } else if (slideIndex === state.currentSlideIndex) {
+          newIndex = Math.min(slideIndex, newSlides.length - 1);
+        }
+        
+        const newSlide = newSlides[newIndex] || null;
+        
+        // Update the appropriate context
+        if (state.currentInstance) {
+          return {
+            currentInstance: { ...state.currentInstance, slides: newSlides },
+            currentSlideIndex: newIndex,
+            currentSlide: newSlide,
+          };
+        } else if (state.currentTemplate) {
+          const updatedTemplate = { ...state.currentTemplate, slides: newSlides };
+          return {
+            templates: state.templates.map(t => 
+              t.id === updatedTemplate.id ? updatedTemplate : t
+            ),
+            currentTemplate: updatedTemplate,
+            currentSlideIndex: newIndex,
+            currentSlide: newSlide,
+          };
+        }
+        
+        return state;
+      });
+      
+      // Mark template as unpublished if in admin mode
+      if (state.mode === 'admin' && state.currentTemplate) {
+        await markTemplateAsUnpublished(state.currentTemplate.id);
+      }
+    } catch (error) {
+      console.error('Error deleting slide:', error);
+      throw error;
     }
   },
   

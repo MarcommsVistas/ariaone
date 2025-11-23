@@ -1,21 +1,32 @@
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { SlideRenderer } from "./SlideRenderer";
 import { useEffect, useRef, useState } from "react";
 import { useAddSlideToTemplate } from "@/hooks/usePsdParser";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
 
 export const SlideNavigation = () => {
-  const { currentTemplate, currentInstance, currentSlideIndex, setCurrentSlideIndex, nextSlide, previousSlide, reorderSlides, mode, addSlide } = useTemplateStore();
+  const { currentTemplate, currentInstance, currentSlideIndex, setCurrentSlideIndex, nextSlide, previousSlide, reorderSlides, mode, addSlide, deleteSlide } = useTemplateStore();
   const { userRole } = useAuthStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
+  const [slideToDelete, setSlideToDelete] = useState<{ id: string; index: number } | null>(null);
   const { addSlideToTemplate, isLoading, progress, progressStatus } = useAddSlideToTemplate();
   const { toast } = useToast();
 
@@ -137,6 +148,39 @@ export const SlideNavigation = () => {
     }
   };
 
+  const handleDeleteSlide = async () => {
+    if (!slideToDelete || !workingContext) return;
+    
+    try {
+      // Check if trying to delete the last slide
+      if (workingContext.slides.length <= 1) {
+        toast({
+          title: "Cannot delete slide",
+          description: "You must have at least one slide in the template",
+          variant: "destructive",
+        });
+        setSlideToDelete(null);
+        return;
+      }
+      
+      await deleteSlide(slideToDelete.id);
+      
+      toast({
+        title: "Slide deleted",
+        description: `Slide ${slideToDelete.index + 1} has been removed`,
+      });
+    } catch (error) {
+      console.error('Error deleting slide:', error);
+      toast({
+        title: "Failed to delete slide",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setSlideToDelete(null);
+    }
+  };
+
   return (
     <>
       {/* Hidden file input */}
@@ -203,6 +247,7 @@ export const SlideNavigation = () => {
                   onClick={() => setCurrentSlideIndex(index)}
                   className={`
                     relative shrink-0 rounded-lg overflow-hidden transition-all
+                    group
                     ${isActive 
                       ? 'ring-2 ring-primary shadow-lg' 
                       : 'ring-1 ring-border hover:ring-primary/50'
@@ -225,6 +270,27 @@ export const SlideNavigation = () => {
                       interactive={false}
                     />
                   </div>
+                  
+                  {/* Delete button - Only for Marcomms in Admin Mode */}
+                  {isAdminMode && isMarcomms && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSlideToDelete({ id: slide.id, index });
+                      }}
+                      className="
+                        absolute top-1 right-1 p-1 rounded
+                        bg-destructive/80 hover:bg-destructive
+                        text-destructive-foreground
+                        opacity-0 group-hover:opacity-100
+                        transition-opacity
+                        z-10
+                      "
+                      title="Delete slide"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
                   
                   {/* Slide number overlay */}
                   <div className={`
@@ -279,6 +345,28 @@ export const SlideNavigation = () => {
         </div>
       </div>
     </div>
+
+    {/* Delete confirmation dialog */}
+    <AlertDialog open={!!slideToDelete} onOpenChange={(open) => !open && setSlideToDelete(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Slide?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete slide {slideToDelete ? slideToDelete.index + 1 : ''}? 
+            This will also delete all layers on this slide. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleDeleteSlide}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 };
