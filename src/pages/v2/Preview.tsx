@@ -118,12 +118,17 @@ export default function Preview() {
 
       if (error) {
         console.error("Edge function error:", error);
-        throw new Error(error.message || "Edge function call failed");
+        const errorMessage = error.message || "Failed to connect to AI service";
+        throw { message: errorMessage, code: "EDGE_FUNCTION_ERROR" };
       }
 
       if (data?.error) {
-        console.error("Edge function returned error:", data.error);
-        throw new Error(data.error);
+        console.error("Edge function returned error:", data);
+        throw { 
+          message: data.error,
+          code: data.errorCode || "AI_GENERATION_ERROR",
+          details: data.details
+        };
       }
 
       console.log("AI generation completed successfully");
@@ -140,19 +145,40 @@ export default function Preview() {
       console.error("Error generating content:", error);
       
       let errorMessage = "Failed to generate AI content. Please try again.";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null) {
-        const anyError = error as any;
-        if (anyError.message) {
-          errorMessage = anyError.message;
+      let errorTitle = "AI Generation Failed";
+      
+      if (typeof error === 'object' && error !== null) {
+        const err = error as any;
+        
+        // Handle specific error codes
+        if (err.code === 'RATE_LIMIT_EXCEEDED') {
+          errorTitle = "Rate Limit Exceeded";
+          errorMessage = err.message || "Too many AI requests. Please wait a moment and try again.";
+        } else if (err.code === 'PAYMENT_REQUIRED') {
+          errorTitle = "AI Credits Depleted";
+          errorMessage = err.message || "AI service credits have run out. Please contact your administrator to add credits.";
+        } else if (err.code === 'NETWORK_ERROR') {
+          errorTitle = "Connection Error";
+          errorMessage = err.message || "Unable to connect to AI service. Please check your internet connection.";
+        } else if (err.code === 'TIMEOUT_ERROR') {
+          errorTitle = "Request Timeout";
+          errorMessage = err.message || "AI generation took too long. Please try again.";
+        } else if (err.message) {
+          errorMessage = err.message;
         }
+        
+        // Log detailed error info for debugging
+        if (err.details) {
+          console.error("Error details:", err.details);
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
       
       setGenerationError(errorMessage);
       
       toast({
-        title: "AI Generation Failed",
+        title: errorTitle,
         description: errorMessage,
         variant: "destructive",
       });
@@ -205,9 +231,22 @@ export default function Preview() {
       navigate("/v2");
     } catch (error) {
       console.error("Error submitting for review:", error);
+      let errorMessage = "Failed to submit for review. Please try again.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        const err = error as any;
+        if (err.message?.includes('row-level security')) {
+          errorMessage = "Permission denied. Please contact your administrator.";
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+      }
+      
       toast({
         title: "Submission Failed",
-        description: "Failed to submit for review. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

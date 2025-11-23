@@ -15,7 +15,12 @@ serve(async (req) => {
     const { instanceId } = await req.json();
     
     if (!instanceId) {
-      return new Response(JSON.stringify({ error: "instanceId is required" }), {
+      console.error("Missing instanceId in request");
+      return new Response(JSON.stringify({ 
+        error: "instanceId is required",
+        errorCode: "MISSING_INSTANCE_ID",
+        details: "The instanceId parameter is required to generate content"
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -26,7 +31,12 @@ serve(async (req) => {
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
     if (!lovableApiKey) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
+      console.error("LOVABLE_API_KEY not configured in environment");
+      return new Response(JSON.stringify({ 
+        error: "AI service not configured. Please contact support.",
+        errorCode: "MISSING_API_KEY",
+        details: "LOVABLE_API_KEY is not set in the environment"
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -43,7 +53,11 @@ serve(async (req) => {
 
     if (instanceError || !instance) {
       console.error('Instance fetch error:', instanceError);
-      return new Response(JSON.stringify({ error: "Instance not found" }), {
+      return new Response(JSON.stringify({ 
+        error: "Creative project not found",
+        errorCode: "INSTANCE_NOT_FOUND",
+        details: instanceError?.message || "The requested creative instance does not exist"
+      }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -51,7 +65,12 @@ serve(async (req) => {
 
     const jobDesc = instance.job_description as { title: string; description: string; location: string };
     if (!jobDesc) {
-      return new Response(JSON.stringify({ error: "No job description found" }), {
+      console.error("Instance missing job_description:", instanceId);
+      return new Response(JSON.stringify({ 
+        error: "Job description is missing",
+        errorCode: "MISSING_JOB_DESCRIPTION",
+        details: "The creative instance does not have job description data"
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -77,7 +96,11 @@ serve(async (req) => {
 
       if (slidesError || !templateSlides) {
         console.error('Template slides fetch error:', slidesError);
-        return new Response(JSON.stringify({ error: "Failed to fetch template slides" }), {
+        return new Response(JSON.stringify({ 
+          error: "Failed to load template structure",
+          errorCode: "TEMPLATE_FETCH_ERROR",
+          details: slidesError?.message || "Could not fetch template slides"
+        }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -154,7 +177,11 @@ serve(async (req) => {
 
     if (slidesError) {
       console.error('Slides fetch error:', slidesError);
-      return new Response(JSON.stringify({ error: "Failed to fetch slides" }), {
+      return new Response(JSON.stringify({ 
+        error: "Failed to load creative slides",
+        errorCode: "SLIDES_FETCH_ERROR",
+        details: slidesError?.message || "Could not fetch slides for AI generation"
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -222,6 +249,32 @@ serve(async (req) => {
           if (!aiResponse.ok) {
             const errorText = await aiResponse.text();
             console.error(`AI API error for layer ${layer.id}:`, aiResponse.status, errorText);
+            
+            // Handle specific AI API errors
+            if (aiResponse.status === 429) {
+              console.error("Rate limit exceeded on Lovable AI");
+              return new Response(JSON.stringify({ 
+                error: "AI service rate limit exceeded. Please try again in a few moments.",
+                errorCode: "RATE_LIMIT_EXCEEDED",
+                details: "Too many requests to the AI service. Please wait and try again."
+              }), {
+                status: 429,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+            
+            if (aiResponse.status === 402) {
+              console.error("Payment required for Lovable AI");
+              return new Response(JSON.stringify({ 
+                error: "AI service credits depleted. Please contact your administrator.",
+                errorCode: "PAYMENT_REQUIRED",
+                details: "Lovable AI credits have run out. Please add credits to continue."
+              }), {
+                status: 402,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+            
             continue;
           }
 
@@ -324,8 +377,32 @@ The caption should be professional yet inviting, and include 2-3 relevant hashta
     );
   } catch (error) {
     console.error('Error in generate-creative function:', error);
+    
+    let errorMessage = 'An unexpected error occurred during AI generation';
+    let errorCode = 'UNKNOWN_ERROR';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // Categorize common errors
+      if (error.message.includes('fetch')) {
+        errorCode = 'NETWORK_ERROR';
+        errorMessage = 'Network error connecting to AI service. Please check your connection.';
+      } else if (error.message.includes('timeout')) {
+        errorCode = 'TIMEOUT_ERROR';
+        errorMessage = 'AI generation timed out. Please try again.';
+      } else if (error.message.includes('JSON')) {
+        errorCode = 'PARSE_ERROR';
+        errorMessage = 'Failed to process AI response. Please try again.';
+      }
+    }
+    
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ 
+        error: errorMessage,
+        errorCode: errorCode,
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
