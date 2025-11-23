@@ -8,6 +8,7 @@ import { Sparkles, Search, Plus, FileText, Clock, CheckCircle, AlertCircle, Sett
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { InstanceThumbnail } from "./InstanceThumbnail";
+import { TemplateThumbnail } from "./TemplateThumbnail";
 
 interface Template {
   id: string;
@@ -245,6 +246,7 @@ export const HRDashboardV2 = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTemplates.map((template) => (
               <Card key={template.id} className="hover:shadow-lg transition-shadow">
+                <TemplateThumbnail templateId={template.id} />
                 <CardHeader>
                   <CardTitle className="text-lg">{template.name}</CardTitle>
                   <CardDescription className="flex items-center gap-2">
