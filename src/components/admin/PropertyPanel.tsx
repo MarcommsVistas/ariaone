@@ -6,6 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle } from "lucide-react";
 
 export const PropertyPanel = () => {
@@ -342,6 +345,81 @@ export const PropertyPanel = () => {
             </div>
           </div>
         )}
+
+        {/* AI Configuration (for template layers only) */}
+        <Separator />
+        <div>
+          <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+            AI Configuration
+          </h4>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="ai-editable" className="text-xs">AI Editable</Label>
+              <Switch
+                id="ai-editable"
+                checked={selectedLayer.aiEditable || false}
+                onCheckedChange={(checked) => updateLayer(selectedLayer.id, { aiEditable: checked })}
+              />
+            </div>
+            
+            {selectedLayer.aiEditable && (
+              <>
+                <div>
+                  <Label htmlFor="ai-content-type" className="text-xs">Content Type</Label>
+                  <Select
+                    value={selectedLayer.aiContentType || "text"}
+                    onValueChange={(value) => updateLayer(selectedLayer.id, { aiContentType: value })}
+                  >
+                    <SelectTrigger id="ai-content-type" className="h-8 text-sm mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="headline">Headline</SelectItem>
+                      <SelectItem value="subheadline">Subheadline</SelectItem>
+                      <SelectItem value="description">Description</SelectItem>
+                      <SelectItem value="cta">Call to Action</SelectItem>
+                      <SelectItem value="body_text">Body Text</SelectItem>
+                      <SelectItem value="location">Location</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="ai-prompt-template" className="text-xs">Custom Prompt Template</Label>
+                  <Textarea
+                    id="ai-prompt-template"
+                    value={selectedLayer.aiPromptTemplate || ""}
+                    onChange={(e) => updateLayer(selectedLayer.id, { aiPromptTemplate: e.target.value })}
+                    placeholder="Use {title}, {description}, {location} as placeholders"
+                    className="text-sm mt-1 min-h-[80px]"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Leave empty to use default prompt based on content type
+                  </p>
+                </div>
+              </>
+            )}
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="hr-visible" className="text-xs">Visible to HR</Label>
+              <Switch
+                id="hr-visible"
+                checked={selectedLayer.hrVisible !== false}
+                onCheckedChange={(checked) => updateLayer(selectedLayer.id, { hrVisible: checked })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="hr-editable" className="text-xs">HR Can Edit</Label>
+              <Switch
+                id="hr-editable"
+                checked={selectedLayer.hrEditable || false}
+                onCheckedChange={(checked) => updateLayer(selectedLayer.id, { hrEditable: checked })}
+              />
+            </div>
+          </div>
+        </div>
       </div>
       )}
     </div>

@@ -9,6 +9,7 @@ import Generate from "./pages/v2/Generate";
 import Preview from "./pages/v2/Preview";
 import Reviews from "./pages/v2/admin/Reviews";
 import ReviewStudio from "./pages/v2/admin/ReviewStudio";
+import BrandVoice from "./pages/v2/admin/BrandVoice";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -77,6 +78,14 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <ReviewStudio />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/v2/admin/brand-voice" 
+              element={
+                <ProtectedRoute>
+                  <BrandVoice />
                 </ProtectedRoute>
               } 
             />

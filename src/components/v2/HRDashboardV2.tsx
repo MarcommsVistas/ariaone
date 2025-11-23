@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthStore } from "@/store/useAuthStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Search, Plus, FileText, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Sparkles, Search, Plus, FileText, Clock, CheckCircle, AlertCircle, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,6 +40,7 @@ export const HRDashboardV2 = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { userRole } = useAuthStore();
 
   useEffect(() => {
     fetchData();
@@ -143,9 +145,17 @@ export const HRDashboardV2 = () => {
     <div className="container mx-auto p-6 space-y-8">
       {/* Header */}
       <div className="space-y-2">
-        <div className="flex items-center gap-3">
-          <Sparkles className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">AI-Powered Creative Studio</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Sparkles className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold">AI-Powered Creative Studio</h1>
+          </div>
+          {userRole === "marcomms" && (
+            <Button variant="outline" onClick={() => navigate("/v2/admin/brand-voice")}>
+              <Settings className="h-4 w-4 mr-2" />
+              Brand Voice Manager
+            </Button>
+          )}
         </div>
         <p className="text-muted-foreground">
           Generate job advertisements in seconds with AI assistance

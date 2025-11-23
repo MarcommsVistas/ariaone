@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { NavigationV2 } from "@/components/v2/NavigationV2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, ArrowLeft, Send, Loader2, CheckCircle } from "lucide-react";
+import { Sparkles, ArrowLeft, Send, Loader2, CheckCircle, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
 
@@ -24,6 +24,7 @@ export default function Preview() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [generationComplete, setGenerationComplete] = useState(false);
+  const [caption, setCaption] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -42,6 +43,7 @@ export default function Preview() {
 
       if (instanceError) throw instanceError;
       setInstance(instanceData);
+      setCaption(instanceData.caption_copy || "");
 
       // Check if AI generation already happened
       if (instanceData.ai_generated) {
@@ -96,6 +98,7 @@ export default function Preview() {
         description: `Generated content for ${data.updatedLayers || 0} layers`,
       });
 
+      setCaption(data.caption || "");
       setGenerationComplete(true);
       await fetchSlides();
     } catch (error) {
@@ -163,6 +166,11 @@ export default function Preview() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCopyCaption = () => {
+    navigator.clipboard.writeText(caption);
+    toast({ title: "Success", description: "Caption copied to clipboard" });
   };
 
   if (isGenerating || !generationComplete) {
@@ -298,6 +306,23 @@ export default function Preview() {
                   </div>
                 </CardContent>
               )}
+            </Card>
+          )}
+
+          {/* Caption */}
+          {caption && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Social Media Caption</CardTitle>
+                <CardDescription>AI-generated caption for your creative</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm whitespace-pre-wrap">{caption}</p>
+                <Button variant="outline" size="sm" onClick={handleCopyCaption}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Caption
+                </Button>
+              </CardContent>
             </Card>
           )}
 
