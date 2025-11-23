@@ -179,13 +179,15 @@ export default function ReviewStudio() {
 
       if (error) throw error;
 
-      // Update local state
-      setSlides(slides.map(slide => ({
-        ...slide,
-        layers: slide.layers.map(layer =>
-          layer.id === layerId ? { ...layer, ...updates } : layer
-        )
-      })));
+      // Update local state with functional update to avoid stale state
+      setSlides(prevSlides =>
+        prevSlides.map(slide => ({
+          ...slide,
+          layers: slide.layers.map(layer =>
+            layer.id === layerId ? { ...layer, ...updates } : layer
+          ),
+        }))
+      );
     } catch (error) {
       console.error("Error updating layer:", error);
       toast({

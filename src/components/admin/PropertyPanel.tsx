@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface PropertyPanelProps {
   selectedLayerOverride?: Layer | null;
@@ -25,6 +26,23 @@ export const PropertyPanel = ({
   
   const selectedLayer = selectedLayerOverride ?? storeSelectedLayer;
   const updateLayer = onUpdateLayerOverride ?? storeUpdateLayer;
+
+  // Buffered text state for ReviewStudio to prevent lag
+  const [localText, setLocalText] = useState(selectedLayer?.text || "");
+  const [lastLayerId, setLastLayerId] = useState<string | null>(null);
+
+  // Sync buffer when layer changes or when in AdminStudio mode
+  useEffect(() => {
+    if (!selectedLayer) return;
+
+    if (selectedLayer.id !== lastLayerId) {
+      setLocalText(selectedLayer.text || "");
+      setLastLayerId(selectedLayer.id);
+    } else if (!onUpdateLayerOverride) {
+      // In AdminStudio, stay fully controlled by store
+      setLocalText(selectedLayer.text || "");
+    }
+  }, [selectedLayer?.id, selectedLayer?.text, onUpdateLayerOverride, lastLayerId, selectedLayer]);
 
   // Default system fonts
   const systemFonts = [
@@ -191,12 +209,28 @@ export const PropertyPanel = ({
             <div className="space-y-3">
               <div>
                 <Label htmlFor="layer-text" className="text-xs">Content</Label>
-                <Input
-                  id="layer-text"
-                  value={selectedLayer.text || ''}
-                  onChange={(e) => updateLayer(selectedLayer.id, { text: e.target.value })}
-                  className="h-8 text-sm mt-1"
-                />
+                {onUpdateLayerOverride ? (
+                  // ReviewStudio: buffered, saves on blur
+                  <Textarea
+                    id="layer-text"
+                    value={localText}
+                    onChange={(e) => setLocalText(e.target.value)}
+                    onBlur={() => {
+                      if (localText !== (selectedLayer.text || "")) {
+                        updateLayer(selectedLayer.id, { text: localText });
+                      }
+                    }}
+                    className="mt-1 text-sm min-h-[80px]"
+                  />
+                ) : (
+                  // AdminStudio: original behavior, single-line input
+                  <Input
+                    id="layer-text"
+                    value={selectedLayer.text || ''}
+                    onChange={(e) => updateLayer(selectedLayer.id, { text: e.target.value })}
+                    className="h-8 text-sm mt-1"
+                  />
+                )}
               </div>
               
               <div>
