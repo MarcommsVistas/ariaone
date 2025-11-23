@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { NavigationV2 } from "@/components/v2/NavigationV2";
+import { InstanceThumbnail } from "@/components/v2/InstanceThumbnail";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -173,9 +174,10 @@ export default function Reviews() {
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {filteredReviews.map((review) => (
-                    <Card key={review.id} className="hover:shadow-lg transition-shadow">
-                      <CardHeader>
+            {filteredReviews.map((review) => (
+              <Card key={review.id} className="hover:shadow-lg transition-shadow overflow-hidden">
+                <InstanceThumbnail instanceId={review.instance_id} />
+                <CardHeader>
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
                             <CardTitle className="text-lg">
