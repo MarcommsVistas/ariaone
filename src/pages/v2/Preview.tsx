@@ -1,12 +1,19 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { NavigationV2 } from "@/components/v2/NavigationV2";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, ArrowLeft, Send, Loader2, CheckCircle, Copy, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { NavigationV2 } from "@/components/v2/NavigationV2";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
+import { useExport } from "@/hooks/useExport";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Download, DownloadCloud, Send, Copy, Sparkles, Minus, Plus, Loader2, AlertCircle } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Slide {
   id: string;
@@ -18,119 +25,96 @@ interface Slide {
 }
 
 export default function Preview() {
-  const { instanceId } = useParams<{ instanceId: string }>();
-  const [instance, setInstance] = useState<any>(null);
-  const [slides, setSlides] = useState<Slide[]>([]);
-  const [isLoadingInstance, setIsLoadingInstance] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [generationComplete, setGenerationComplete] = useState(false);
-  const [generationError, setGenerationError] = useState<string | null>(null);
-  const [caption, setCaption] = useState("");
+  const { instanceId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { exportAsImage, exportAllSlides, isExporting } = useExport();
+  
+  const [instance, setInstance] = useState<any>(null);
+  const [slides, setSlides] = useState<Slide[]>([]);
+  const [currentSlideIdx, setCurrentSlideIdx] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(80);
 
   useEffect(() => {
-    if (!instanceId) return;
-    fetchInstanceData();
+    if (instanceId) {
+      fetchInstanceData();
+    }
   }, [instanceId]);
 
   const fetchInstanceData = async () => {
     try {
-      console.log("Fetching instance data for:", instanceId);
-      
+      setLoading(true);
+
       const { data: instanceData, error: instanceError } = await supabase
         .from("template_instances")
         .select("*")
         .eq("id", instanceId)
         .single();
 
-      if (instanceError) {
-        console.error("Instance fetch error:", instanceError);
-        throw instanceError;
-      }
+      if (instanceError) throw instanceError;
 
-      if (!instanceData) {
-        throw new Error("Instance not found");
-      }
-
-      console.log("Instance data loaded:", instanceData);
       setInstance(instanceData);
-      setCaption(instanceData.caption_copy || "");
 
       // Check if AI generation already happened
       if (instanceData.ai_generated) {
-        console.log("AI already generated, loading slides...");
-        setGenerationComplete(true);
-        await fetchSlides();
+        const slidesData = await fetchSlides();
+        setSlides(slidesData);
       } else {
-        console.log("AI not generated yet, triggering generation...");
         // Start AI generation
         await generateContent();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching instance:", error);
-      
-      let errorMessage = "Failed to load creative data";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
       toast({
         title: "Error",
-        description: errorMessage,
+        description: "Failed to load creative preview",
         variant: "destructive",
       });
-      
-      setGenerationError(errorMessage);
+      setGenerationError(error.message);
     } finally {
-      setIsLoadingInstance(false);
+      setLoading(false);
     }
   };
 
-  const fetchSlides = async () => {
-    try {
-      const { data: slidesData, error: slidesError } = await supabase
-        .from("slides")
-        .select("*, layers(*)")
-        .eq("instance_id", instanceId)
-        .order("order_index", { ascending: true });
+  const fetchSlides = async (): Promise<Slide[]> => {
+    const { data: slidesData, error } = await supabase
+      .from("slides")
+      .select("*, layers(*)")
+      .eq("instance_id", instanceId)
+      .order("order_index", { ascending: true });
 
-      if (slidesError) throw slidesError;
-      
-      // Map database properties to component interface
-      const mappedSlides = slidesData?.map(slide => ({
-        ...slide,
-        layers: slide.layers.map((layer: any) => ({
-          id: layer.id,
-          name: layer.name,
-          type: layer.type,
-          text: layer.text_content,
-          src: layer.image_src,
-          x: layer.x,
-          y: layer.y,
-          width: layer.width,
-          height: layer.height,
-          opacity: layer.opacity,
-          rotation: layer.rotation,
-          visible: layer.visible,
-          locked: layer.locked,
-          zIndex: layer.z_index,
-          fontFamily: layer.font_family,
-          fontSize: layer.font_size,
-          fontWeight: layer.font_weight,
-          color: layer.color,
-          align: layer.text_align,
-          lineHeight: layer.line_height,
-          letterSpacing: layer.letter_spacing,
-          textTransform: layer.text_transform
-        }))
-      })) || [];
-      
-      setSlides(mappedSlides);
-    } catch (error) {
-      console.error("Error fetching slides:", error);
-    }
+    if (error) throw error;
+
+    return slidesData?.map(slide => ({
+      ...slide,
+      layers: slide.layers.map((layer: any) => ({
+        id: layer.id,
+        name: layer.name,
+        type: layer.type,
+        text: layer.text_content,
+        src: layer.image_src,
+        x: layer.x,
+        y: layer.y,
+        width: layer.width,
+        height: layer.height,
+        opacity: layer.opacity,
+        rotation: layer.rotation,
+        visible: layer.visible,
+        locked: layer.locked,
+        zIndex: layer.z_index,
+        fontFamily: layer.font_family,
+        fontSize: layer.font_size,
+        fontWeight: layer.font_weight,
+        color: layer.color,
+        align: layer.text_align,
+        lineHeight: layer.line_height,
+        letterSpacing: layer.letter_spacing,
+        textTransform: layer.text_transform,
+      }))
+    })) || [];
   };
 
   const generateContent = async () => {
@@ -138,78 +122,27 @@ export default function Preview() {
     setGenerationError(null);
     
     try {
-      console.log("Invoking generate-creative function for instance:", instanceId);
-      
       const { data, error } = await supabase.functions.invoke("generate-creative", {
         body: { instanceId },
       });
 
-      console.log("Generate-creative response:", { data, error });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      if (error) {
-        console.error("Edge function error:", error);
-        const errorMessage = error.message || "Failed to connect to AI service";
-        throw { message: errorMessage, code: "EDGE_FUNCTION_ERROR" };
-      }
-
-      if (data?.error) {
-        console.error("Edge function returned error:", data);
-        throw { 
-          message: data.error,
-          code: data.errorCode || "AI_GENERATION_ERROR",
-          details: data.details
-        };
-      }
-
-      console.log("AI generation completed successfully");
-      
       toast({
         title: "AI Generation Complete",
         description: `Generated content for ${data.updatedLayers || 0} layers`,
       });
 
-      setCaption(data.caption || "");
-      setGenerationComplete(true);
-      await fetchSlides();
-    } catch (error) {
+      const slidesData = await fetchSlides();
+      setSlides(slidesData);
+    } catch (error: any) {
       console.error("Error generating content:", error);
-      
-      let errorMessage = "Failed to generate AI content. Please try again.";
-      let errorTitle = "AI Generation Failed";
-      
-      if (typeof error === 'object' && error !== null) {
-        const err = error as any;
-        
-        // Handle specific error codes
-        if (err.code === 'RATE_LIMIT_EXCEEDED') {
-          errorTitle = "Rate Limit Exceeded";
-          errorMessage = err.message || "Too many AI requests. Please wait a moment and try again.";
-        } else if (err.code === 'PAYMENT_REQUIRED') {
-          errorTitle = "AI Credits Depleted";
-          errorMessage = err.message || "AI service credits have run out. Please contact your administrator to add credits.";
-        } else if (err.code === 'NETWORK_ERROR') {
-          errorTitle = "Connection Error";
-          errorMessage = err.message || "Unable to connect to AI service. Please check your internet connection.";
-        } else if (err.code === 'TIMEOUT_ERROR') {
-          errorTitle = "Request Timeout";
-          errorMessage = err.message || "AI generation took too long. Please try again.";
-        } else if (err.message) {
-          errorMessage = err.message;
-        }
-        
-        // Log detailed error info for debugging
-        if (err.details) {
-          console.error("Error details:", err.details);
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
-      setGenerationError(errorMessage);
+      setGenerationError(error.message || "Failed to generate AI content");
       
       toast({
-        title: errorTitle,
-        description: errorMessage,
+        title: "Generation Failed",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -217,37 +150,63 @@ export default function Preview() {
     }
   };
 
-  const handleSubmitForReview = async () => {
-    setIsSubmitting(true);
+  const handleExportCurrent = () => {
+    if (slides.length === 0) return;
+    exportAsImage('preview-canvas', slides[currentSlideIdx].name, 'jpeg', 0.95);
+  };
 
+  const handleExportAll = async () => {
+    if (!instance || slides.length === 0) return;
+
+    await exportAllSlides(
+      slides.map(s => ({ id: s.id, name: s.name })),
+      async (slideId) => {
+        const slideIndex = slides.findIndex(s => s.id === slideId);
+        setCurrentSlideIdx(slideIndex);
+      },
+      'preview-canvas',
+      instance.name,
+      'jpeg',
+      0.95
+    );
+  };
+
+  const handleSubmitForReview = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to submit for review",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      // Create review entry
-      const { error: reviewError } = await supabase
+      const { data: review, error: reviewError } = await supabase
         .from("creative_reviews")
         .insert({
-          instance_id: instanceId,
+          instance_id: instanceId!,
           submitted_by: user.id,
           status: "pending",
-        });
+        })
+        .select()
+        .single();
 
       if (reviewError) throw reviewError;
 
-      // Create notification for marcomms team
-      const { data: marcommsUsers, error: marcommsError } = await supabase
+      const { data: marcommsUsers, error: usersError } = await supabase
         .from("user_roles")
         .select("user_id")
         .eq("role", "marcomms");
 
-      if (!marcommsError && marcommsUsers) {
-        const notifications = marcommsUsers.map(u => ({
-          user_id: u.user_id,
-          type: "review_submitted",
-          title: "New Creative Submitted",
-          message: `${instance?.name || 'A new creative'} has been submitted for review`,
-          data: { instanceId },
+      if (!usersError && marcommsUsers) {
+        const notifications = marcommsUsers.map((user) => ({
+          user_id: user.user_id,
+          type: "review_submission",
+          title: "New Creative Review",
+          message: `${instance?.name || "A new creative"} has been submitted for review`,
+          data: { reviewId: review.id, instanceId: instanceId },
         }));
 
         await supabase.from("notifications").insert(notifications);
@@ -255,44 +214,54 @@ export default function Preview() {
 
       toast({
         title: "Submitted for Review",
-        description: "Your creative has been sent to the admin team for review",
+        description: "Your creative has been sent to the marcomms team",
       });
 
       navigate("/v2");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting for review:", error);
-      let errorMessage = "Failed to submit for review. Please try again.";
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null) {
-        const err = error as any;
-        if (err.message?.includes('row-level security')) {
-          errorMessage = "Permission denied. Please contact your administrator.";
-        } else if (err.message) {
-          errorMessage = err.message;
-        }
-      }
-      
       toast({
         title: "Submission Failed",
-        description: errorMessage,
+        description: error.message,
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleCopyCaption = () => {
-    navigator.clipboard.writeText(caption);
-    toast({ title: "Success", description: "Caption copied to clipboard" });
+    if (instance?.caption_copy) {
+      navigator.clipboard.writeText(instance.caption_copy);
+      toast({
+        title: "Copied",
+        description: "Caption copied to clipboard",
+      });
+    }
   };
 
-  // Show loading state while loading instance or generating
-  if (isLoadingInstance || (isGenerating && !generationError) || (!generationComplete && !generationError && !instance?.ai_generated)) {
+  const currentSlide = slides[currentSlideIdx];
+
+  // Calculate scale
+  const containerPadding = 80;
+  const availableWidth = window.innerWidth - 400 - containerPadding;
+  const availableHeight = window.innerHeight - 64 - containerPadding;
+  const baseScale = currentSlide
+    ? Math.min(availableWidth / currentSlide.width, availableHeight / currentSlide.height, 1)
+    : 0.5;
+
+  const minZoom = 25;
+  const maxZoom = 200;
+  const effectiveScale = baseScale * (zoom / 100);
+
+  const handleZoomIn = () => setZoom((z) => Math.min(maxZoom, z + 10));
+  const handleZoomOut = () => setZoom((z) => Math.max(minZoom, z - 10));
+  const handleZoomReset = () => setZoom(100);
+
+  const jobDesc = instance?.job_description as any;
+
+  // Loading state during initial load or generation
+  if (loading || isGenerating) {
     return (
-      <div className="h-screen flex flex-col bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <NavigationV2 />
         <div className="flex-1 flex items-center justify-center">
           <Card className="w-full max-w-md">
@@ -302,37 +271,21 @@ export default function Preview() {
                   <Sparkles className="h-6 w-6 text-primary animate-pulse" />
                 </div>
                 <CardTitle>
-                  {isLoadingInstance ? "Loading Creative..." : "Generating Creative Content"}
+                  {loading ? "Loading Creative..." : "Generating Creative Content"}
                 </CardTitle>
               </div>
-              <CardDescription>
-                {isLoadingInstance 
-                  ? "Please wait while we load your creative data..."
-                  : "Our AI is crafting professional content based on your job description..."}
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>Analyzing job description</span>
+                  <span>Processing job description</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>Generating headlines</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>Creating descriptions</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>Finalizing content</span>
+                  <span>Generating content</span>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                This usually takes 10-20 seconds...
-              </p>
             </CardContent>
           </Card>
         </div>
@@ -340,21 +293,19 @@ export default function Preview() {
     );
   }
 
-  // Show error state if generation failed
+  // Error state
   if (generationError) {
     return (
-      <div className="h-screen flex flex-col bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <NavigationV2 />
-        <div className="flex-1 flex items-center justify-center p-6">
-          <Card className="w-full max-w-md">
+        <div className="flex-1 flex items-center justify-center">
+          <Card className="max-w-md">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center gap-4 text-center">
-                <div className="rounded-full bg-destructive/10 p-3">
-                  <AlertCircle className="h-6 w-6 text-destructive" />
-                </div>
+                <AlertCircle className="h-12 w-12 text-destructive" />
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Generation Failed</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{generationError}</p>
+                  <p className="text-sm text-muted-foreground">{generationError}</p>
                 </div>
                 <div className="flex gap-3">
                   <Button variant="outline" onClick={() => navigate("/v2")}>
@@ -375,144 +326,241 @@ export default function Preview() {
     );
   }
 
-  return (
-    <div className="h-screen flex flex-col bg-background">
-      <NavigationV2 />
-      <div className="flex-1 overflow-auto">
-        <div className="container mx-auto p-6 max-w-7xl space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/v2")}
-                className="gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back
+  // No slides available
+  if (!instance || slides.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <NavigationV2 />
+        <div className="flex-1 flex items-center justify-center">
+          <Card className="max-w-md">
+            <CardHeader>
+              <CardTitle>No Preview Available</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                This creative doesn't have any slides yet.
+              </p>
+              <Button onClick={() => navigate("/v2")}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
               </Button>
-            </div>
-            <Button
-              onClick={handleSubmitForReview}
-              disabled={isSubmitting}
-              className="gap-2"
-              size="lg"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" />
-                  Submit for Review
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* Success Banner */}
-          <Card className="border-green-500/20 bg-green-500/5">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-3">
-                <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                <div className="space-y-1">
-                  <p className="font-medium">AI Generation Complete!</p>
-                  <p className="text-sm text-muted-foreground">
-                    Review the generated content below. When you're satisfied, submit it for admin approval.
-                  </p>
-                </div>
-              </div>
             </CardContent>
           </Card>
+        </div>
+      </div>
+    );
+  }
 
-          {/* Instance Info */}
-          {instance && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{instance.name}</CardTitle>
-                <CardDescription className="flex items-center gap-2">
-                  {instance.brand && (
-                    <span className="px-3 py-1 rounded-full bg-muted text-sm">
-                      {instance.brand}
-                    </span>
-                  )}
-                  {instance.category && (
-                    <span className="px-3 py-1 rounded-full bg-muted text-sm">
-                      {instance.category}
-                    </span>
-                  )}
-                </CardDescription>
-              </CardHeader>
-              {instance.job_description && (
-                <CardContent className="space-y-3">
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <NavigationV2 />
+      
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar */}
+        <div className="w-[400px] bg-panel border-r border-border overflow-auto">
+          <div className="sticky top-0 z-10 bg-panel/95 backdrop-blur-sm border-b border-border">
+            <div className="h-14 flex items-center justify-between px-5">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <h3 className="font-semibold text-foreground">{instance.name}</h3>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* Job Details */}
+            {jobDesc && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Job Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
                   <div>
-                    <p className="text-sm font-medium mb-1">Job Title</p>
-                    <p className="text-sm text-muted-foreground">
-                      {instance.job_description.title}
-                    </p>
+                    <p className="text-muted-foreground text-xs mb-1">Position</p>
+                    <p className="font-medium">{jobDesc.title}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium mb-1">Location</p>
-                    <p className="text-sm text-muted-foreground">
-                      {instance.job_description.location}
-                    </p>
+                    <p className="text-muted-foreground text-xs mb-1">Location</p>
+                    <p>{jobDesc.location}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-1">Description</p>
+                    <p className="text-muted-foreground">{jobDesc.description}</p>
                   </div>
                 </CardContent>
-              )}
-            </Card>
-          )}
-
-          {/* Caption */}
-          {caption && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Social Media Caption</CardTitle>
-                <CardDescription>AI-generated caption for your creative</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm whitespace-pre-wrap">{caption}</p>
-                <Button variant="outline" size="sm" onClick={handleCopyCaption}>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy Caption
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Slides Preview */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold">Generated Creative</h2>
-            {slides.length === 0 ? (
-              <Card className="p-12">
-                <div className="text-center text-muted-foreground">
-                  No slides found
-                </div>
               </Card>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {slides.map((slide, index) => (
-                  <Card key={slide.id} className="overflow-hidden">
-                    <CardHeader>
-                      <CardTitle className="text-lg">
-                        Slide {index + 1}: {slide.name}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="bg-muted/30 rounded-lg p-4">
-                        <SlideRenderer
-                          slide={slide}
-                          interactive={false}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+            )}
+
+            {/* Caption */}
+            {instance.caption_copy && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center justify-between">
+                    Social Caption
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCopyCaption}
+                      className="h-8 px-2"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {instance.caption_copy}
+                  </p>
+                </CardContent>
+              </Card>
             )}
           </div>
+        </div>
+
+        {/* Main Canvas Area */}
+        <div className="flex-1 flex flex-col">
+          {/* Top Toolbar */}
+          <div className="h-14 border-b border-border flex items-center justify-between px-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/v2")}
+              className="gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+
+            <div className="flex items-center gap-2">
+              {slides.length > 1 ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="outline" disabled={isExporting}>
+                      <Download className="w-4 h-4 mr-2" />
+                      {isExporting ? "Exporting..." : "Export"}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleExportCurrent}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Export Current Slide
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportAll}>
+                      <DownloadCloud className="w-4 h-4 mr-2" />
+                      Export All Slides (ZIP)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleExportCurrent}
+                  disabled={isExporting}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isExporting ? "Exporting..." : "Export"}
+                </Button>
+              )}
+
+              <Button size="sm" onClick={handleSubmitForReview}>
+                <Send className="w-4 h-4 mr-2" />
+                Submit for Review
+              </Button>
+            </div>
+          </div>
+
+          {/* Canvas */}
+          <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto p-8 relative">
+            {currentSlide && (
+              <div
+                className="relative"
+                style={{
+                  width: currentSlide.width * baseScale,
+                  height: currentSlide.height * baseScale,
+                }}
+              >
+                <div
+                  id="preview-canvas"
+                  style={{
+                    transform: `scale(${effectiveScale})`,
+                    transformOrigin: "center center",
+                  }}
+                >
+                  <SlideRenderer slide={currentSlide} interactive={false} />
+                </div>
+              </div>
+            )}
+
+            {/* Zoom Controls */}
+            <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-panel/95 border border-border rounded-full px-3 py-1.5 shadow-lg backdrop-blur-sm z-50">
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <button
+                type="button"
+                onClick={handleZoomReset}
+                className="text-xs font-medium text-muted-foreground min-w-[52px] text-center hover:text-foreground transition-colors"
+              >
+                {Math.round(zoom)}%
+              </button>
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+
+          {/* Slide Navigation Carousel */}
+          {slides.length > 1 && (
+            <div className="border-t border-border bg-panel p-4">
+              <div className="flex items-center gap-4 justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentSlideIdx((i) => Math.max(0, i - 1))}
+                  disabled={currentSlideIdx === 0}
+                >
+                  Previous
+                </Button>
+                
+                <div className="flex gap-2 overflow-x-auto max-w-2xl">
+                  {slides.map((slide, idx) => (
+                    <button
+                      key={slide.id}
+                      onClick={() => setCurrentSlideIdx(idx)}
+                      className={`
+                        relative aspect-[16/10] w-24 rounded border-2 transition-all overflow-hidden
+                        ${idx === currentSlideIdx 
+                          ? 'border-primary shadow-lg' 
+                          : 'border-border hover:border-primary/50'}
+                      `}
+                    >
+                      <div className="absolute inset-0 bg-muted/30 flex items-center justify-center">
+                        <span className="text-xs font-medium">{idx + 1}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentSlideIdx((i) => Math.min(slides.length - 1, i + 1))}
+                  disabled={currentSlideIdx === slides.length - 1}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

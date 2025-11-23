@@ -194,15 +194,40 @@ serve(async (req) => {
       for (const layer of slide.layers) {
         if (!layer.ai_editable) continue;
 
-        // Build AI prompt based on content type and job description
-        let prompt = '';
         const contentType = layer.ai_content_type || 'text';
         
+        // For job title headlines, use the actual title directly
+        if (contentType === 'headline' && 
+            (layer.name.toLowerCase().includes('position') || 
+             layer.name.toLowerCase().includes('job title') ||
+             layer.name.toLowerCase().includes('job_title'))) {
+          const { error: updateError } = await supabase
+            .from('layers')
+            .update({ text_content: jobDesc.title })
+            .eq('id', layer.id);
+          
+          if (!updateError) {
+            updatedLayers.push({ layerId: layer.id, content: jobDesc.title });
+          }
+          continue; // Skip AI generation for this layer
+        }
+
+        // Build AI prompt based on content type and job description
+        let prompt = '';
+        
         if (layer.ai_prompt_template) {
-          prompt = layer.ai_prompt_template
-            .replace('{title}', jobDesc.title)
-            .replace('{description}', jobDesc.description)
-            .replace('{location}', jobDesc.location);
+          // Check if template has placeholders
+          if (layer.ai_prompt_template.includes('{title}') || 
+              layer.ai_prompt_template.includes('{description}') || 
+              layer.ai_prompt_template.includes('{location}')) {
+            prompt = layer.ai_prompt_template
+              .replace('{title}', jobDesc.title)
+              .replace('{description}', jobDesc.description)
+              .replace('{location}', jobDesc.location);
+          } else {
+            // Template doesn't have placeholders - use it as context
+            prompt = `Based on this context: "${layer.ai_prompt_template}"\n\nGenerate similar content for: ${jobDesc.title} in ${jobDesc.location}`;
+          }
         } else {
           // Default prompts based on content type
           switch (contentType) {
