@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, XCircle, MessageSquare, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, CheckCircle, XCircle, MessageSquare, Loader2, Minus, Plus, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
 import {
@@ -34,11 +35,14 @@ export default function ReviewStudio() {
   const [instance, setInstance] = useState<any>(null);
   const [review, setReview] = useState<any>(null);
   const [slides, setSlides] = useState<Slide[]>([]);
+  const [currentSlideIdx, setCurrentSlideIdx] = useState(0);
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [reviewNotes, setReviewNotes] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showChangesDialog, setShowChangesDialog] = useState(false);
+  const [zoom, setZoom] = useState(80);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -121,6 +125,37 @@ export default function ReviewStudio() {
       navigate("/v2/admin/reviews");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const updateLayerText = async (layerId: string, newText: string) => {
+    try {
+      const { error } = await supabase
+        .from("layers")
+        .update({ text_content: newText })
+        .eq("id", layerId);
+
+      if (error) throw error;
+
+      // Update local state
+      setSlides(slides.map(slide => ({
+        ...slide,
+        layers: slide.layers.map(layer =>
+          layer.id === layerId ? { ...layer, text: newText } : layer
+        )
+      })));
+
+      toast({
+        title: "Layer Updated",
+        description: "Text content has been saved",
+      });
+    } catch (error) {
+      console.error("Error updating layer:", error);
+      toast({
+        title: "Update Failed",
+        description: "Could not save changes",
+        variant: "destructive",
+      });
     }
   };
 
@@ -306,6 +341,15 @@ export default function ReviewStudio() {
     }
   };
 
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 10, 150));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 10, 30));
+  const handleZoomReset = () => setZoom(80);
+
+  const currentSlide = slides[currentSlideIdx];
+  const selectedLayer = currentSlide?.layers.find(l => l.id === selectedLayerId);
+  const canGoPrevious = currentSlideIdx > 0;
+  const canGoNext = currentSlideIdx < slides.length - 1;
+
   if (isLoading) {
     return (
       <div className="h-screen flex flex-col bg-background">
@@ -320,10 +364,11 @@ export default function ReviewStudio() {
   return (
     <div className="h-screen flex flex-col bg-background">
       <NavigationV2 />
-      <div className="flex-1 overflow-auto">
-        <div className="container mx-auto p-6 max-w-7xl space-y-6">
-          {/* Header */}
-          <div className="flex items-center gap-4">
+      
+      {/* Top Toolbar */}
+      <div className="border-b bg-panel">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
@@ -333,144 +378,285 @@ export default function ReviewStudio() {
               <ArrowLeft className="h-4 w-4" />
               Back to Queue
             </Button>
+            
+            {instance && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-medium">{instance.name}</span>
+                {instance.brand && (
+                  <span className="px-2 py-1 rounded-full bg-muted text-xs">
+                    {instance.brand}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Instance Info */}
-          {instance && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{instance.name}</CardTitle>
-                <CardDescription className="flex items-center gap-2">
-                  {instance.brand && (
-                    <span className="px-3 py-1 rounded-full bg-muted text-sm">
-                      {instance.brand}
-                    </span>
-                  )}
-                  {instance.category && (
-                    <span className="px-3 py-1 rounded-full bg-muted text-sm">
-                      {instance.category}
-                    </span>
-                  )}
-                </CardDescription>
-              </CardHeader>
-              {instance.job_description && (
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-sm font-medium mb-1">Job Title</p>
-                    <p className="text-sm text-muted-foreground">
-                      {instance.job_description.title}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium mb-1">Location</p>
-                    <p className="text-sm text-muted-foreground">
-                      {instance.job_description.location}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium mb-1">Status</p>
-                    <p className="text-sm text-muted-foreground capitalize">
-                      {review?.status?.replace('_', ' ') || 'Pending'}
-                    </p>
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-          )}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleZoomOut}
+              disabled={zoom <= 30}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleZoomReset}
+              className="min-w-[70px]"
+            >
+              {zoom}%
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleZoomIn}
+              disabled={zoom >= 150}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Slides Preview */}
-            <div className="lg:col-span-2 space-y-4">
-              <h2 className="text-2xl font-semibold">Creative Preview</h2>
-              {slides.length === 0 ? (
-                <Card className="p-12">
-                  <div className="text-center text-muted-foreground">
-                    No slides found
+      <div className="flex-1 flex overflow-hidden">
+        {/* Main Canvas Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Canvas */}
+          <div className="flex-1 bg-muted/30 overflow-auto flex items-center justify-center p-8">
+            {currentSlide ? (
+              <div style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'center' }}>
+                <SlideRenderer
+                  slide={currentSlide}
+                  interactive={true}
+                  onLayerClick={(layerId) => setSelectedLayerId(layerId)}
+                />
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground">
+                No slides available
+              </div>
+            )}
+          </div>
+
+          {/* Slide Navigation Carousel */}
+          {slides.length > 0 && (
+            <div className="bg-panel border-t">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentSlideIdx(prev => Math.max(0, prev - 1))}
+                  disabled={!canGoPrevious}
+                  className="shrink-0"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+
+                <div className="flex-1 overflow-x-auto">
+                  <div className="flex gap-2 min-w-min">
+                    {slides.map((slide, index) => {
+                      const isActive = index === currentSlideIdx;
+                      const thumbnailScale = 60 / Math.max(slide.width, slide.height);
+
+                      return (
+                        <button
+                          key={slide.id}
+                          onClick={() => setCurrentSlideIdx(index)}
+                          className={`
+                            relative shrink-0 rounded-lg overflow-hidden transition-all cursor-pointer
+                            ${isActive 
+                              ? 'ring-2 ring-primary shadow-lg' 
+                              : 'ring-1 ring-border hover:ring-primary/50'
+                            }
+                          `}
+                          style={{
+                            width: slide.width * thumbnailScale,
+                            height: slide.height * thumbnailScale,
+                          }}
+                        >
+                          <div 
+                            className="absolute inset-0 bg-white"
+                            style={{ transform: `scale(${thumbnailScale})`, transformOrigin: 'top left' }}
+                          >
+                            <SlideRenderer slide={slide} interactive={false} />
+                          </div>
+                          
+                          <div className={`
+                            absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[10px] font-medium
+                            ${isActive 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'bg-background/80 text-foreground'
+                            }
+                          `}>
+                            {index + 1}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {slides.map((slide, index) => (
-                    <Card key={slide.id} className="overflow-hidden">
-                      <CardHeader>
-                        <CardTitle className="text-lg">
-                          Slide {index + 1}: {slide.name}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="bg-muted/30 rounded-lg p-4">
-                          <SlideRenderer slide={slide} interactive={false} />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
                 </div>
-              )}
-            </div>
 
-            {/* Review Actions */}
-            <div className="space-y-4">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentSlideIdx(prev => Math.min(slides.length - 1, prev + 1))}
+                  disabled={!canGoNext}
+                  className="shrink-0"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+
+                <div className="text-xs text-muted-foreground shrink-0 min-w-[80px] text-right">
+                  Slide {currentSlideIdx + 1} of {slides.length}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Sidebar - Properties & Review Actions */}
+        <div className="w-80 border-l bg-panel overflow-auto">
+          <div className="p-4 space-y-4">
+            {/* Layer Properties */}
+            {selectedLayer && selectedLayer.type === 'text' && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Review Actions</CardTitle>
-                  <CardDescription>
-                    Approve, request changes, or reject this submission
-                  </CardDescription>
+                  <CardTitle className="text-sm">Edit Text Layer</CardTitle>
+                  <CardDescription className="text-xs">{selectedLayer.name}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3">
                   <div className="space-y-2">
-                    <Label htmlFor="notes">Review Notes (Optional)</Label>
+                    <Label htmlFor="layer-text" className="text-xs">Text Content</Label>
                     <Textarea
-                      id="notes"
-                      placeholder="Add feedback or notes..."
-                      value={reviewNotes}
-                      onChange={(e) => setReviewNotes(e.target.value)}
-                      rows={6}
+                      id="layer-text"
+                      value={selectedLayer.text || ''}
+                      onChange={(e) => {
+                        const newText = e.target.value;
+                        setSlides(slides.map(slide => ({
+                          ...slide,
+                          layers: slide.layers.map(layer =>
+                            layer.id === selectedLayerId ? { ...layer, text: newText } : layer
+                          )
+                        })));
+                      }}
+                      onBlur={() => updateLayerText(selectedLayerId!, selectedLayer.text || '')}
+                      rows={4}
+                      className="text-sm"
                     />
                   </div>
+                  
+                  <Button
+                    onClick={() => setSelectedLayerId(null)}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    Done Editing
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
-                  <div className="space-y-2">
-                    <Button
-                      onClick={handleApprove}
-                      disabled={!!actionLoading}
-                      className="w-full gap-2"
-                    >
-                      {actionLoading === "approve" ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Approving...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="h-4 w-4" />
-                          Approve
-                        </>
-                      )}
-                    </Button>
-
-                    <Button
-                      onClick={() => setShowChangesDialog(true)}
-                      disabled={!!actionLoading}
-                      variant="outline"
-                      className="w-full gap-2"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                      Request Changes
-                    </Button>
-
-                    <Button
-                      onClick={() => setShowRejectDialog(true)}
-                      disabled={!!actionLoading}
-                      variant="destructive"
-                      className="w-full gap-2"
-                    >
-                      <XCircle className="h-4 w-4" />
-                      Reject
-                    </Button>
+            {/* Instance Info */}
+            {instance && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Submission Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-xs">
+                  {instance.job_description && (
+                    <>
+                      <div>
+                        <span className="font-medium">Job Title: </span>
+                        <span className="text-muted-foreground">
+                          {instance.job_description.title}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Location: </span>
+                        <span className="text-muted-foreground">
+                          {instance.job_description.location}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <span className="font-medium">Status: </span>
+                    <span className="text-muted-foreground capitalize">
+                      {review?.status?.replace('_', ' ') || 'Pending'}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            )}
+
+            {/* Review Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Review Actions</CardTitle>
+                <CardDescription className="text-xs">
+                  Approve, request changes, or reject
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="text-xs">Review Notes (Optional)</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Add feedback or notes..."
+                    value={reviewNotes}
+                    onChange={(e) => setReviewNotes(e.target.value)}
+                    rows={4}
+                    className="text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleApprove}
+                    disabled={!!actionLoading}
+                    className="w-full gap-2"
+                    size="sm"
+                  >
+                    {actionLoading === "approve" ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Approving...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4" />
+                        Approve
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    onClick={() => setShowChangesDialog(true)}
+                    disabled={!!actionLoading}
+                    variant="outline"
+                    className="w-full gap-2"
+                    size="sm"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Request Changes
+                  </Button>
+
+                  <Button
+                    onClick={() => setShowRejectDialog(true)}
+                    disabled={!!actionLoading}
+                    variant="destructive"
+                    className="w-full gap-2"
+                    size="sm"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Reject
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
