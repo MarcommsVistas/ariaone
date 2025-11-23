@@ -16,19 +16,31 @@ export type Database = {
     Tables: {
       brands: {
         Row: {
+          ai_enabled: boolean | null
+          ai_instructions: Json | null
           created_at: string | null
           id: string
           name: string
+          tov_document_url: string | null
+          tov_guidelines: string | null
         }
         Insert: {
+          ai_enabled?: boolean | null
+          ai_instructions?: Json | null
           created_at?: string | null
           id?: string
           name: string
+          tov_document_url?: string | null
+          tov_guidelines?: string | null
         }
         Update: {
+          ai_enabled?: boolean | null
+          ai_instructions?: Json | null
           created_at?: string | null
           id?: string
           name?: string
+          tov_document_url?: string | null
+          tov_guidelines?: string | null
         }
         Relationships: []
       }
@@ -52,6 +64,56 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      creative_reviews: {
+        Row: {
+          change_requests: Json | null
+          created_at: string
+          id: string
+          instance_id: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string
+          submitted_by: string
+          updated_at: string
+        }
+        Insert: {
+          change_requests?: Json | null
+          created_at?: string
+          id?: string
+          instance_id: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          submitted_by: string
+          updated_at?: string
+        }
+        Update: {
+          change_requests?: Json | null
+          created_at?: string
+          id?: string
+          instance_id?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          submitted_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creative_reviews_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "template_instances"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       custom_fonts: {
         Row: {
@@ -94,12 +156,17 @@ export type Database = {
       }
       layers: {
         Row: {
+          ai_content_type: string | null
+          ai_editable: boolean | null
+          ai_prompt_template: string | null
           color: string | null
           created_at: string
           font_family: string | null
           font_size: number | null
           font_weight: number | null
           height: number
+          hr_editable: boolean | null
+          hr_visible: boolean | null
           id: string
           image_src: string | null
           letter_spacing: number | null
@@ -121,12 +188,17 @@ export type Database = {
           z_index: number
         }
         Insert: {
+          ai_content_type?: string | null
+          ai_editable?: boolean | null
+          ai_prompt_template?: string | null
           color?: string | null
           created_at?: string
           font_family?: string | null
           font_size?: number | null
           font_weight?: number | null
           height?: number
+          hr_editable?: boolean | null
+          hr_visible?: boolean | null
           id?: string
           image_src?: string | null
           letter_spacing?: number | null
@@ -148,12 +220,17 @@ export type Database = {
           z_index?: number
         }
         Update: {
+          ai_content_type?: string | null
+          ai_editable?: boolean | null
+          ai_prompt_template?: string | null
           color?: string | null
           created_at?: string
           font_family?: string | null
           font_size?: number | null
           font_weight?: number | null
           height?: number
+          hr_editable?: boolean | null
+          hr_visible?: boolean | null
           id?: string
           image_src?: string | null
           letter_spacing?: number | null
@@ -183,6 +260,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message: string
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       psd_uploads: {
         Row: {
@@ -272,33 +382,45 @@ export type Database = {
       }
       template_instances: {
         Row: {
+          ai_generated: boolean | null
           brand: string | null
+          can_download: boolean | null
+          caption_copy: string | null
           category: string | null
           created_at: string
           created_by: string
           id: string
+          job_description: Json | null
           name: string
           original_template_id: string
           updated_at: string
           workflow_version: string | null
         }
         Insert: {
+          ai_generated?: boolean | null
           brand?: string | null
+          can_download?: boolean | null
+          caption_copy?: string | null
           category?: string | null
           created_at?: string
           created_by: string
           id?: string
+          job_description?: Json | null
           name: string
           original_template_id: string
           updated_at?: string
           workflow_version?: string | null
         }
         Update: {
+          ai_generated?: boolean | null
           brand?: string | null
+          can_download?: boolean | null
+          caption_copy?: string | null
           category?: string | null
           created_at?: string
           created_by?: string
           id?: string
+          job_description?: Json | null
           name?: string
           original_template_id?: string
           updated_at?: string
