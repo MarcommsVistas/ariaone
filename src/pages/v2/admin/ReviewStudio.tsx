@@ -595,7 +595,7 @@ export default function ReviewStudio() {
           {/* Slide Carousel */}
           {slides.length > 0 && (
             <div className="bg-panel border-b p-4">
-              <div className="flex gap-3 overflow-x-auto">
+              <div className="flex gap-3 overflow-x-auto pb-2">
                 {slides.map((slide, index) => {
                   const isActive = index === currentSlideIdx;
                   const thumbnailScale = 80 / Math.max(slide.width, slide.height);
@@ -608,7 +608,7 @@ export default function ReviewStudio() {
                         setSelectedLayerId(null);
                       }}
                       className={`
-                        relative shrink-0 rounded-lg overflow-hidden transition-all cursor-pointer
+                        relative shrink-0 rounded-lg overflow-hidden transition-all cursor-pointer bg-white
                         ${isActive 
                           ? 'ring-2 ring-primary shadow-lg' 
                           : 'ring-1 ring-border hover:ring-primary/50'
@@ -620,8 +620,13 @@ export default function ReviewStudio() {
                       }}
                     >
                       <div 
-                        className="absolute inset-0 bg-white"
-                        style={{ transform: `scale(${thumbnailScale})`, transformOrigin: 'top left' }}
+                        className="w-full h-full"
+                        style={{ 
+                          transform: `scale(${thumbnailScale})`, 
+                          transformOrigin: 'top left',
+                          width: slide.width,
+                          height: slide.height,
+                        }}
                       >
                         <SlideRenderer slide={slide} interactive={false} />
                       </div>
