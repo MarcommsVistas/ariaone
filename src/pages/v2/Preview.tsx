@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { NavigationV2 } from "@/components/v2/NavigationV2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, ArrowLeft, Send, Loader2, CheckCircle, Copy } from "lucide-react";
+import { Sparkles, ArrowLeft, Send, Loader2, CheckCircle, Copy, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
 
@@ -21,9 +21,11 @@ export default function Preview() {
   const { instanceId } = useParams<{ instanceId: string }>();
   const [instance, setInstance] = useState<any>(null);
   const [slides, setSlides] = useState<Slide[]>([]);
+  const [isLoadingInstance, setIsLoadingInstance] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [generationComplete, setGenerationComplete] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -35,32 +37,54 @@ export default function Preview() {
 
   const fetchInstanceData = async () => {
     try {
+      console.log("Fetching instance data for:", instanceId);
+      
       const { data: instanceData, error: instanceError } = await supabase
         .from("template_instances")
         .select("*")
         .eq("id", instanceId)
         .single();
 
-      if (instanceError) throw instanceError;
+      if (instanceError) {
+        console.error("Instance fetch error:", instanceError);
+        throw instanceError;
+      }
+
+      if (!instanceData) {
+        throw new Error("Instance not found");
+      }
+
+      console.log("Instance data loaded:", instanceData);
       setInstance(instanceData);
       setCaption(instanceData.caption_copy || "");
 
       // Check if AI generation already happened
       if (instanceData.ai_generated) {
+        console.log("AI already generated, loading slides...");
         setGenerationComplete(true);
         await fetchSlides();
       } else {
+        console.log("AI not generated yet, triggering generation...");
         // Start AI generation
         await generateContent();
       }
     } catch (error) {
       console.error("Error fetching instance:", error);
+      
+      let errorMessage = "Failed to load creative data";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to load instance data",
+        description: errorMessage,
         variant: "destructive",
       });
-      navigate("/v2");
+      
+      setGenerationError(errorMessage);
+    } finally {
+      setIsLoadingInstance(false);
     }
   };
 
@@ -81,18 +105,29 @@ export default function Preview() {
 
   const generateContent = async () => {
     setIsGenerating(true);
+    setGenerationError(null);
     
     try {
+      console.log("Invoking generate-creative function for instance:", instanceId);
+      
       const { data, error } = await supabase.functions.invoke("generate-creative", {
         body: { instanceId },
       });
 
-      if (error) throw error;
+      console.log("Generate-creative response:", { data, error });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Edge function call failed");
+      }
 
       if (data?.error) {
+        console.error("Edge function returned error:", data.error);
         throw new Error(data.error);
       }
 
+      console.log("AI generation completed successfully");
+      
       toast({
         title: "AI Generation Complete",
         description: `Generated content for ${data.updatedLayers || 0} layers`,
@@ -103,12 +138,24 @@ export default function Preview() {
       await fetchSlides();
     } catch (error) {
       console.error("Error generating content:", error);
+      
+      let errorMessage = "Failed to generate AI content. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        const anyError = error as any;
+        if (anyError.message) {
+          errorMessage = anyError.message;
+        }
+      }
+      
+      setGenerationError(errorMessage);
+      
       toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate content",
+        title: "AI Generation Failed",
+        description: errorMessage,
         variant: "destructive",
       });
-      navigate("/v2");
     } finally {
       setIsGenerating(false);
     }
@@ -173,7 +220,8 @@ export default function Preview() {
     toast({ title: "Success", description: "Caption copied to clipboard" });
   };
 
-  if (isGenerating || !generationComplete) {
+  // Show loading state while loading instance or generating
+  if (isLoadingInstance || (isGenerating && !generationError) || (!generationComplete && !generationError && !instance?.ai_generated)) {
     return (
       <div className="h-screen flex flex-col bg-background">
         <NavigationV2 />
@@ -184,10 +232,14 @@ export default function Preview() {
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <Sparkles className="h-6 w-6 text-primary animate-pulse" />
                 </div>
-                <CardTitle>Generating Creative Content</CardTitle>
+                <CardTitle>
+                  {isLoadingInstance ? "Loading Creative..." : "Generating Creative Content"}
+                </CardTitle>
               </div>
               <CardDescription>
-                Our AI is crafting professional content based on your job description...
+                {isLoadingInstance 
+                  ? "Please wait while we load your creative data..."
+                  : "Our AI is crafting professional content based on your job description..."}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -212,6 +264,41 @@ export default function Preview() {
               <p className="text-xs text-muted-foreground">
                 This usually takes 10-20 seconds...
               </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if generation failed
+  if (generationError) {
+    return (
+      <div className="h-screen flex flex-col bg-background">
+        <NavigationV2 />
+        <div className="flex-1 flex items-center justify-center p-6">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="rounded-full bg-destructive/10 p-3">
+                  <AlertCircle className="h-6 w-6 text-destructive" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Generation Failed</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{generationError}</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={() => navigate("/v2")}>
+                    Back to Dashboard
+                  </Button>
+                  <Button onClick={() => {
+                    setGenerationError(null);
+                    generateContent();
+                  }}>
+                    Try Again
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
