@@ -63,10 +63,33 @@ export const JobDescriptionForm = ({ templateId, templateName }: JobDescriptionF
 
     try {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("User not authenticated");
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error("Authentication error:", authError);
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to generate creatives.",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return;
       }
+
+      if (!user) {
+        console.error("No authenticated user found");
+        toast({
+          title: "Not Logged In",
+          description: "Please log in to generate creatives.",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return;
+      }
+
+      console.log("Creating template instance for user:", user.id);
+      console.log("Template ID:", templateId);
+      console.log("Job description data:", data);
 
       // Create template instance with job description
       const { data: instance, error: instanceError } = await supabase
@@ -87,7 +110,19 @@ export const JobDescriptionForm = ({ templateId, templateName }: JobDescriptionF
         .select()
         .single();
 
-      if (instanceError) throw instanceError;
+      if (instanceError) {
+        console.error("Supabase insert error:", instanceError);
+        console.error("Error code:", instanceError.code);
+        console.error("Error message:", instanceError.message);
+        console.error("Error details:", instanceError.details);
+        throw instanceError;
+      }
+
+      if (!instance) {
+        throw new Error("Instance creation returned no data");
+      }
+
+      console.log("Successfully created instance:", instance);
 
       toast({
         title: "Success",
@@ -98,9 +133,29 @@ export const JobDescriptionForm = ({ templateId, templateName }: JobDescriptionF
       navigate(`/v2/preview/${instance.id}`);
     } catch (error) {
       console.error("Error creating instance:", error);
+      
+      // Extract meaningful error message
+      let errorMessage = "Failed to save job details. Please try again.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        const supabaseError = error as any;
+        if (supabaseError.message) {
+          errorMessage = supabaseError.message;
+        }
+        
+        // Handle specific RLS errors
+        if (supabaseError.message?.includes("row-level security")) {
+          errorMessage = "Permission denied. Please contact your administrator.";
+        } else if (supabaseError.message?.includes("violates")) {
+          errorMessage = "Data validation failed. Please check your input.";
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to save job details. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
