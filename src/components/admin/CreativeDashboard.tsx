@@ -23,7 +23,11 @@ const PRESET_CATEGORIES = [
   "Video"
 ];
 
-export const CreativeDashboard = () => {
+interface CreativeDashboardProps {
+  onEditTemplate?: (templateId: string) => void;
+}
+
+export const CreativeDashboard = ({ onEditTemplate }: CreativeDashboardProps = {}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { parsePsdFile, parsePsdFiles, isLoading, progress, progressStatus } = usePsdParser();
   const { 
@@ -338,7 +342,7 @@ export const CreativeDashboard = () => {
               <MarcommsTemplateCard
                 key={template.id}
                 template={template}
-                onEditTemplate={setCurrentTemplate}
+                onEditTemplate={onEditTemplate || setCurrentTemplate}
               />
             ))}
             
