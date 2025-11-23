@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Sparkles, Search, Plus, FileText, Clock, CheckCircle, AlertCircle, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { InstanceThumbnail } from "./InstanceThumbnail";
 
 interface Template {
   id: string;
@@ -171,6 +172,7 @@ export const HRDashboardV2 = () => {
               const review = reviews[instance.id];
               return (
                 <Card key={instance.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <InstanceThumbnail instanceId={instance.id} />
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <CardTitle className="text-lg">{instance.name}</CardTitle>
@@ -199,7 +201,12 @@ export const HRDashboardV2 = () => {
                         {review.review_notes}
                       </p>
                     )}
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => navigate(`/v2/preview/${instance.id}`)}
+                    >
                       View Project
                     </Button>
                   </CardContent>
