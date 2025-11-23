@@ -97,7 +97,37 @@ export default function Preview() {
         .order("order_index", { ascending: true });
 
       if (slidesError) throw slidesError;
-      setSlides(slidesData || []);
+      
+      // Map database properties to component interface
+      const mappedSlides = slidesData?.map(slide => ({
+        ...slide,
+        layers: slide.layers.map((layer: any) => ({
+          id: layer.id,
+          name: layer.name,
+          type: layer.type,
+          text: layer.text_content,
+          src: layer.image_src,
+          x: layer.x,
+          y: layer.y,
+          width: layer.width,
+          height: layer.height,
+          opacity: layer.opacity,
+          rotation: layer.rotation,
+          visible: layer.visible,
+          locked: layer.locked,
+          zIndex: layer.z_index,
+          fontFamily: layer.font_family,
+          fontSize: layer.font_size,
+          fontWeight: layer.font_weight,
+          color: layer.color,
+          align: layer.text_align,
+          lineHeight: layer.line_height,
+          letterSpacing: layer.letter_spacing,
+          textTransform: layer.text_transform
+        }))
+      })) || [];
+      
+      setSlides(mappedSlides);
     } catch (error) {
       console.error("Error fetching slides:", error);
     }
