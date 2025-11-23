@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Search, Plus, FileText, Clock, CheckCircle, AlertCircle, Settings, Layers, FolderOpen } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Sparkles, Search, Plus, FileText, Clock, CheckCircle, AlertCircle, Settings, Layers, FolderOpen, Grid3x3, List } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { InstanceThumbnail } from "./InstanceThumbnail";
@@ -40,6 +41,7 @@ export const HRDashboardV2 = () => {
   const [instances, setInstances] = useState<TemplateInstance[]>([]);
   const [reviews, setReviews] = useState<Record<string, Review>>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [projectViewMode, setProjectViewMode] = useState<"grid" | "list">("grid");
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -243,7 +245,23 @@ export const HRDashboardV2 = () => {
 
         {/* My Projects Tab */}
         <TabsContent value="projects" className="space-y-6">
-          <h2 className="text-2xl font-semibold">My Projects</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">My Projects</h2>
+            {instances.length > 0 && (
+              <ToggleGroup 
+                type="single" 
+                value={projectViewMode} 
+                onValueChange={(value) => value && setProjectViewMode(value as "grid" | "list")}
+              >
+                <ToggleGroupItem value="grid" aria-label="Grid view">
+                  <Grid3x3 className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="list" aria-label="List view">
+                  <List className="h-4 w-4" />
+                </ToggleGroupItem>
+              </ToggleGroup>
+            )}
+          </div>
           
           {instances.length === 0 ? (
             <Card className="p-12">
@@ -257,7 +275,7 @@ export const HRDashboardV2 = () => {
                 </p>
               </div>
             </Card>
-          ) : (
+          ) : projectViewMode === "grid" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {instances.map((instance) => {
                 const review = reviews[instance.id];
@@ -301,6 +319,60 @@ export const HRDashboardV2 = () => {
                         View Project
                       </Button>
                     </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {instances.map((instance) => {
+                const review = reviews[instance.id];
+                return (
+                  <Card 
+                    key={instance.id} 
+                    className="hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => navigate(`/v2/preview/${instance.id}`)}
+                  >
+                    <div className="flex items-center gap-4 p-4">
+                      <div className="w-32 h-20 flex-shrink-0">
+                        <InstanceThumbnail instanceId={instance.id} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-4 mb-2">
+                          <div>
+                            <h3 className="font-semibold text-lg truncate">{instance.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              {instance.brand && (
+                                <span className="px-2 py-0.5 rounded-full bg-muted text-xs">
+                                  {instance.brand}
+                                </span>
+                              )}
+                              {instance.category && (
+                                <span className="px-2 py-0.5 rounded-full bg-muted text-xs">
+                                  {instance.category}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {getStatusIcon(review?.status)}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            <span>{getStatusText(review?.status)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            <span>{new Date(instance.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        {review?.review_notes && (
+                          <p className="text-sm text-muted-foreground line-clamp-1 mt-2">
+                            {review.review_notes}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </Card>
                 );
               })}
