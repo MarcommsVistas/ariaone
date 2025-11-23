@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import V2Index from "./pages/v2/Index";
 import Generate from "./pages/v2/Generate";
+import Preview from "./pages/v2/Preview";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -50,6 +51,14 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <Generate />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/v2/preview/:instanceId" 
+              element={
+                <ProtectedRoute>
+                  <Preview />
                 </ProtectedRoute>
               } 
             />
