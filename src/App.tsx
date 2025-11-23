@@ -1,4 +1,3 @@
-import React, { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,11 +14,6 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const user = useAuthStore((state) => state.user);
-  const initialize = useAuthStore((state) => state.initialize);
-
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
 
   return (
     <QueryClientProvider client={queryClient}>
