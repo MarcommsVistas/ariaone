@@ -443,6 +443,7 @@ export type Database = {
           category: string | null
           created_at: string
           created_by: string
+          deleted_at: string | null
           id: string
           job_description: Json | null
           job_description_parsed: Json | null
@@ -459,6 +460,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by: string
+          deleted_at?: string | null
           id?: string
           job_description?: Json | null
           job_description_parsed?: Json | null
@@ -475,6 +477,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
           id?: string
           job_description?: Json | null
           job_description_parsed?: Json | null
@@ -499,6 +502,7 @@ export type Database = {
           category: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           frame_count: number | null
           id: string
           is_published: boolean
@@ -512,6 +516,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           frame_count?: number | null
           id?: string
           is_published?: boolean
@@ -525,6 +530,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           frame_count?: number | null
           id?: string
           is_published?: boolean

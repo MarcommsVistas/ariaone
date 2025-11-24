@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Edit, Trash2, Layers } from "lucide-react";
+import { Edit, Archive, Layers } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,8 +51,8 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
     try {
       await deleteTemplate(template.id);
       toast({
-        title: "Template deleted",
-        description: `${template.name} has been permanently deleted`,
+        title: "Template archived",
+        description: `${template.name} has been moved to archive`,
       });
     } catch (error) {
       toast({
@@ -64,6 +64,9 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
       setIsDeleting(false);
     }
   };
+
+  // Calculate deletion impact
+  const totalLayers = template.slides.reduce((sum, slide) => sum + slide.layers.length, 0);
 
   // Grid view
   if (viewMode === "grid") {
@@ -146,14 +149,20 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
                   size="icon"
                   disabled={isDeleting}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Archive className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Template?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete "{template.name}"? This will permanently delete the template and all its slides and layers. This action cannot be undone.
+                  <AlertDialogTitle>Archive Template?</AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-2">
+                    <p>Are you sure you want to archive "{template.name}"?</p>
+                    <p className="text-sm font-medium">This will archive:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      <li>{template.slides.length} slide{template.slides.length !== 1 ? 's' : ''}</li>
+                      <li>{totalLayers} layer{totalLayers !== 1 ? 's' : ''}</li>
+                    </ul>
+                    <p className="text-xs text-muted-foreground pt-2">The template will be moved to archive and can be restored later if needed.</p>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -162,7 +171,7 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
                     onClick={handleDelete}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
-                    Delete
+                    Archive Template
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -254,15 +263,21 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
                   size="sm"
                   disabled={isDeleting}
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
+                  <Archive className="h-4 w-4 mr-2" />
+                  Archive
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Template?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete "{template.name}"? This will permanently delete the template and all its slides and layers. This action cannot be undone.
+                  <AlertDialogTitle>Archive Template?</AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-2">
+                    <p>Are you sure you want to archive "{template.name}"?</p>
+                    <p className="text-sm font-medium">This will archive:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      <li>{template.slides.length} slide{template.slides.length !== 1 ? 's' : ''}</li>
+                      <li>{totalLayers} layer{totalLayers !== 1 ? 's' : ''}</li>
+                    </ul>
+                    <p className="text-xs text-muted-foreground pt-2">The template will be moved to archive and can be restored later if needed.</p>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -271,7 +286,7 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
                     onClick={handleDelete}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
-                    Delete
+                    Archive Template
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
