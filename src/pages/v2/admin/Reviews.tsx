@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardList, Eye, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { ClipboardList, Eye, Clock, CheckCircle, XCircle, AlertCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -17,6 +17,8 @@ interface Review {
   submitted_at: string;
   status: string;
   review_notes: string | null;
+  deletion_requested: boolean;
+  deletion_requested_at: string | null;
   template_instances: {
     name: string;
     brand: string | null;
@@ -29,6 +31,7 @@ export default function Reviews() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("pending");
+  const [showDeletionOnly, setShowDeletionOnly] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -101,9 +104,12 @@ export default function Reviews() {
   };
 
   const filteredReviews = reviews.filter(review => {
+    if (showDeletionOnly) return review.deletion_requested;
     if (activeTab === "all") return true;
     return review.status === activeTab;
   });
+
+  const deletionRequestCount = reviews.filter(r => r.deletion_requested).length;
 
   const reviewCounts = {
     all: reviews.length,
@@ -141,24 +147,42 @@ export default function Reviews() {
           </div>
 
           {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="all">
-                All ({reviewCounts.all})
-              </TabsTrigger>
-              <TabsTrigger value="pending">
-                Pending ({reviewCounts.pending})
-              </TabsTrigger>
-              <TabsTrigger value="approved">
-                Approved ({reviewCounts.approved})
-              </TabsTrigger>
-              <TabsTrigger value="changes_requested">
-                Changes Requested ({reviewCounts.changes_requested})
-              </TabsTrigger>
-              <TabsTrigger value="rejected">
-                Rejected ({reviewCounts.rejected})
-              </TabsTrigger>
-            </TabsList>
+          <div className="flex items-center gap-4">
+            <Tabs value={activeTab} onValueChange={(v) => {
+              setActiveTab(v);
+              setShowDeletionOnly(false);
+            }} className="flex-1">
+              <TabsList>
+                <TabsTrigger value="all">
+                  All ({reviewCounts.all})
+                </TabsTrigger>
+                <TabsTrigger value="pending">
+                  Pending ({reviewCounts.pending})
+                </TabsTrigger>
+                <TabsTrigger value="approved">
+                  Approved ({reviewCounts.approved})
+                </TabsTrigger>
+                <TabsTrigger value="changes_requested">
+                  Changes Requested ({reviewCounts.changes_requested})
+                </TabsTrigger>
+                <TabsTrigger value="rejected">
+                  Rejected ({reviewCounts.rejected})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            <Button
+              variant={showDeletionOnly ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowDeletionOnly(!showDeletionOnly)}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Deletion Requests ({deletionRequestCount})
+            </Button>
+          </div>
+          
+          <Tabs value={activeTab}>
 
             <TabsContent value={activeTab} className="space-y-4">
               {filteredReviews.length === 0 ? (
@@ -180,8 +204,14 @@ export default function Reviews() {
                 <CardHeader>
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
-                            <CardTitle className="text-lg">
+                            <CardTitle className="text-lg flex items-center gap-2">
                               {review.template_instances?.name || "Untitled"}
+                              {review.deletion_requested && (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-orange-500/10 text-orange-600 text-xs font-medium">
+                                  <Trash2 className="h-3 w-3" />
+                                  Deletion Requested
+                                </span>
+                              )}
                             </CardTitle>
                             <CardDescription className="flex items-center gap-2">
                               {review.template_instances?.brand && (

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Sparkles, Search, Plus, FileText, Clock, CheckCircle, AlertCircle, Settings, Layers, FolderOpen, Grid3x3, List } from "lucide-react";
+import { Sparkles, Search, Plus, FileText, Clock, CheckCircle, AlertCircle, Settings, Layers, FolderOpen, Grid3x3, List, Trash2, XCircle, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { InstanceThumbnail } from "./InstanceThumbnail";
@@ -34,6 +34,7 @@ interface TemplateInstance {
 interface Review {
   status: string;
   review_notes: string | null;
+  deletion_requested: boolean;
 }
 
 export const HRDashboardV2 = () => {
@@ -75,7 +76,7 @@ export const HRDashboardV2 = () => {
       if (instancesData && instancesData.length > 0) {
         const { data: reviewsData, error: reviewsError } = await supabase
           .from("creative_reviews")
-          .select("instance_id, status, review_notes")
+          .select("instance_id, status, review_notes, deletion_requested")
           .in("instance_id", instancesData.map(i => i.id));
 
         if (reviewsError) throw reviewsError;
@@ -84,7 +85,8 @@ export const HRDashboardV2 = () => {
         reviewsData?.forEach(review => {
           reviewsMap[review.instance_id] = {
             status: review.status,
-            review_notes: review.review_notes
+            review_notes: review.review_notes,
+            deletion_requested: review.deletion_requested || false
           };
         });
         setReviews(reviewsMap);
@@ -110,6 +112,113 @@ export const HRDashboardV2 = () => {
     template.category?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleDeleteInstance = async (instanceId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const review = reviews[instanceId];
+    
+    try {
+      if (!review || review.status !== 'approved') {
+        // Direct deletion
+        const { error } = await supabase
+          .from('template_instances')
+          .delete()
+          .eq('id', instanceId);
+
+        if (error) throw error;
+
+        toast({
+          title: "Project Deleted",
+          description: "Your project has been deleted successfully",
+        });
+        
+        fetchData();
+      } else {
+        // Request deletion
+        const { error } = await supabase
+          .from('creative_reviews')
+          .update({
+            deletion_requested: true,
+            deletion_requested_at: new Date().toISOString(),
+          })
+          .eq('instance_id', instanceId);
+
+        if (error) throw error;
+
+        // Notify marcomms
+        const { data: marcommsUsers } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'marcomms');
+
+        if (marcommsUsers) {
+          const notifications = marcommsUsers.map(u => ({
+            user_id: u.user_id,
+            type: 'deletion_request',
+            title: 'Deletion Request',
+            message: `HR user requested deletion of project "${instances.find(i => i.id === instanceId)?.name}"`,
+            data: { instanceId },
+          }));
+
+          await supabase.from('notifications').insert(notifications);
+        }
+
+        toast({
+          title: "Deletion Requested",
+          description: "Your deletion request has been sent for approval",
+        });
+        
+        fetchData();
+      }
+    } catch (error) {
+      console.error('Error deleting:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete project",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getDeleteButton = (instance: TemplateInstance, review?: Review) => {
+    if (!review || review.status !== 'approved') {
+      return (
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={(e) => handleDeleteInstance(instance.id, e)}
+          className="gap-1"
+        >
+          <Trash2 className="h-3 w-3" />
+          Delete
+        </Button>
+      );
+    } else if (review.deletion_requested) {
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          disabled
+          className="gap-1 opacity-60"
+        >
+          <AlertCircle className="h-3 w-3" />
+          Pending Deletion
+        </Button>
+      );
+    } else {
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={(e) => handleDeleteInstance(instance.id, e)}
+          className="gap-1"
+        >
+          <Trash2 className="h-3 w-3" />
+          Request Deletion
+        </Button>
+      );
+    }
+  };
+
   const getStatusIcon = (status?: string) => {
     switch (status) {
       case "approved":
@@ -117,7 +226,7 @@ export const HRDashboardV2 = () => {
       case "changes_requested":
         return <AlertCircle className="h-4 w-4 text-yellow-500" />;
       case "rejected":
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-red-500" />;
       default:
         return <Clock className="h-4 w-4 text-blue-500" />;
     }
@@ -310,14 +419,21 @@ export const HRDashboardV2 = () => {
                           {review.review_notes}
                         </p>
                       )}
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full"
-                        onClick={() => navigate(`/v2/preview/${instance.id}`)}
-                      >
-                        View Project
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1 gap-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/v2/preview/${instance.id}`);
+                          }}
+                        >
+                          <Eye className="h-3 w-3" />
+                          View
+                        </Button>
+                        {getDeleteButton(instance, review)}
+                      </div>
                     </CardContent>
                   </Card>
                 );
@@ -371,6 +487,18 @@ export const HRDashboardV2 = () => {
                             {review.review_notes}
                           </p>
                         )}
+                      </div>
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/v2/preview/${instance.id}`)}
+                          className="gap-1"
+                        >
+                          <Eye className="h-3 w-3" />
+                          View
+                        </Button>
+                        {getDeleteButton(instance, review)}
                       </div>
                     </div>
                   </Card>
