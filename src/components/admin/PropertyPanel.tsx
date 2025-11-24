@@ -412,22 +412,55 @@ export const PropertyPanel = ({
                 <div>
                   <Label htmlFor="ai-content-type" className="text-xs">Content Type</Label>
                   <Select
-                    value={selectedLayer.aiContentType || "text"}
+                    value={selectedLayer.aiContentType || "other"}
                     onValueChange={(value) => updateLayer(selectedLayer.id, { aiContentType: value })}
                   >
                     <SelectTrigger id="ai-content-type" className="h-8 text-sm mt-1">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="headline">Headline</SelectItem>
-                      <SelectItem value="subheadline">Subheadline</SelectItem>
-                      <SelectItem value="description">Description</SelectItem>
-                      <SelectItem value="cta">Call to Action</SelectItem>
-                      <SelectItem value="body_text">Body Text</SelectItem>
+                    <SelectContent className="max-h-[400px]">
+                      <SelectItem value="headline">Headline / Job Title</SelectItem>
+                      <SelectItem value="intro">Introduction</SelectItem>
                       <SelectItem value="location">Location</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      
+                      <Separator className="my-2" />
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                        Qualifications
+                      </div>
+                      <SelectItem value="qualifications_education">Education Requirements</SelectItem>
+                      <SelectItem value="qualifications_experience">Experience Requirements</SelectItem>
+                      <SelectItem value="qualifications_combined">Combined Qualifications</SelectItem>
+                      
+                      <Separator className="my-2" />
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                        Lists (Auto-counted)
+                      </div>
+                      <SelectItem value="skills">Skills</SelectItem>
+                      <SelectItem value="domain_expertise">Domain Expertise</SelectItem>
+                      <SelectItem value="requirements">Job Requirements</SelectItem>
+                      <SelectItem value="responsibilities">Key Responsibilities</SelectItem>
+                      
+                      <Separator className="my-2" />
+                      <SelectItem value="job_type">Job Type / Contract</SelectItem>
+                      <SelectItem value="email_subject">Email Subject Line</SelectItem>
+                      <SelectItem value="cta">Call to Action</SelectItem>
+                      <SelectItem value="other">Other / Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  
+                  {/* Helper text for dynamic content types */}
+                  {['skills', 'domain_expertise', 'requirements', 'responsibilities'].includes(selectedLayer.aiContentType || '') && (
+                    <p className="text-xs text-muted-foreground mt-1.5 flex items-start gap-1">
+                      <span className="text-primary">💡</span>
+                      <span>AI will extract one item per layer with this type</span>
+                    </p>
+                  )}
+                  
+                  {selectedLayer.aiContentType === 'headline' && (
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      Uses job title directly from the instance name
+                    </p>
+                  )}
                 </div>
 
                 <div>
