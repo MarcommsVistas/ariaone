@@ -7,6 +7,7 @@ import { PropertyPanel } from "./PropertyPanel";
 import { TemplateHeader } from "./TemplateHeader";
 import { SlideNavigation } from "@/components/editor/SlideNavigation";
 import { TemplateStrategyPanel } from "./TemplateStrategyPanel";
+import { BulkLayerConfigurationDialog } from "./BulkLayerConfigurationDialog";
 import { AlertCircle, Minus, Plus } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
