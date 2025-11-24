@@ -44,12 +44,35 @@ export const HRDashboardV2 = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [projectViewMode, setProjectViewMode] = useState<"grid" | "list">("grid");
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingInstanceId, setDeletingInstanceId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userRole } = useAuthStore();
 
   useEffect(() => {
     fetchData();
+  }, []);
+
+  // Real-time subscription for review updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('review-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'creative_reviews'
+        },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchData = async () => {
@@ -72,22 +95,26 @@ export const HRDashboardV2 = () => {
 
       if (instancesError) throw instancesError;
 
-      // Fetch reviews for instances
+      // Fetch reviews for instances - get only the most recent review per instance
       if (instancesData && instancesData.length > 0) {
         const { data: reviewsData, error: reviewsError } = await supabase
           .from("creative_reviews")
           .select("instance_id, status, review_notes, deletion_requested")
-          .in("instance_id", instancesData.map(i => i.id));
+          .in("instance_id", instancesData.map(i => i.id))
+          .order("submitted_at", { ascending: false });
 
         if (reviewsError) throw reviewsError;
 
         const reviewsMap: Record<string, Review> = {};
         reviewsData?.forEach(review => {
-          reviewsMap[review.instance_id] = {
-            status: review.status,
-            review_notes: review.review_notes,
-            deletion_requested: review.deletion_requested || false
-          };
+          // Only add if this instance doesn't already have a review (ensures we keep the most recent)
+          if (!reviewsMap[review.instance_id]) {
+            reviewsMap[review.instance_id] = {
+              status: review.status,
+              review_notes: review.review_notes,
+              deletion_requested: review.deletion_requested || false
+            };
+          }
         });
         setReviews(reviewsMap);
       }
@@ -115,6 +142,8 @@ export const HRDashboardV2 = () => {
   const handleDeleteInstance = async (instanceId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     const review = reviews[instanceId];
+    
+    setDeletingInstanceId(instanceId);
     
     try {
       if (!review || review.status !== 'approved') {
@@ -188,20 +217,25 @@ export const HRDashboardV2 = () => {
         description: "Failed to delete project",
         variant: "destructive",
       });
+    } finally {
+      setDeletingInstanceId(null);
     }
   };
 
   const getDeleteButton = (instance: TemplateInstance, review?: Review) => {
+    const isDeleting = deletingInstanceId === instance.id;
+    
     if (!review || review.status !== 'approved') {
       return (
         <Button
           variant="destructive"
           size="sm"
           onClick={(e) => handleDeleteInstance(instance.id, e)}
+          disabled={isDeleting}
           className="gap-1"
         >
           <Trash2 className="h-3 w-3" />
-          Delete
+          {isDeleting ? "Deleting..." : "Delete"}
         </Button>
       );
     } else if (review.deletion_requested) {
@@ -222,10 +256,11 @@ export const HRDashboardV2 = () => {
           variant="outline"
           size="sm"
           onClick={(e) => handleDeleteInstance(instance.id, e)}
+          disabled={isDeleting}
           className="gap-1"
         >
           <Trash2 className="h-3 w-3" />
-          Request Deletion
+          {isDeleting ? "Submitting..." : "Request Deletion"}
         </Button>
       );
     }

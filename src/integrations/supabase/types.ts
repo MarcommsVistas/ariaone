@@ -57,15 +57,7 @@ export type Database = {
           performed_at?: string
           performed_by?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "audit_logs_instance_id_fkey"
-            columns: ["instance_id"]
-            isOneToOne: false
-            referencedRelation: "template_instances"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       brands: {
         Row: {
