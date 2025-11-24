@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { Plus, Upload, Layers, Search } from "lucide-react";
+import { Plus, Upload, Layers, Search, Grid3x3, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { usePsdParser } from "@/hooks/usePsdParser";
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -52,6 +53,7 @@ export const CreativeDashboard = ({ onEditTemplate }: CreativeDashboardProps = {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedBrand, setSelectedBrand] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   
   const isMarcomms = userRole === 'marcomms';
   
@@ -274,14 +276,25 @@ export const CreativeDashboard = ({ onEditTemplate }: CreativeDashboardProps = {
 
         {/* Search and Filters */}
         <div className="mb-8 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search templates..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search templates..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            
+            <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as "grid" | "list")}>
+              <ToggleGroupItem value="grid" aria-label="Grid view">
+                <Grid3x3 className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="List view">
+                <List className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
           
           <div className="flex flex-wrap gap-4">
@@ -335,19 +348,24 @@ export const CreativeDashboard = ({ onEditTemplate }: CreativeDashboardProps = {
             </div>
           </div>
         ) : (
-          /* Templates Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          /* Templates Layout */
+          <div className={
+            viewMode === "grid"
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              : "space-y-4"
+          }>
             {/* Template Cards */}
             {displayTemplates.map((template) => (
               <MarcommsTemplateCard
                 key={template.id}
                 template={template}
                 onEditTemplate={onEditTemplate || setCurrentTemplate}
+                viewMode={viewMode}
               />
             ))}
             
-            {/* Import PSD Card - Only visible to Marcomms */}
-            {isMarcomms && (
+            {/* Import PSD Card - Only visible to Marcomms in grid view */}
+            {isMarcomms && viewMode === "grid" && (
               <Card 
                 className="border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer group relative"
                 onClick={!isLoading ? handleImportPSD : undefined}
