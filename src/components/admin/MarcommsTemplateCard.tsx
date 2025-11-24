@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, Layers } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Template, useTemplateStore } from "@/store/useTemplateStore";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
+import { classifyTemplate } from "@/lib/templateClassification";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,20 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate }: MarcommsTempl
   const { deleteTemplate } = useTemplateStore();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Get template classification
+  const classification = classifyTemplate(template.slides.length);
+  
+  const getTypeColor = () => {
+    switch (classification.type) {
+      case '1-frame':
+        return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
+      case '3-frame':
+        return 'bg-purple-500/10 text-purple-600 border-purple-500/20';
+      case '5-7-frame':
+        return 'bg-green-500/10 text-green-600 border-green-500/20';
+    }
+  };
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -77,12 +92,21 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate }: MarcommsTempl
         <div className="space-y-2">
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-semibold text-foreground line-clamp-1">{template.name}</h3>
-            <Badge 
-              variant={isPublished ? "default" : "secondary"}
-              className={isPublished ? "bg-green-600 hover:bg-green-700" : "bg-yellow-600 hover:bg-yellow-700"}
-            >
-              {isPublished ? "Published" : "Draft"}
-            </Badge>
+            <div className="flex gap-1.5">
+              <Badge 
+                variant="outline"
+                className={getTypeColor()}
+              >
+                <Layers className="h-3 w-3 mr-1" />
+                {classification.type}
+              </Badge>
+              <Badge 
+                variant={isPublished ? "default" : "secondary"}
+                className={isPublished ? "bg-green-600 hover:bg-green-700" : "bg-yellow-600 hover:bg-yellow-700"}
+              >
+                {isPublished ? "Published" : "Draft"}
+              </Badge>
+            </div>
           </div>
           
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
