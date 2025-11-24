@@ -204,6 +204,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
           created_at,
           updated_at
         `)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       // HR users only see published templates
@@ -987,10 +988,10 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
     const state = get();
     
     try {
-      // Delete from database (cascades to slides, layers, psd_uploads)
+      // Soft delete: set deleted_at timestamp instead of actually deleting
       const { error } = await supabase
         .from('templates')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', templateId);
 
       if (error) {
