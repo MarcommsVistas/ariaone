@@ -14,6 +14,7 @@ import Categories from "./pages/v2/admin/Categories";
 import Reviews from "./pages/v2/admin/Reviews";
 import ReviewStudio from "./pages/v2/admin/ReviewStudio";
 import BrandVoice from "./pages/v2/admin/BrandVoice";
+import ProjectHistory from "./pages/v2/admin/ProjectHistory";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -122,6 +123,14 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <BrandVoice />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/v2/admin/project-history" 
+              element={
+                <ProtectedRoute>
+                  <ProjectHistory />
                 </ProtectedRoute>
               } 
             />

@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          event_category: string
+          event_type: string
+          id: string
+          instance_id: string
+          metadata: Json | null
+          new_value: Json | null
+          old_value: Json | null
+          performed_at: string
+          performed_by: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_category: string
+          event_type: string
+          id?: string
+          instance_id: string
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+          performed_at?: string
+          performed_by: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_category?: string
+          event_type?: string
+          id?: string
+          instance_id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+          performed_at?: string
+          performed_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "template_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           ai_enabled: boolean | null
@@ -510,12 +563,54 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_audit_logs_with_emails: {
+        Args: {
+          _end_date?: string
+          _event_category?: string
+          _event_type?: string
+          _instance_id?: string
+          _limit?: number
+          _offset?: number
+          _performed_by?: string
+          _start_date?: string
+        }
+        Returns: {
+          entity_id: string
+          entity_type: string
+          event_category: string
+          event_type: string
+          id: string
+          instance_id: string
+          instance_name: string
+          metadata: Json
+          new_value: Json
+          old_value: Json
+          performed_at: string
+          performed_by: string
+          performed_by_email: string
+        }[]
+      }
+      get_user_email: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      log_audit_event: {
+        Args: {
+          _entity_id?: string
+          _entity_type?: string
+          _event_category: string
+          _event_type: string
+          _instance_id: string
+          _metadata?: Json
+          _new_value?: Json
+          _old_value?: Json
+          _performed_by: string
+        }
+        Returns: string
       }
     }
     Enums: {

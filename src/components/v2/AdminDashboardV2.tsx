@@ -6,7 +6,8 @@ import {
   MessageSquare, 
   FolderTree, 
   Sparkles,
-  Activity
+  Activity,
+  History
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +19,7 @@ export const AdminDashboardV2 = () => {
     totalTemplates: 0,
     totalBrands: 0,
     totalCategories: 0,
+    recentLogs: 0,
   });
 
   useEffect(() => {
@@ -26,11 +28,15 @@ export const AdminDashboardV2 = () => {
 
   const fetchStats = async () => {
     try {
-      const [reviewsRes, templatesRes, brandsRes, categoriesRes] = await Promise.all([
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      const [reviewsRes, templatesRes, brandsRes, categoriesRes, logsRes] = await Promise.all([
         supabase.from('creative_reviews').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('templates').select('id', { count: 'exact', head: true }),
         supabase.from('brands').select('id', { count: 'exact', head: true }),
         supabase.from('categories').select('id', { count: 'exact', head: true }),
+        supabase.from('audit_logs').select('id', { count: 'exact', head: true }).gte('performed_at', yesterday.toISOString()),
       ]);
 
       setStats({
@@ -38,6 +44,7 @@ export const AdminDashboardV2 = () => {
         totalTemplates: templatesRes.count || 0,
         totalBrands: brandsRes.count || 0,
         totalCategories: categoriesRes.count || 0,
+        recentLogs: logsRes.count || 0,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -81,6 +88,15 @@ export const AdminDashboardV2 = () => {
       action: () => navigate("/v2/admin/categories"),
       gradient: "from-green-500/20 to-emerald-500/20",
     },
+    {
+      title: "Project History",
+      description: "View audit logs and project changes",
+      icon: History,
+      count: stats.recentLogs,
+      countLabel: "recent events",
+      action: () => navigate("/v2/admin/project-history"),
+      gradient: "from-slate-500/20 to-gray-500/20",
+    },
   ];
 
   return (
@@ -95,7 +111,7 @@ export const AdminDashboardV2 = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {cards.map((card) => (
           <Card 
             key={card.title}

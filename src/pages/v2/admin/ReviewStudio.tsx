@@ -246,6 +246,17 @@ export default function ReviewStudio() {
 
       if (instanceError) throw instanceError;
 
+      // Log audit event
+      await supabase.rpc('log_audit_event', {
+        _instance_id: instanceId,
+        _event_type: 'review_approved',
+        _event_category: 'review',
+        _performed_by: user.id,
+        _entity_type: 'review',
+        _entity_id: review.id,
+        _metadata: { review_notes: reviewNotes }
+      });
+
       // Notify HR user
       await supabase
         .from("notifications")
@@ -302,6 +313,17 @@ export default function ReviewStudio() {
         .eq("id", review.id);
 
       if (reviewError) throw reviewError;
+
+      // Log audit event
+      await supabase.rpc('log_audit_event', {
+        _instance_id: instanceId,
+        _event_type: 'review_changes_requested',
+        _event_category: 'review',
+        _performed_by: user.id,
+        _entity_type: 'review',
+        _entity_id: review.id,
+        _metadata: { review_notes: reviewNotes }
+      });
 
       await supabase
         .from("notifications")
@@ -360,6 +382,17 @@ export default function ReviewStudio() {
 
       if (reviewError) throw reviewError;
 
+      // Log audit event
+      await supabase.rpc('log_audit_event', {
+        _instance_id: instanceId,
+        _event_type: 'review_rejected',
+        _event_category: 'review',
+        _performed_by: user.id,
+        _entity_type: 'review',
+        _entity_id: review.id,
+        _metadata: { review_notes: reviewNotes }
+      });
+
       await supabase
         .from("notifications")
         .insert({
@@ -401,6 +434,19 @@ export default function ReviewStudio() {
         .eq("id", instanceId);
 
       if (deleteError) throw deleteError;
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Log audit event
+      if (user) {
+        await supabase.rpc('log_audit_event', {
+          _instance_id: instanceId,
+          _event_type: 'deletion_approved',
+          _event_category: 'deletion',
+          _performed_by: user.id,
+          _metadata: { reason: 'Approved by marcomms' }
+        });
+      }
 
       // Notify HR user
       await supabase
@@ -446,6 +492,19 @@ export default function ReviewStudio() {
         .eq("id", review.id);
 
       if (error) throw error;
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Log audit event
+      if (user) {
+        await supabase.rpc('log_audit_event', {
+          _instance_id: instanceId,
+          _event_type: 'deletion_denied',
+          _event_category: 'deletion',
+          _performed_by: user.id,
+          _metadata: { reason: reviewNotes || 'No reason provided' }
+        });
+      }
 
       // Notify HR user
       await supabase
