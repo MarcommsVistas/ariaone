@@ -144,6 +144,18 @@ export const HRDashboardV2 = () => {
 
         if (error) throw error;
 
+        // Log audit event
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.rpc('log_audit_event', {
+            _instance_id: instanceId,
+            _event_type: 'deletion_requested',
+            _event_category: 'deletion',
+            _performed_by: user.id,
+            _metadata: { reason: 'Requested by HR user' }
+          });
+        }
+
         // Notify marcomms
         const { data: marcommsUsers } = await supabase
           .from('user_roles')
