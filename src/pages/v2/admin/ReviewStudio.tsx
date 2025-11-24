@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, CheckCircle, XCircle, MessageSquare, Loader2, Minus, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, MessageSquare, Loader2, Minus, Plus, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
 import { InteractionOverlay } from "@/components/editor/InteractionOverlay";
@@ -50,6 +50,8 @@ export default function ReviewStudio() {
   const [editedCaption, setEditedCaption] = useState("");
   const [isJdOpen, setIsJdOpen] = useState(true);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [showApproveDeletionDialog, setShowApproveDeletionDialog] = useState(false);
+  const [showDenyDeletionDialog, setShowDenyDeletionDialog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -387,6 +389,94 @@ export default function ReviewStudio() {
     }
   };
 
+  const handleApproveDeletion = async () => {
+    if (!review) return;
+    setActionLoading("approve_deletion");
+
+    try {
+      // Delete the instance (cascades to slides and layers)
+      const { error: deleteError } = await supabase
+        .from("template_instances")
+        .delete()
+        .eq("id", instanceId);
+
+      if (deleteError) throw deleteError;
+
+      // Notify HR user
+      await supabase
+        .from("notifications")
+        .insert({
+          user_id: review.submitted_by,
+          type: "deletion_approved",
+          title: "Deletion Approved",
+          message: `Your deletion request for "${instance?.name}" has been approved and the project has been deleted`,
+          data: { instanceId },
+        });
+
+      toast({
+        title: "Deletion Approved",
+        description: "Project has been deleted and HR user notified",
+      });
+
+      navigate("/v2/admin/reviews");
+    } catch (error) {
+      console.error("Error approving deletion:", error);
+      toast({
+        title: "Deletion Failed",
+        description: "Failed to delete project. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading(null);
+      setShowApproveDeletionDialog(false);
+    }
+  };
+
+  const handleDenyDeletion = async () => {
+    if (!review) return;
+    setActionLoading("deny_deletion");
+
+    try {
+      const { error } = await supabase
+        .from("creative_reviews")
+        .update({
+          deletion_requested: false,
+          deletion_requested_at: null,
+        })
+        .eq("id", review.id);
+
+      if (error) throw error;
+
+      // Notify HR user
+      await supabase
+        .from("notifications")
+        .insert({
+          user_id: review.submitted_by,
+          type: "deletion_denied",
+          title: "Deletion Request Denied",
+          message: `Your deletion request for "${instance?.name}" has been denied`,
+          data: { instanceId, notes: reviewNotes || 'No reason provided' },
+        });
+
+      toast({
+        title: "Deletion Denied",
+        description: "HR user has been notified",
+      });
+
+      navigate("/v2/admin/reviews");
+    } catch (error) {
+      console.error("Error denying deletion:", error);
+      toast({
+        title: "Action Failed",
+        description: "Failed to deny deletion request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading(null);
+      setShowDenyDeletionDialog(false);
+    }
+  };
+
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 10, 150));
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 10, 30));
 
@@ -547,11 +637,48 @@ export default function ReviewStudio() {
               </CardContent>
             </Card>
 
+            {/* Deletion Request Actions */}
+            {review?.deletion_requested && (
+              <Card className="bg-orange-500/10 border-orange-500/20">
+                <CardHeader>
+                  <CardTitle className="text-base text-orange-600 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    Deletion Request
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    HR user requested deletion of this project.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setShowApproveDeletionDialog(true)}
+                      disabled={actionLoading !== null}
+                      variant="destructive"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      Approve Deletion
+                    </Button>
+                    <Button
+                      onClick={() => setShowDenyDeletionDialog(true)}
+                      disabled={actionLoading !== null}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      Deny Request
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Review Actions */}
             <div className="space-y-2">
               <Button
                 onClick={handleApprove}
-                disabled={actionLoading !== null || !captionApproved}
+                disabled={actionLoading !== null || !captionApproved || review?.deletion_requested}
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
               >
                 {actionLoading === "approve" ? (
@@ -569,7 +696,7 @@ export default function ReviewStudio() {
 
               <Button
                 onClick={() => setShowChangesDialog(true)}
-                disabled={actionLoading !== null}
+                disabled={actionLoading !== null || review?.deletion_requested}
                 variant="outline"
                 className="w-full"
               >
@@ -579,7 +706,7 @@ export default function ReviewStudio() {
 
               <Button
                 onClick={() => setShowRejectDialog(true)}
-                disabled={actionLoading !== null}
+                disabled={actionLoading !== null || review?.deletion_requested}
                 variant="destructive"
                 className="w-full"
               >
@@ -727,6 +854,54 @@ export default function ReviewStudio() {
                 </>
               ) : (
                 "Reject"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showApproveDeletionDialog} onOpenChange={setShowApproveDeletionDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Approve Deletion Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this project? This will permanently remove the project and all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleApproveDeletion} className="bg-destructive hover:bg-destructive/90">
+              {actionLoading === "approve_deletion" ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Project"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDenyDeletionDialog} onOpenChange={setShowDenyDeletionDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deny Deletion Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to deny this deletion request? The HR user will be notified.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDenyDeletion}>
+              {actionLoading === "deny_deletion" ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Denying...
+                </>
+              ) : (
+                "Deny Request"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

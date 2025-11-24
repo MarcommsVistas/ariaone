@@ -69,6 +69,9 @@ export type Database = {
         Row: {
           change_requests: Json | null
           created_at: string
+          deletion_request_notes: string | null
+          deletion_requested: boolean | null
+          deletion_requested_at: string | null
           id: string
           instance_id: string
           review_notes: string | null
@@ -82,6 +85,9 @@ export type Database = {
         Insert: {
           change_requests?: Json | null
           created_at?: string
+          deletion_request_notes?: string | null
+          deletion_requested?: boolean | null
+          deletion_requested_at?: string | null
           id?: string
           instance_id: string
           review_notes?: string | null
@@ -95,6 +101,9 @@ export type Database = {
         Update: {
           change_requests?: Json | null
           created_at?: string
+          deletion_request_notes?: string | null
+          deletion_requested?: boolean | null
+          deletion_requested_at?: string | null
           id?: string
           instance_id?: string
           review_notes?: string | null
