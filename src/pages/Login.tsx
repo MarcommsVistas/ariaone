@@ -109,20 +109,9 @@ const Login = () => {
         navigate('/');
       }
     } catch (error: any) {
-      console.error('Auth error:', error);
-      
-      let errorMessage = "Authentication failed";
-      
-      // Handle network errors (CORS/redirect URL issues)
-      if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-        errorMessage = "Unable to reach authentication server. Please check your backend configuration (Site URL and Redirect URLs in Auth Settings).";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
       toast({
         title: "Error",
-        description: errorMessage,
+        description: error.message || "Authentication failed",
         variant: "destructive",
       });
     } finally {
