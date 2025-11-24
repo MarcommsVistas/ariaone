@@ -168,6 +168,66 @@ serve(async (req) => {
       }
     }
 
+    // Fetch brand data early for all content generation
+    let brandContext = {
+      tov_guidelines: "",
+      ai_instructions: null as any,
+      systemPrompt: "",
+    };
+
+    if (instance.brand) {
+      const { data: brandData } = await supabase
+        .from('brands')
+        .select('tov_guidelines, ai_instructions')
+        .eq('name', instance.brand)
+        .single();
+      
+      if (brandData) {
+        brandContext.tov_guidelines = brandData.tov_guidelines || "";
+        brandContext.ai_instructions = brandData.ai_instructions;
+        
+        // Build comprehensive brand-aware system prompt
+        let systemPromptParts = [
+          "You are a professional copywriter creating job advertisement content.",
+          "Be concise, compelling, and professional."
+        ];
+        
+        if (brandContext.tov_guidelines) {
+          systemPromptParts.push(`\nBrand Tone of Voice: ${brandContext.tov_guidelines}`);
+        }
+        
+        if (brandContext.ai_instructions) {
+          // Format ai_instructions JSONB into readable text
+          const instructions = brandContext.ai_instructions;
+          
+          if (instructions.focus_areas && Array.isArray(instructions.focus_areas)) {
+            systemPromptParts.push(`\nKey Focus Areas: ${instructions.focus_areas.join(', ')}`);
+          }
+          
+          if (instructions.guidelines && Array.isArray(instructions.guidelines)) {
+            systemPromptParts.push(`\nGuidelines:\n${instructions.guidelines.map((g: string) => `- ${g}`).join('\n')}`);
+          }
+          
+          if (instructions.avoid && Array.isArray(instructions.avoid)) {
+            systemPromptParts.push(`\nAvoid:\n${instructions.avoid.map((a: string) => `- ${a}`).join('\n')}`);
+          }
+        }
+        
+        brandContext.systemPrompt = systemPromptParts.join('\n');
+      }
+    }
+
+    // Fallback if no brand context
+    if (!brandContext.systemPrompt) {
+      brandContext.systemPrompt = "You are a professional copywriter creating job advertisement content. Be concise, compelling, and professional.";
+    }
+
+    console.log("Brand context loaded:", { 
+      brand: instance.brand, 
+      hasTOV: !!brandContext.tov_guidelines,
+      hasInstructions: !!brandContext.ai_instructions 
+    });
+
     // Fetch all AI-editable layers for this instance
     const { data: slides, error: slidesError } = await supabase
       .from('slides')
@@ -248,6 +308,23 @@ serve(async (req) => {
           }
         }
 
+        // Add brand voice context to the prompt
+        if (brandContext.tov_guidelines || brandContext.ai_instructions) {
+          prompt += '\n\n--- Brand Voice & Guidelines ---';
+          if (brandContext.tov_guidelines) {
+            prompt += `\nTone: ${brandContext.tov_guidelines}`;
+          }
+          if (brandContext.ai_instructions) {
+            const instructions = brandContext.ai_instructions;
+            if (instructions.focus_areas) {
+              prompt += `\nFocus on: ${instructions.focus_areas.join(', ')}`;
+            }
+            if (instructions.guidelines) {
+              prompt += `\nRemember to: ${instructions.guidelines.join('; ')}`;
+            }
+          }
+        }
+
         // Call Lovable AI
         try {
           const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -261,7 +338,7 @@ serve(async (req) => {
               messages: [
                 {
                   role: 'system',
-                  content: 'You are a professional copywriter creating job advertisement content. Be concise, compelling, and professional.',
+                  content: brandContext.systemPrompt,
                 },
                 {
                   role: 'user',
@@ -325,30 +402,26 @@ serve(async (req) => {
       }
     }
 
-    // Fetch brand TOV for caption generation
-    let brandTOV = "";
-    if (instance.brand) {
-      const { data: brandData } = await supabase
-        .from('brands')
-        .select('tov_guidelines')
-        .eq('name', instance.brand)
-        .single();
-      
-      if (brandData?.tov_guidelines) {
-        brandTOV = brandData.tov_guidelines;
-      }
-    }
-
-    // Generate caption copy
+    // Generate caption copy using brand context
     let captionCopy = "";
     try {
-      const captionPrompt = `Write a 2-3 sentence engaging social media caption for a job posting.
+      let captionPrompt = `Write a 2-3 sentence engaging social media caption for a job posting.
 Job Title: ${jobDesc.title || "Unknown Position"}
 Location: ${jobDesc.location || ""}
 Company: ${instance.brand || ""}
-${brandTOV ? `Tone of Voice: ${brandTOV}` : ""}
 
 The caption should be professional yet inviting, and include 2-3 relevant hashtags. Keep it concise and compelling.`;
+
+      // Add brand voice context
+      if (brandContext.tov_guidelines) {
+        captionPrompt += `\n\nTone of Voice: ${brandContext.tov_guidelines}`;
+      }
+      if (brandContext.ai_instructions) {
+        const instructions = brandContext.ai_instructions;
+        if (instructions.focus_areas) {
+          captionPrompt += `\nHighlight: ${instructions.focus_areas.join(', ')}`;
+        }
+      }
 
       const captionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -359,7 +432,7 @@ The caption should be professional yet inviting, and include 2-3 relevant hashta
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [
-            { role: "system", content: "You are a professional copywriter creating engaging social media content." },
+            { role: "system", content: brandContext.systemPrompt },
             { role: "user", content: captionPrompt }
           ],
         }),
