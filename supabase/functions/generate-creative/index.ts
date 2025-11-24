@@ -1,5 +1,6 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.84.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,497 +14,386 @@ serve(async (req) => {
 
   try {
     const { instanceId } = await req.json();
-    
-    if (!instanceId) {
-      console.error("Missing instanceId in request");
-      return new Response(JSON.stringify({ 
-        error: "instanceId is required",
-        errorCode: "MISSING_INSTANCE_ID",
-        details: "The instanceId parameter is required to generate content"
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    console.log('🚀 Starting dynamic content generation for instance:', instanceId);
+
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !LOVABLE_API_KEY) {
+      throw new Error('Missing required environment variables');
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    if (!lovableApiKey) {
-      console.error("LOVABLE_API_KEY not configured in environment");
-      return new Response(JSON.stringify({ 
-        error: "AI service not configured. Please contact support.",
-        errorCode: "MISSING_API_KEY",
-        details: "LOVABLE_API_KEY is not set in the environment"
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Fetch instance with job description
+    // Fetch the instance and template details
     const { data: instance, error: instanceError } = await supabase
       .from('template_instances')
-      .select('*, templates!original_template_id(name, brand, category)')
+      .select('*, original_template_id')
       .eq('id', instanceId)
       .single();
 
     if (instanceError || !instance) {
-      console.error('Instance fetch error:', instanceError);
-      return new Response(JSON.stringify({ 
-        error: "Creative project not found",
-        errorCode: "INSTANCE_NOT_FOUND",
-        details: instanceError?.message || "The requested creative instance does not exist"
-      }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      throw new Error('Instance not found');
     }
 
-    const jobDesc = instance.job_description as { title: string; description: string; location: string };
-    if (!jobDesc) {
-      console.error("Instance missing job_description:", instanceId);
-      return new Response(JSON.stringify({ 
-        error: "Job description is missing",
-        errorCode: "MISSING_JOB_DESCRIPTION",
-        details: "The creative instance does not have job description data"
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    console.log('✅ Found instance:', instance.name);
 
-    // Check if slides already exist for this instance
+    // PHASE 1: TEMPLATE STRUCTURE ANALYSIS
+    console.log('📊 Phase 1: Analyzing template structure...');
+
+    // Check if slides exist for this instance, if not copy from template
     const { data: existingSlides } = await supabase
       .from('slides')
       .select('id')
-      .eq('instance_id', instanceId)
-      .limit(1);
+      .eq('instance_id', instanceId);
 
-    // If slides don't exist, copy template structure
+    // If no slides exist, copy structure from template
     if (!existingSlides || existingSlides.length === 0) {
-      console.log('Copying template structure to instance...');
+      console.log('No slides found for instance, copying from template...');
       
-      // Fetch template slides
-      const { data: templateSlides, error: slidesError } = await supabase
+      // Get template slides
+      const { data: templateSlides } = await supabase
         .from('slides')
-        .select('*, layers(*)')
+        .select('*')
         .eq('template_id', instance.original_template_id)
         .order('order_index', { ascending: true });
 
-      if (slidesError || !templateSlides) {
-        console.error('Template slides fetch error:', slidesError);
-        return new Response(JSON.stringify({ 
-          error: "Failed to load template structure",
-          errorCode: "TEMPLATE_FETCH_ERROR",
-          details: slidesError?.message || "Could not fetch template slides"
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+      if (templateSlides && templateSlides.length > 0) {
+        // Create slides for instance
+        for (const templateSlide of templateSlides) {
+          const { data: newSlide, error: slideError } = await supabase
+            .from('slides')
+            .insert({
+              name: templateSlide.name,
+              width: templateSlide.width,
+              height: templateSlide.height,
+              order_index: templateSlide.order_index,
+              instance_id: instanceId,
+            })
+            .select()
+            .single();
 
-      // Copy slides and layers
-      for (const slide of templateSlides) {
-        const { data: newSlide, error: slideInsertError } = await supabase
-          .from('slides')
-          .insert({
-            name: slide.name,
-            width: slide.width,
-            height: slide.height,
-            order_index: slide.order_index,
-            instance_id: instanceId,
-            template_id: null,
-          })
-          .select()
-          .single();
-
-        if (slideInsertError || !newSlide) {
-          console.error('Slide insert error:', slideInsertError);
-          continue;
-        }
-
-        // Copy layers for this slide
-        const layersToInsert = slide.layers.map((layer: any) => ({
-          slide_id: newSlide.id,
-          name: layer.name,
-          type: layer.type,
-          x: layer.x,
-          y: layer.y,
-          width: layer.width,
-          height: layer.height,
-          z_index: layer.z_index,
-          opacity: layer.opacity,
-          rotation: layer.rotation,
-          visible: layer.visible,
-          locked: layer.locked,
-          text_content: layer.text_content,
-          font_family: layer.font_family,
-          font_size: layer.font_size,
-          font_weight: layer.font_weight,
-          color: layer.color,
-          text_align: layer.text_align,
-          text_transform: layer.text_transform,
-          line_height: layer.line_height,
-          letter_spacing: layer.letter_spacing,
-          image_src: layer.image_src,
-          max_length: layer.max_length,
-          ai_editable: layer.ai_editable,
-          ai_content_type: layer.ai_content_type,
-          ai_prompt_template: layer.ai_prompt_template,
-          hr_visible: layer.hr_visible,
-          hr_editable: layer.hr_editable,
-        }));
-
-        const { error: layersInsertError } = await supabase
-          .from('layers')
-          .insert(layersToInsert);
-
-        if (layersInsertError) {
-          console.error('Layers insert error:', layersInsertError);
-        }
-      }
-    }
-
-    // Fetch brand data early for all content generation
-    let brandContext = {
-      tov_guidelines: "",
-      ai_instructions: null as any,
-      systemPrompt: "",
-    };
-
-    if (instance.brand) {
-      const { data: brandData } = await supabase
-        .from('brands')
-        .select('tov_guidelines, ai_instructions')
-        .eq('name', instance.brand)
-        .single();
-      
-      if (brandData) {
-        brandContext.tov_guidelines = brandData.tov_guidelines || "";
-        brandContext.ai_instructions = brandData.ai_instructions;
-        
-        // Build comprehensive brand-aware system prompt
-        let systemPromptParts = [
-          "You are a professional copywriter creating job advertisement content.",
-          "Be concise, compelling, and professional."
-        ];
-        
-        if (brandContext.tov_guidelines) {
-          systemPromptParts.push(`\nBrand Tone of Voice: ${brandContext.tov_guidelines}`);
-        }
-        
-        if (brandContext.ai_instructions) {
-          // Format ai_instructions JSONB into readable text
-          const instructions = brandContext.ai_instructions;
-          
-          if (instructions.focus_areas && Array.isArray(instructions.focus_areas)) {
-            systemPromptParts.push(`\nKey Focus Areas: ${instructions.focus_areas.join(', ')}`);
-          }
-          
-          if (instructions.guidelines && Array.isArray(instructions.guidelines)) {
-            systemPromptParts.push(`\nGuidelines:\n${instructions.guidelines.map((g: string) => `- ${g}`).join('\n')}`);
-          }
-          
-          if (instructions.avoid && Array.isArray(instructions.avoid)) {
-            systemPromptParts.push(`\nAvoid:\n${instructions.avoid.map((a: string) => `- ${a}`).join('\n')}`);
-          }
-        }
-        
-        brandContext.systemPrompt = systemPromptParts.join('\n');
-      }
-    }
-
-    // Fallback if no brand context
-    if (!brandContext.systemPrompt) {
-      brandContext.systemPrompt = "You are a professional copywriter creating job advertisement content. Be concise, compelling, and professional.";
-    }
-
-    console.log("Brand context loaded:", { 
-      brand: instance.brand, 
-      hasTOV: !!brandContext.tov_guidelines,
-      hasInstructions: !!brandContext.ai_instructions 
-    });
-
-    // Fetch all AI-editable layers for this instance
-    const { data: slides, error: slidesError } = await supabase
-      .from('slides')
-      .select('*, layers!inner(*)')
-      .eq('instance_id', instanceId)
-      .eq('layers.ai_editable', true);
-
-    if (slidesError) {
-      console.error('Slides fetch error:', slidesError);
-      return new Response(JSON.stringify({ 
-        error: "Failed to load creative slides",
-        errorCode: "SLIDES_FETCH_ERROR",
-        details: slidesError?.message || "Could not fetch slides for AI generation"
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Generate AI content for each editable layer
-    const updatedLayers = [];
-    
-    for (const slide of slides || []) {
-      for (const layer of slide.layers) {
-        if (!layer.ai_editable) continue;
-
-        const contentType = layer.ai_content_type || 'text';
-        
-        // For job title headlines, use the actual title directly
-        if (contentType === 'headline' && 
-            (layer.name.toLowerCase().includes('position') || 
-             layer.name.toLowerCase().includes('job title') ||
-             layer.name.toLowerCase().includes('job_title'))) {
-          const { error: updateError } = await supabase
-            .from('layers')
-            .update({ text_content: jobDesc.title })
-            .eq('id', layer.id);
-          
-          if (!updateError) {
-            updatedLayers.push({ layerId: layer.id, content: jobDesc.title });
-          }
-          continue; // Skip AI generation for this layer
-        }
-
-        // Build AI prompt based on content type and job description
-        let prompt = '';
-        
-        if (layer.ai_prompt_template) {
-          // Check if template has placeholders
-          if (layer.ai_prompt_template.includes('{title}') || 
-              layer.ai_prompt_template.includes('{description}') || 
-              layer.ai_prompt_template.includes('{location}')) {
-            prompt = layer.ai_prompt_template
-              .replace('{title}', jobDesc.title)
-              .replace('{description}', jobDesc.description)
-              .replace('{location}', jobDesc.location);
-          } else {
-            // Template doesn't have placeholders - use it as context
-            prompt = `Based on this context: "${layer.ai_prompt_template}"\n\nGenerate similar content for: ${jobDesc.title} in ${jobDesc.location}`;
-          }
-        } else {
-          // Default prompts based on content type
-          switch (contentType) {
-            case 'headline':
-              prompt = `Create a compelling job advertisement headline for: ${jobDesc.title}. Keep it under 60 characters, punchy and attention-grabbing.`;
-              break;
-            case 'description':
-              prompt = `Write a concise job description for ${jobDesc.title} in ${jobDesc.location}. Based on: ${jobDesc.description}. Keep it under 150 characters.`;
-              break;
-            case 'location':
-              prompt = `Format this location professionally: ${jobDesc.location}`;
-              break;
-            case 'cta':
-              prompt = `Create a call-to-action for a ${jobDesc.title} job posting. Keep it under 30 characters.`;
-              break;
-            default:
-              prompt = `Generate professional text for a ${jobDesc.title} job posting in ${jobDesc.location}. Context: ${jobDesc.description}. Keep it concise.`;
-          }
-        }
-
-        // Add brand voice context to the prompt
-        if (brandContext.tov_guidelines || brandContext.ai_instructions) {
-          prompt += '\n\n--- Brand Voice & Guidelines ---';
-          if (brandContext.tov_guidelines) {
-            prompt += `\nTone: ${brandContext.tov_guidelines}`;
-          }
-          if (brandContext.ai_instructions) {
-            const instructions = brandContext.ai_instructions;
-            if (instructions.focus_areas) {
-              prompt += `\nFocus on: ${instructions.focus_areas.join(', ')}`;
-            }
-            if (instructions.guidelines) {
-              prompt += `\nRemember to: ${instructions.guidelines.join('; ')}`;
-            }
-          }
-        }
-
-        // Call Lovable AI
-        try {
-          const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${lovableApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'google/gemini-2.5-flash',
-              messages: [
-                {
-                  role: 'system',
-                  content: brandContext.systemPrompt,
-                },
-                {
-                  role: 'user',
-                  content: prompt,
-                },
-              ],
-            }),
-          });
-
-          if (!aiResponse.ok) {
-            const errorText = await aiResponse.text();
-            console.error(`AI API error for layer ${layer.id}:`, aiResponse.status, errorText);
-            
-            // Handle specific AI API errors
-            if (aiResponse.status === 429) {
-              console.error("Rate limit exceeded on Lovable AI");
-              return new Response(JSON.stringify({ 
-                error: "AI service rate limit exceeded. Please try again in a few moments.",
-                errorCode: "RATE_LIMIT_EXCEEDED",
-                details: "Too many requests to the AI service. Please wait and try again."
-              }), {
-                status: 429,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              });
-            }
-            
-            if (aiResponse.status === 402) {
-              console.error("Payment required for Lovable AI");
-              return new Response(JSON.stringify({ 
-                error: "AI service credits depleted. Please contact your administrator.",
-                errorCode: "PAYMENT_REQUIRED",
-                details: "Lovable AI credits have run out. Please add credits to continue."
-              }), {
-                status: 402,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              });
-            }
-            
+          if (slideError) {
+            console.error('Error creating slide:', slideError);
             continue;
           }
 
-          const aiData = await aiResponse.json();
-          const generatedContent = aiData.choices?.[0]?.message?.content?.trim();
+          // Get layers from template slide
+          const { data: templateLayers } = await supabase
+            .from('layers')
+            .select('*')
+            .eq('slide_id', templateSlide.id);
 
-          if (generatedContent) {
-            // Update layer with AI-generated content
-            const { error: updateError } = await supabase
+          if (templateLayers && templateLayers.length > 0) {
+            // Copy layers to new slide
+            const newLayers = templateLayers.map(layer => ({
+              slide_id: newSlide.id,
+              type: layer.type,
+              name: layer.name,
+              x: layer.x,
+              y: layer.y,
+              width: layer.width,
+              height: layer.height,
+              z_index: layer.z_index,
+              opacity: layer.opacity,
+              rotation: layer.rotation,
+              visible: layer.visible,
+              locked: layer.locked,
+              text_content: layer.text_content,
+              font_family: layer.font_family,
+              font_size: layer.font_size,
+              font_weight: layer.font_weight,
+              color: layer.color,
+              text_align: layer.text_align,
+              line_height: layer.line_height,
+              letter_spacing: layer.letter_spacing,
+              text_transform: layer.text_transform,
+              image_src: layer.image_src,
+              max_length: layer.max_length,
+              ai_editable: layer.ai_editable,
+              ai_content_type: layer.ai_content_type,
+              ai_prompt_template: layer.ai_prompt_template,
+              hr_editable: layer.hr_editable,
+              hr_visible: layer.hr_visible,
+            }));
+
+            const { error: layersError } = await supabase
               .from('layers')
-              .update({ text_content: generatedContent })
-              .eq('id', layer.id);
+              .insert(newLayers);
 
-            if (updateError) {
-              console.error(`Error updating layer ${layer.id}:`, updateError);
-            } else {
-              updatedLayers.push({ layerId: layer.id, content: generatedContent });
+            if (layersError) {
+              console.error('Error copying layers:', layersError);
             }
           }
-        } catch (aiError) {
-          console.error(`AI generation error for layer ${layer.id}:`, aiError);
         }
+        
+        console.log('Successfully copied template structure to instance');
       }
     }
 
-    // Generate caption copy using brand context
-    let captionCopy = "";
-    try {
-      let captionPrompt = `Write a 2-3 sentence engaging social media caption for a job posting.
-Job Title: ${jobDesc.title || "Unknown Position"}
-Location: ${jobDesc.location || ""}
-Company: ${instance.brand || ""}
+    // Get all AI-editable layers for this instance
+    const { data: slides } = await supabase
+      .from('slides')
+      .select(`
+        id,
+        name,
+        order_index,
+        layers!inner(
+          id,
+          name,
+          type,
+          ai_content_type,
+          ai_editable,
+          max_length,
+          width,
+          height
+        )
+      `)
+      .eq('instance_id', instanceId)
+      .eq('layers.ai_editable', true)
+      .order('order_index', { ascending: true });
 
-The caption should be professional yet inviting, and include 2-3 relevant hashtags. Keep it concise and compelling.`;
-
-      // Add brand voice context
-      if (brandContext.tov_guidelines) {
-        captionPrompt += `\n\nTone of Voice: ${brandContext.tov_guidelines}`;
-      }
-      if (brandContext.ai_instructions) {
-        const instructions = brandContext.ai_instructions;
-        if (instructions.focus_areas) {
-          captionPrompt += `\nHighlight: ${instructions.focus_areas.join(', ')}`;
-        }
-      }
-
-      const captionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${lovableApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: brandContext.systemPrompt },
-            { role: "user", content: captionPrompt }
-          ],
+    if (!slides || slides.length === 0) {
+      console.log('⚠️ No AI-editable layers found');
+      return new Response(
+        JSON.stringify({ 
+          message: 'No AI-editable layers found',
+          updated_layers: 0
         }),
-      });
-
-      if (captionResponse.ok) {
-        const captionData = await captionResponse.json();
-        captionCopy = captionData.choices?.[0]?.message?.content || "";
-        console.log("Generated caption:", captionCopy);
-      }
-    } catch (captionError) {
-      console.error("Error generating caption:", captionError);
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Mark instance as AI generated and save caption
-    const { error: updateInstanceError } = await supabase
+    // Group layers by ai_content_type and count them
+    const layersByCategory: Record<string, any[]> = {};
+    const extractionRequirements: Record<string, { count: number; max_chars_per_item?: number }> = {};
+
+    for (const slide of slides) {
+      for (const layer of slide.layers) {
+        const category = layer.ai_content_type || 'other';
+        
+        if (!layersByCategory[category]) {
+          layersByCategory[category] = [];
+        }
+        layersByCategory[category].push({ ...layer, slide_name: slide.name });
+      }
+    }
+
+    // Calculate extraction requirements based on layer counts
+    for (const [category, layers] of Object.entries(layersByCategory)) {
+      const count = layers.length;
+      const maxChars = layers[0]?.max_length || null;
+      
+      extractionRequirements[category] = {
+        count,
+        ...(maxChars && { max_chars_per_item: maxChars })
+      };
+    }
+
+    console.log('📋 Extraction requirements:', JSON.stringify(extractionRequirements, null, 2));
+
+    // PHASE 2: INTELLIGENT JD PARSING
+    console.log('🧠 Phase 2: Parsing job description...');
+
+    // Fetch brand context
+    const { data: template } = await supabase
+      .from('templates')
+      .select('brand')
+      .eq('id', instance.original_template_id)
+      .single();
+
+    let brandGuidelines = {
+      tov: 'Professional and aspirational',
+      focus_areas: [] as string[]
+    };
+
+    if (template?.brand) {
+      console.log('Loading brand context for:', template.brand);
+      const { data: brandData } = await supabase
+        .from('brands')
+        .select('tov_guidelines, ai_instructions')
+        .eq('name', template.brand)
+        .single();
+
+      if (brandData) {
+        brandGuidelines.tov = brandData.tov_guidelines || brandGuidelines.tov;
+        if (brandData.ai_instructions) {
+          try {
+            const instructions = typeof brandData.ai_instructions === 'string' 
+              ? JSON.parse(brandData.ai_instructions)
+              : brandData.ai_instructions;
+            brandGuidelines.focus_areas = instructions.focus_areas || [];
+          } catch (e) {
+            console.error('Failed to parse AI instructions:', e);
+          }
+        }
+        console.log('✅ Loaded brand context');
+      }
+    }
+
+    // Prepare job description for parsing
+    const jobDescription = instance.job_description || {};
+    const jobDescText = typeof jobDescription === 'string' 
+      ? jobDescription 
+      : (jobDescription.description || jobDescription.text || '');
+
+    if (!jobDescText) {
+      throw new Error('No job description found in instance');
+    }
+
+    // Call parse-job-description function
+    console.log('Calling parse-job-description function...');
+    
+    const parseResponse = await fetch(`${SUPABASE_URL}/functions/v1/parse-job-description`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        job_description: {
+          title: instance.name || 'Job Position',
+          location: jobDescription.location || instance.brand || '',
+          description: jobDescText
+        },
+        extraction_requirements: extractionRequirements,
+        brand_guidelines: brandGuidelines
+      })
+    });
+
+    if (!parseResponse.ok) {
+      const errorText = await parseResponse.text();
+      console.error('Parse function error:', parseResponse.status, errorText);
+      
+      if (parseResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      throw new Error(`Failed to parse job description: ${errorText}`);
+    }
+
+    const { parsed_data } = await parseResponse.json();
+    console.log('✅ Received parsed data with categories:', Object.keys(parsed_data));
+
+    // Store parsed data in instance
+    await supabase
       .from('template_instances')
       .update({ 
-        ai_generated: true,
-        caption_copy: captionCopy 
+        job_description_parsed: parsed_data,
+        ai_generated: true 
       })
       .eq('id', instanceId);
 
-    if (updateInstanceError) {
-      console.error('Instance update error:', updateInstanceError);
-    }
+    console.log('💾 Stored parsed data in instance');
 
-    console.log(`Successfully generated content for ${updatedLayers.length} layers`);
+    // PHASE 3: SMART LAYER POPULATION
+    console.log('🎨 Phase 3: Populating layers with extracted content...');
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        updatedLayers: updatedLayers.length,
-        message: `Generated content for ${updatedLayers.length} layers`,
-        caption: captionCopy,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
-  } catch (error) {
-    console.error('Error in generate-creative function:', error);
-    
-    let errorMessage = 'An unexpected error occurred during AI generation';
-    let errorCode = 'UNKNOWN_ERROR';
-    
-    if (error instanceof Error) {
-      errorMessage = error.message;
+    let updatedLayersCount = 0;
+
+    // Iterate through each category and populate layers
+    for (const [category, layers] of Object.entries(layersByCategory)) {
+      const extractedItems = parsed_data[category];
       
-      // Categorize common errors
-      if (error.message.includes('fetch')) {
-        errorCode = 'NETWORK_ERROR';
-        errorMessage = 'Network error connecting to AI service. Please check your connection.';
-      } else if (error.message.includes('timeout')) {
-        errorCode = 'TIMEOUT_ERROR';
-        errorMessage = 'AI generation timed out. Please try again.';
-      } else if (error.message.includes('JSON')) {
-        errorCode = 'PARSE_ERROR';
-        errorMessage = 'Failed to process AI response. Please try again.';
+      console.log(`Processing category "${category}": ${layers.length} layers, ${Array.isArray(extractedItems) ? extractedItems.length : 1} items`);
+
+      if (!extractedItems) {
+        console.warn(`No extracted data for category: ${category}`);
+        continue;
+      }
+
+      if (Array.isArray(extractedItems)) {
+        // Multi-item category (skills, domain_expertise, requirements, etc.)
+        for (let i = 0; i < layers.length; i++) {
+          const layer = layers[i];
+          const content = extractedItems[i] || ''; // Use item or empty string if not enough items
+          
+          if (content) {
+            const { error: updateError } = await supabase
+              .from('layers')
+              .update({ text_content: content })
+              .eq('id', layer.id);
+
+            if (!updateError) {
+              updatedLayersCount++;
+              console.log(`  ✓ Updated "${layer.name}": "${content.substring(0, 50)}..."`);
+            } else {
+              console.error(`  ✗ Failed to update "${layer.name}":`, updateError);
+            }
+          } else {
+            console.warn(`  ⚠ No content available for layer ${i + 1} of ${layers.length}`);
+          }
+        }
+      } else {
+        // Single-item category (intro, location, job_type, etc.)
+        // Use the same content for all layers with this content type
+        for (const layer of layers) {
+          const { error: updateError } = await supabase
+            .from('layers')
+            .update({ text_content: extractedItems })
+            .eq('id', layer.id);
+
+          if (!updateError) {
+            updatedLayersCount++;
+            console.log(`  ✓ Updated "${layer.name}": "${extractedItems.substring(0, 50)}..."`);
+          } else {
+            console.error(`  ✗ Failed to update "${layer.name}":`, updateError);
+          }
+        }
       }
     }
+
+    // Generate social media caption using parsed data
+    console.log('📝 Generating social media caption...');
     
+    const captionItems = [];
+    if (parsed_data.intro) captionItems.push(parsed_data.intro);
+    if (parsed_data.location) captionItems.push(`📍 ${parsed_data.location}`);
+    if (parsed_data.job_type) captionItems.push(`💼 ${parsed_data.job_type}`);
+    
+    const captionCopy = `${captionItems.join(' | ')}
+
+Apply now and join our team! 🚀
+
+#Hiring #JobOpportunity #${instance.name?.replace(/\s+/g, '')} #CareerGrowth`;
+
+    // Update instance with caption
+    await supabase
+      .from('template_instances')
+      .update({ caption_copy: captionCopy })
+      .eq('id', instanceId);
+    
+    console.log('✅ Caption generated and saved');
+
+    console.log(`\n🎉 Content generation completed!`);
+    console.log(`   - Updated ${updatedLayersCount} layers across ${Object.keys(layersByCategory).length} categories`);
+    console.log(`   - Generated social media caption`);
+
     return new Response(
       JSON.stringify({ 
-        error: errorMessage,
-        errorCode: errorCode,
-        details: error instanceof Error ? error.message : 'Unknown error occurred'
+        message: 'Dynamic content generation completed successfully',
+        updated_layers: updatedLayersCount,
+        categories_processed: Object.keys(layersByCategory).length,
+        parsed_data_stored: true,
+        caption_generated: true
       }),
-      {
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Error in generate-creative:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        details: error instanceof Error ? error.stack : undefined
+      }),
+      { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }
