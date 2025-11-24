@@ -63,7 +63,7 @@ const Login = () => {
           if (!existingRoles || existingRoles.length === 0) {
             const { error: roleError } = await supabase
               .from('user_roles')
-              .insert({ user_id: user.id, role: selectedRole });
+              .insert({ user_id: user.id, role: selectedRole, preferred_version: 'v2' });
 
             if (roleError) throw roleError;
           }
@@ -95,7 +95,7 @@ const Login = () => {
           if (!existingRoles || existingRoles.length === 0) {
             const { error: roleError } = await supabase
               .from('user_roles')
-              .insert({ user_id: user.id, role: selectedRole });
+              .insert({ user_id: user.id, role: selectedRole, preferred_version: 'v2' });
 
             if (roleError) throw roleError;
           }
