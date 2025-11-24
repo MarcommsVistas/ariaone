@@ -64,7 +64,7 @@ export const TemplateThumbnail = ({ templateId }: TemplateThumbnailProps) => {
 
   if (isLoading) {
     return (
-      <div className="aspect-[16/10] bg-muted/30 rounded-t-lg flex items-center justify-center">
+      <div className="bg-muted/30 flex items-center justify-center p-6">
         <div className="animate-pulse text-muted-foreground text-sm">Loading...</div>
       </div>
     );
@@ -72,7 +72,7 @@ export const TemplateThumbnail = ({ templateId }: TemplateThumbnailProps) => {
 
   if (slides.length === 0) {
     return (
-      <div className="aspect-[16/10] bg-muted/30 rounded-t-lg flex flex-col items-center justify-center gap-2">
+      <div className="bg-muted/30 flex flex-col items-center justify-center gap-2 p-6">
         <FileText className="h-8 w-8 text-muted-foreground/50" />
         <p className="text-xs text-muted-foreground">No preview available</p>
       </div>
@@ -82,16 +82,26 @@ export const TemplateThumbnail = ({ templateId }: TemplateThumbnailProps) => {
   const firstSlide = slides[0];
 
   return (
-    <div className="aspect-[16/10] bg-white rounded-t-lg overflow-hidden flex items-center justify-center p-2">
+    <div className="bg-muted/30 flex items-center justify-center p-6 overflow-hidden px-[12px] py-[12px]">
       <div 
-        style={{ 
-          transform: 'scale(0.15)', 
-          transformOrigin: 'center',
-          width: firstSlide.width,
-          height: firstSlide.height
+        className="relative bg-white shadow-md rounded-sm overflow-hidden" 
+        style={{
+          width: '100%',
+          maxWidth: '360px',
+          aspectRatio: `${firstSlide.width} / ${firstSlide.height}`
         }}
       >
-        <SlideRenderer slide={firstSlide} />
+        <div 
+          className="absolute inset-0"
+          style={{ 
+            transform: `scale(${360 / Math.max(firstSlide.width, firstSlide.height)})`,
+            transformOrigin: 'top left',
+            width: firstSlide.width,
+            height: firstSlide.height
+          }}
+        >
+          <SlideRenderer slide={firstSlide} />
+        </div>
       </div>
     </div>
   );
