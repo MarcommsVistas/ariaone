@@ -6,8 +6,10 @@ import { LayerPanel } from "./LayerPanel";
 import { PropertyPanel } from "./PropertyPanel";
 import { TemplateHeader } from "./TemplateHeader";
 import { SlideNavigation } from "@/components/editor/SlideNavigation";
+import { TemplateStrategyPanel } from "./TemplateStrategyPanel";
 import { AlertCircle, Minus, Plus } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const AdminStudio = () => {
   const { currentSlide, setSelectedLayer } = useTemplateStore();
@@ -115,7 +117,12 @@ export const AdminStudio = () => {
       <ResizableHandle withHandle />
 
       <ResizablePanel defaultSize={25} minSize={20} maxSize={35} className="h-full">
-        <PropertyPanel />
+        <ScrollArea className="h-full">
+          <div className="space-y-4 p-4">
+            <TemplateStrategyPanel />
+            <PropertyPanel />
+          </div>
+        </ScrollArea>
       </ResizablePanel>
     </ResizablePanelGroup>
       </div>
