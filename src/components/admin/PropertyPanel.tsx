@@ -96,11 +96,6 @@ export const PropertyPanel = ({
         <h3 className="font-semibold text-sm text-foreground">Properties</h3>
       </div>
       
-      {/* Font Uploader Section */}
-      <div className="p-4 border-b border-border">
-        <FontUploader />
-      </div>
-      
       {!selectedLayer ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-2 px-4">
@@ -516,6 +511,15 @@ export const PropertyPanel = ({
             </div>
           </>
         )}
+
+        {/* Font Uploader Section */}
+        <Separator />
+        <div>
+          <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+            Custom Fonts
+          </h4>
+          <FontUploader />
+        </div>
         </div>
       )}
     </div>
