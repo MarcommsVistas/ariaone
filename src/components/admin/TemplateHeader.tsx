@@ -33,9 +33,10 @@ export const TemplateHeader = ({ enableAI = false }: TemplateHeaderProps) => {
   const [tempBrand, setTempBrand] = useState(currentTemplate?.brand || "");
   const [tempCategory, setTempCategory] = useState(currentTemplate?.category || "");
   const [availableCategories, setAvailableCategories] = useState<string[]>(PRESET_CATEGORIES);
+  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Fetch categories from database
+  // Fetch categories and brands from database
   useEffect(() => {
     const fetchCategories = async () => {
       const { data } = await supabase
@@ -47,8 +48,20 @@ export const TemplateHeader = ({ enableAI = false }: TemplateHeaderProps) => {
         setAvailableCategories(data.map(c => c.name));
       }
     };
+
+    const fetchBrands = async () => {
+      const { data } = await supabase
+        .from('brands')
+        .select('name')
+        .order('name');
+      
+      if (data) {
+        setAvailableBrands(data.map(b => b.name));
+      }
+    };
     
     fetchCategories();
+    fetchBrands();
   }, []);
 
   if (!currentTemplate) return null;
@@ -77,7 +90,8 @@ export const TemplateHeader = ({ enableAI = false }: TemplateHeaderProps) => {
   };
 
   const handleBrandSave = () => {
-    updateTemplateBrand(tempBrand.trim());
+    const brandToSave = (tempBrand && tempBrand !== "none") ? tempBrand : "";
+    updateTemplateBrand(brandToSave);
     setIsEditingBrand(false);
   };
 
@@ -228,18 +242,20 @@ export const TemplateHeader = ({ enableAI = false }: TemplateHeaderProps) => {
           <PopoverContent className="w-64" align="start">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="brand">Brand Name</Label>
-                <Input
-                  id="brand"
-                  placeholder="e.g., Nike, Adidas"
-                  value={tempBrand}
-                  onChange={(e) => setTempBrand(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleBrandSave();
-                    }
-                  }}
-                />
+                <Label htmlFor="brand">Brand</Label>
+                <Select value={tempBrand || "none"} onValueChange={setTempBrand}>
+                  <SelectTrigger id="brand">
+                    <SelectValue placeholder="Select a brand" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {availableBrands.map(brand => (
+                      <SelectItem key={brand} value={brand}>
+                        {brand}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex justify-end gap-2">
                 <Button
