@@ -80,17 +80,18 @@ export const TemplateThumbnail = ({ templateId }: TemplateThumbnailProps) => {
   }
 
   const firstSlide = slides[0];
-  const maxThumbnailSize = 280;
+  const maxThumbnailSize = 350;
   const scale = maxThumbnailSize / Math.max(firstSlide.width, firstSlide.height);
 
   return (
-    <div className="bg-muted/30 flex items-center justify-center p-4 overflow-hidden">
+    <div className="bg-muted/30 flex items-center justify-center overflow-hidden" style={{ minHeight: '260px' }}>
       <div 
         className="relative bg-white shadow-md rounded-sm overflow-hidden" 
         style={{
-          width: '100%',
+          width: firstSlide.width * scale,
+          height: firstSlide.height * scale,
           maxWidth: `${maxThumbnailSize}px`,
-          aspectRatio: `${firstSlide.width} / ${firstSlide.height}`
+          maxHeight: `${maxThumbnailSize}px`
         }}
       >
         <div 
