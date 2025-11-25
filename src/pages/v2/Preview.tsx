@@ -446,6 +446,23 @@ export default function Preview() {
       <NavigationV2 />
       
       <div className="flex-1 flex overflow-hidden">
+        {/* Hidden export container - renders at 1:1 scale for accurate export */}
+        {currentSlide && (
+          <div 
+            id="preview-canvas"
+            className="absolute opacity-0 pointer-events-none"
+            style={{
+              position: 'fixed',
+              left: '-9999px',
+              top: 0,
+              width: currentSlide.width,
+              height: currentSlide.height,
+            }}
+          >
+            <SlideRenderer slide={currentSlide} interactive={false} />
+          </div>
+        )}
+
         {/* Left Sidebar */}
         <div className="w-[400px] bg-panel border-r border-border overflow-auto">
           <div className="sticky top-0 z-10 bg-panel/95 backdrop-blur-sm border-b border-border">
@@ -563,23 +580,40 @@ export default function Preview() {
           {/* Canvas */}
           <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto p-8 relative">
             {currentSlide && (
-              <div
-                className="relative"
-                style={{
-                  width: currentSlide.width * baseScale,
-                  height: currentSlide.height * baseScale,
-                }}
-              >
-                <div
+              <>
+                {/* Hidden export container - renders at 1:1 scale for accurate export */}
+                <div 
                   id="preview-canvas"
+                  className="absolute opacity-0 pointer-events-none"
                   style={{
-                    transform: `scale(${effectiveScale})`,
-                    transformOrigin: "center center",
+                    position: 'fixed',
+                    left: '-9999px',
+                    top: 0,
+                    width: currentSlide.width,
+                    height: currentSlide.height,
                   }}
                 >
                   <SlideRenderer slide={currentSlide} interactive={false} />
                 </div>
-              </div>
+
+                {/* Visible canvas with zoom */}
+                <div
+                  className="relative"
+                  style={{
+                    width: currentSlide.width * baseScale,
+                    height: currentSlide.height * baseScale,
+                  }}
+                >
+                  <div
+                    style={{
+                      transform: `scale(${effectiveScale})`,
+                      transformOrigin: "center center",
+                    }}
+                  >
+                    <SlideRenderer slide={currentSlide} interactive={false} />
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Zoom Controls */}

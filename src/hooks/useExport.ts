@@ -49,8 +49,24 @@ export const useExport = () => {
     
     document.head.appendChild(fontStyle);
     
-    // Wait for fonts to load
+    // Wait for fonts to load - including common Google Fonts
     await document.fonts.ready;
+    
+    // Pre-load common fonts used in templates
+    const commonFonts = [
+      '400 16px "DM Sans"',
+      '500 16px "DM Sans"',
+      '600 16px "DM Sans"',
+      '700 16px "DM Sans"',
+    ];
+    
+    await Promise.all([
+      ...commonFonts.map(f => document.fonts.load(f).catch(() => {})),
+      ...uploadedFonts.map(font => 
+        document.fonts.load(`${font.weight || 400} 16px "${font.family}"`).catch(() => {})
+      )
+    ]);
+    
     await new Promise(resolve => setTimeout(resolve, 100));
   };
 
@@ -102,6 +118,12 @@ export const useExport = () => {
         quality,
         pixelRatio: 2,
         cacheBust: true,
+        skipFonts: true, // Skip external stylesheets that cause CORS errors
+        filter: (node) => {
+          // Filter out any problematic nodes
+          const element = node as HTMLElement;
+          return !element.className?.includes('pointer-events-none');
+        },
       });
 
       // Clean up injected fonts
@@ -185,6 +207,12 @@ export const useExport = () => {
           quality,
           pixelRatio: 2,
           cacheBust: true,
+          skipFonts: true, // Skip external stylesheets that cause CORS errors
+          filter: (node) => {
+            // Filter out any problematic nodes
+            const element = node as HTMLElement;
+            return !element.className?.includes('pointer-events-none');
+          },
         });
 
         // Clean up injected fonts

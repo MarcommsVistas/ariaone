@@ -82,6 +82,23 @@ export const HRInterface = () => {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Hidden export container - renders at 1:1 scale for accurate export */}
+      {currentSlide && (
+        <div 
+          id="hr-export-canvas"
+          className="absolute opacity-0 pointer-events-none"
+          style={{
+            position: 'fixed',
+            left: '-9999px',
+            top: 0,
+            width: currentSlide.width,
+            height: currentSlide.height,
+          }}
+        >
+          <SlideRenderer slide={currentSlide} interactive={false} />
+        </div>
+      )}
+
       <div className="flex-1 flex overflow-hidden">
         <div className="w-[420px] bg-panel border-r border-border overflow-auto">
           <div className="sticky top-0 z-10 bg-panel/95 backdrop-blur-sm border-b border-border">
@@ -147,7 +164,6 @@ export const HRInterface = () => {
           }}
         >
           <div 
-            id="hr-export-canvas"
             style={{ 
               transform: `scale(${baseScale * (zoom / 100)})`, 
               transformOrigin: 'center center' 
