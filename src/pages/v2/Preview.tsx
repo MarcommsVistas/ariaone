@@ -117,32 +117,70 @@ export default function Preview() {
     })) || [];
   };
 
-  const generateContent = async () => {
+  const generateContent = async (retryCount = 0) => {
     setIsGenerating(true);
     setGenerationError(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke("generate-creative", {
+      console.log(`[Preview] Starting AI generation (attempt ${retryCount + 1})...`);
+      
+      // Add timeout wrapper for edge function call
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Generation timeout - please try again')), 120000); // 2 min timeout
+      });
+
+      const invocationPromise = supabase.functions.invoke("generate-creative", {
         body: { instanceId },
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const { data, error } = await Promise.race([
+        invocationPromise,
+        timeoutPromise
+      ]) as any;
+
+      if (error) {
+        console.error('[Preview] Edge function error:', error);
+        throw error;
+      }
+      if (data?.error) {
+        console.error('[Preview] Generation error:', data.error);
+        throw new Error(data.error);
+      }
+
+      console.log('[Preview] AI generation successful:', data);
 
       toast({
         title: "AI Generation Complete",
-        description: `Generated content for ${data.updatedLayers || 0} layers`,
+        description: `Generated content for ${data.updated_layers || 0} layers`,
       });
 
       const slidesData = await fetchSlides();
       setSlides(slidesData);
     } catch (error: any) {
-      console.error("Error generating content:", error);
-      setGenerationError(error.message || "Failed to generate AI content");
+      console.error("[Preview] Error generating content:", error);
+      
+      // Check if it's a timeout or database error
+      const isTimeout = error.message?.includes('timeout');
+      const isDbError = error.message?.includes('database') || error.message?.includes('statement timeout');
+      
+      let errorMessage = error.message || "Failed to generate AI content";
+      
+      if (isTimeout || isDbError) {
+        errorMessage = "Generation is taking longer than expected. This may be due to database load. Please try again.";
+        
+        // Auto-retry once for timeouts
+        if (retryCount < 1) {
+          console.log('[Preview] Auto-retrying after timeout...');
+          setTimeout(() => generateContent(retryCount + 1), 2000);
+          return;
+        }
+      }
+      
+      setGenerationError(errorMessage);
       
       toast({
         title: "Generation Failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
