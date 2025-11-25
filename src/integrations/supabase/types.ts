@@ -496,6 +496,120 @@ export type Database = {
           },
         ]
       }
+      template_version_layers: {
+        Row: {
+          id: string
+          layer_data: Json
+          layer_id: string | null
+          version_slide_id: string
+          z_index: number
+        }
+        Insert: {
+          id?: string
+          layer_data: Json
+          layer_id?: string | null
+          version_slide_id: string
+          z_index: number
+        }
+        Update: {
+          id?: string
+          layer_data?: Json
+          layer_id?: string | null
+          version_slide_id?: string
+          z_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_version_layers_version_slide_id_fkey"
+            columns: ["version_slide_id"]
+            isOneToOne: false
+            referencedRelation: "template_version_slides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_version_slides: {
+        Row: {
+          id: string
+          order_index: number
+          slide_data: Json
+          slide_id: string | null
+          version_id: string
+        }
+        Insert: {
+          id?: string
+          order_index: number
+          slide_data: Json
+          slide_id?: string | null
+          version_id: string
+        }
+        Update: {
+          id?: string
+          order_index?: number
+          slide_data?: Json
+          slide_id?: string | null
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_version_slides_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "template_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_versions: {
+        Row: {
+          change_description: string | null
+          change_type: string
+          created_at: string
+          created_by: string | null
+          id: string
+          layer_count: number
+          slide_count: number
+          template_data: Json
+          template_id: string
+          version_label: string | null
+          version_number: number
+        }
+        Insert: {
+          change_description?: string | null
+          change_type: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          layer_count: number
+          slide_count: number
+          template_data: Json
+          template_id: string
+          version_label?: string | null
+          version_number: number
+        }
+        Update: {
+          change_description?: string | null
+          change_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          layer_count?: number
+          slide_count?: number
+          template_data?: Json
+          template_id?: string
+          version_label?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_versions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       templates: {
         Row: {
           brand: string | null
@@ -570,6 +684,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_template_version: {
+        Args: {
+          p_change_description?: string
+          p_change_type: string
+          p_template_id: string
+          p_version_label?: string
+        }
+        Returns: string
+      }
       get_audit_logs_with_emails: {
         Args: {
           _end_date?: string

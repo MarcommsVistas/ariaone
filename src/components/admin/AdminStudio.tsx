@@ -5,6 +5,7 @@ import { InteractionOverlay } from "@/components/editor/InteractionOverlay";
 import { LayerPanel } from "./LayerPanel";
 import { PropertyPanel } from "./PropertyPanel";
 import { TemplateHeader } from "./TemplateHeader";
+import { VersionHistoryPanel } from "./VersionHistoryPanel";
 import { SlideNavigation } from "@/components/editor/SlideNavigation";
 import { TemplateStrategyPanel } from "./TemplateStrategyPanel";
 import { BulkLayerConfigurationDialog } from "./BulkLayerConfigurationDialog";
@@ -120,6 +121,7 @@ export const AdminStudio = () => {
       <ResizablePanel defaultSize={25} minSize={20} maxSize={35} className="h-full">
         <ScrollArea className="h-full">
           <div className="space-y-4 p-4">
+            <VersionHistoryPanel />
             <TemplateStrategyPanel />
             <PropertyPanel />
           </div>

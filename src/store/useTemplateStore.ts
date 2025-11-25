@@ -60,6 +60,7 @@ export interface Template {
   saved?: boolean; // Whether template is published for HR use
   created_at?: string;
   updated_at?: string;
+  deleted_at?: string | null;
 }
 
 export interface TemplateInstance {
@@ -83,13 +84,21 @@ interface TemplateStore {
   mode: 'admin' | 'hr';
   isLoading: boolean;
   realtimeChannel: RealtimeChannel | null;
+  slides: Slide[];
+  layers: Layer[];
   
   // Instance-specific
   instances: TemplateInstance[];
   currentInstance: TemplateInstance | null;
   
+  // Archive-specific
+  archivedTemplates: Template[];
+  
   setMode: (mode: 'admin' | 'hr') => void;
   fetchTemplates: () => Promise<void>;
+  fetchArchivedTemplates: () => Promise<void>;
+  restoreTemplate: (templateId: string) => Promise<void>;
+  permanentlyDeleteTemplate: (templateId: string) => Promise<void>;
   subscribeToChanges: () => void;
   unsubscribeFromChanges: () => void;
   addTemplate: (template: Template) => void;
@@ -113,6 +122,11 @@ interface TemplateStore {
   unpublishTemplate: () => Promise<void>;
   deleteTemplate: (templateId: string) => Promise<void>;
   clearCurrentTemplate: () => void;
+  
+  // Version history
+  createVersion: (templateId: string, changeType: string, changeDescription?: string, versionLabel?: string) => Promise<string | null>;
+  fetchVersionHistory: (templateId: string) => Promise<any[]>;
+  restoreVersion: (templateId: string, versionId: string) => Promise<void>;
   
   // Instance methods
   createInstanceFromTemplate: (templateId: string) => Promise<string>;
@@ -166,8 +180,11 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
     mode: 'admin',
     isLoading: false,
     realtimeChannel: null,
+    slides: [],
+    layers: [],
     instances: [],
     currentInstance: null,
+    archivedTemplates: [],
     
     setMode: (mode) => set({ mode }),
   
@@ -299,6 +316,253 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
     } catch (error) {
       console.error('Error in fetchTemplates:', error);
       set({ isLoading: false });
+    }
+  },
+
+  fetchArchivedTemplates: async () => {
+    try {
+      const { data: archivedData, error: archivedError } = await supabase
+        .from("templates")
+        .select("*, deleted_at")
+        .not('deleted_at', 'is', null)
+        .order("deleted_at", { ascending: false });
+
+      if (archivedError) throw archivedError;
+
+      // Fetch slides for archived templates
+      const templateIds = archivedData?.map(t => t.id) || [];
+      
+      if (templateIds.length > 0) {
+        const { data: slidesData } = await supabase
+          .from("slides")
+          .select("*")
+          .in("template_id", templateIds)
+          .order("order_index");
+
+        const slideIds = slidesData?.map(s => s.id) || [];
+        
+        if (slideIds.length > 0) {
+          const { data: layersData } = await supabase
+            .from("layers")
+            .select("*")
+            .in("slide_id", slideIds)
+            .order("z_index");
+
+          // Map archived templates with slides
+          const archivedWithSlides = archivedData?.map(template => {
+            const templateSlides = slidesData?.filter(s => s.template_id === template.id) || [];
+            const slides = templateSlides.map(slide => {
+              const slideLayers = layersData?.filter(l => l.slide_id === slide.id) || [];
+              const layers: Layer[] = slideLayers.map(dbLayer => ({
+                id: dbLayer.id,
+                type: dbLayer.type as 'text' | 'image' | 'shape',
+                name: dbLayer.name,
+                visible: dbLayer.visible,
+                locked: dbLayer.locked,
+                zIndex: dbLayer.z_index,
+                x: dbLayer.x,
+                y: dbLayer.y,
+                width: dbLayer.width,
+                height: dbLayer.height,
+                opacity: dbLayer.opacity,
+                rotation: dbLayer.rotation,
+                ...(dbLayer.type === 'text' && {
+                  text: dbLayer.text_content || '',
+                  fontFamily: dbLayer.font_family || 'DM Sans',
+                  fontSize: dbLayer.font_size || 16,
+                  color: dbLayer.color || '#000000',
+                })
+              }));
+              return {
+                id: slide.id,
+                name: slide.name,
+                width: slide.width,
+                height: slide.height,
+                layers
+              };
+            });
+            return {
+              ...template,
+              deleted_at: template.deleted_at,
+              slides,
+              saved: template.is_published
+            };
+          }) || [];
+
+          set({ archivedTemplates: archivedWithSlides });
+        } else {
+          set({ archivedTemplates: archivedData?.map(t => ({ ...t, slides: [], saved: t.is_published })) || [] });
+        }
+      } else {
+        set({ archivedTemplates: [] });
+      }
+    } catch (error) {
+      console.error("Error fetching archived templates:", error);
+    }
+  },
+
+  restoreTemplate: async (templateId: string) => {
+    try {
+      const { error } = await supabase
+        .from("templates")
+        .update({ deleted_at: null })
+        .eq("id", templateId);
+
+      if (error) throw error;
+
+      await get().fetchTemplates();
+      await get().fetchArchivedTemplates();
+    } catch (error) {
+      console.error("Error restoring template:", error);
+      throw error;
+    }
+  },
+
+  permanentlyDeleteTemplate: async (templateId: string) => {
+    try {
+      const { error } = await supabase
+        .from("templates")
+        .delete()
+        .eq("id", templateId);
+
+      if (error) throw error;
+
+      await get().fetchArchivedTemplates();
+    } catch (error) {
+      console.error("Error permanently deleting template:", error);
+      throw error;
+    }
+  },
+
+  createVersion: async (templateId: string, changeType: string, changeDescription?: string, versionLabel?: string) => {
+    try {
+      const { data, error } = await supabase.rpc('create_template_version', {
+        p_template_id: templateId,
+        p_change_type: changeType,
+        p_change_description: changeDescription || null,
+        p_version_label: versionLabel || null,
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("Error creating version:", error);
+      return null;
+    }
+  },
+
+  fetchVersionHistory: async (templateId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("template_versions")
+        .select("*")
+        .eq("template_id", templateId)
+        .order("version_number", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("Error fetching version history:", error);
+      return [];
+    }
+  },
+
+  restoreVersion: async (templateId: string, versionId: string) => {
+    try {
+      await get().createVersion(templateId, 'auto_save', 'Before version restore');
+
+      const { data: versionData, error: versionError } = await supabase
+        .from("template_versions")
+        .select(`
+          *,
+          template_version_slides (
+            *,
+            template_version_layers (*)
+          )
+        `)
+        .eq("id", versionId)
+        .single();
+
+      if (versionError) throw versionError;
+
+      const templateData = versionData.template_data as any;
+      const { error: templateError } = await supabase
+        .from("templates")
+        .update({
+          name: templateData.name,
+          brand: templateData.brand,
+          category: templateData.category,
+        })
+        .eq("id", templateId);
+
+      if (templateError) throw templateError;
+
+      const { error: deleteError } = await supabase
+        .from("slides")
+        .delete()
+        .eq("template_id", templateId);
+
+      if (deleteError) throw deleteError;
+
+      for (const versionSlide of versionData.template_version_slides) {
+        const slideData = versionSlide.slide_data as any;
+        const { data: newSlide, error: slideError } = await supabase
+          .from("slides")
+          .insert({
+            template_id: templateId,
+            name: slideData.name,
+            width: slideData.width,
+            height: slideData.height,
+            order_index: versionSlide.order_index,
+          })
+          .select()
+          .single();
+
+        if (slideError) throw slideError;
+
+        for (const versionLayer of versionSlide.template_version_layers) {
+          const layerData = versionLayer.layer_data as any;
+          const { error: layerError } = await supabase
+            .from("layers")
+            .insert({
+              slide_id: newSlide.id,
+              type: layerData.type,
+              name: layerData.name,
+              x: layerData.x,
+              y: layerData.y,
+              width: layerData.width,
+              height: layerData.height,
+              z_index: layerData.z_index,
+              visible: layerData.visible,
+              locked: layerData.locked,
+              opacity: layerData.opacity,
+              rotation: layerData.rotation,
+              text_content: layerData.text_content,
+              font_family: layerData.font_family,
+              font_size: layerData.font_size,
+              font_weight: layerData.font_weight,
+              color: layerData.color,
+              text_align: layerData.text_align,
+              line_height: layerData.line_height,
+              letter_spacing: layerData.letter_spacing,
+              text_transform: layerData.text_transform,
+              image_src: layerData.image_src,
+              max_length: layerData.max_length,
+              ai_editable: layerData.ai_editable,
+              ai_content_type: layerData.ai_content_type,
+              ai_prompt_template: layerData.ai_prompt_template,
+              hr_visible: layerData.hr_visible,
+              hr_editable: layerData.hr_editable,
+            });
+
+          if (layerError) throw layerError;
+        }
+      }
+
+      await get().fetchTemplates();
+    } catch (error) {
+      console.error("Error restoring version:", error);
+      throw error;
     }
   },
 
