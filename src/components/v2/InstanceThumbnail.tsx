@@ -21,7 +21,7 @@ export const InstanceThumbnail = ({ instanceId }: InstanceThumbnailProps) => {
           .from("instance_thumbnails")
           .select("thumbnail_url")
           .eq("instance_id", instanceId)
-          .single();
+          .maybeSingle();
 
         if (!cacheError && cachedData?.thumbnail_url) {
           setCachedThumbnailUrl(cachedData.thumbnail_url);
