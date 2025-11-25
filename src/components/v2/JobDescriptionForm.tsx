@@ -65,8 +65,7 @@ export const JobDescriptionForm = ({ templateId, templateName }: JobDescriptionF
       // Get current user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (authError) {
-        console.error("Authentication error:", authError);
+      if (authError || !user) {
         toast({
           title: "Authentication Error",
           description: "Please log in to generate creatives.",
@@ -76,22 +75,11 @@ export const JobDescriptionForm = ({ templateId, templateName }: JobDescriptionF
         return;
       }
 
-      if (!user) {
-        console.error("No authenticated user found");
-        toast({
-          title: "Not Logged In",
-          description: "Please log in to generate creatives.",
-          variant: "destructive",
-        });
-        navigate("/login");
-        return;
-      }
+      // Add timeout wrapper for database operation
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      console.log("Creating template instance for user:", user.id);
-      console.log("Template ID:", templateId);
-      console.log("Job description data:", data);
-
-      // Create template instance with job description
+      // Create template instance with simplified select (only fetch ID)
       const { data: instance, error: instanceError } = await supabase
         .from("template_instances")
         .insert({
@@ -104,25 +92,16 @@ export const JobDescriptionForm = ({ templateId, templateName }: JobDescriptionF
             description: data.description,
             location: data.location,
           },
-          ai_generated: false, // Will be set to true after AI generation
-          can_download: false, // Will be set to true after approval
+          ai_generated: false,
+          can_download: false,
         })
-        .select()
+        .select('id')
         .single();
 
-      if (instanceError) {
-        console.error("Supabase insert error:", instanceError);
-        console.error("Error code:", instanceError.code);
-        console.error("Error message:", instanceError.message);
-        console.error("Error details:", instanceError.details);
-        throw instanceError;
-      }
+      clearTimeout(timeoutId);
 
-      if (!instance) {
-        throw new Error("Instance creation returned no data");
-      }
-
-      console.log("Successfully created instance:", instance);
+      if (instanceError) throw instanceError;
+      if (!instance) throw new Error("Instance creation returned no data");
 
       toast({
         title: "Success",
@@ -134,22 +113,15 @@ export const JobDescriptionForm = ({ templateId, templateName }: JobDescriptionF
     } catch (error) {
       console.error("Error creating instance:", error);
       
-      // Extract meaningful error message
-      let errorMessage = "Failed to save job details. Please try again.";
+      let errorMessage = "Failed to save job details.";
       
       if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null) {
-        const supabaseError = error as any;
-        if (supabaseError.message) {
-          errorMessage = supabaseError.message;
-        }
-        
-        // Handle specific RLS errors
-        if (supabaseError.message?.includes("row-level security")) {
+        if (error.name === 'AbortError' || error.message?.includes('timeout')) {
+          errorMessage = "Request timed out. The database might be slow. Please try again.";
+        } else if (error.message?.includes("row-level security")) {
           errorMessage = "Permission denied. Please contact your administrator.";
-        } else if (supabaseError.message?.includes("violates")) {
-          errorMessage = "Data validation failed. Please check your input.";
+        } else {
+          errorMessage = error.message;
         }
       }
       
