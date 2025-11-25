@@ -391,7 +391,7 @@ export const HRDashboardV2 = () => {
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        <span>Updated {format(new Date(template.updated_at), "MMM d, yyyy")}</span>
+                        <span>Updated {format(new Date(template.updated_at), "MMM d, yyyy 'at' h:mm a")}</span>
                       </div>
                     </CardDescription>
                   </CardHeader>
