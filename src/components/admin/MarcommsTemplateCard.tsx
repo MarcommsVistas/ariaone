@@ -76,7 +76,7 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
     return (
       <Card className="border border-border hover:border-primary/50 transition-colors overflow-hidden group">
         {/* Thumbnail Preview */}
-        <div className="bg-muted/30 p-6 flex items-center justify-center overflow-hidden" style={{ minHeight: '280px' }}>
+        <div className="bg-muted/30 p-6 flex items-center justify-center overflow-hidden" style={{ minHeight: '340px' }}>
           {firstSlide ? (
             <div 
               className="relative bg-white shadow-md rounded-sm overflow-hidden" 
