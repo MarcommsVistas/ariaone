@@ -441,7 +441,8 @@ export const PropertyPanel = ({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="max-h-[400px]">
-                          <SelectItem value="headline">Headline / Job Title</SelectItem>
+                          <SelectItem value="job_title">Job Title (Direct from Form)</SelectItem>
+                          <SelectItem value="headline">Headline (AI Generated)</SelectItem>
                           <SelectItem value="intro">Introduction</SelectItem>
                           <SelectItem value="location">Location</SelectItem>
                           

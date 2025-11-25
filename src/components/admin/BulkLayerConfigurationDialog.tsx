@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const AI_CONTENT_TYPES = [
+  { value: 'job_title', label: 'Job Title' },
   { value: 'headline', label: 'Headline' },
   { value: 'intro', label: 'Introduction' },
   { value: 'skills', label: 'Skills' },
