@@ -10,6 +10,7 @@ import Preview from "./pages/v2/Preview";
 import AdminIndex from "./pages/v2/admin/Index";
 import Templates from "./pages/v2/admin/Templates";
 import Studio from "./pages/v2/admin/Studio";
+import Archive from "./pages/v2/admin/Archive";
 import Categories from "./pages/v2/admin/Categories";
 import Reviews from "./pages/v2/admin/Reviews";
 import ReviewStudio from "./pages/v2/admin/ReviewStudio";
@@ -111,7 +112,15 @@ const App = () => {
               } 
             />
             <Route 
-              path="/v2/admin/categories" 
+              path="/v2/admin/archive" 
+              element={
+                <ProtectedRoute>
+                  <Archive />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/v2/admin/categories"
               element={
                 <ProtectedRoute>
                   <Categories />

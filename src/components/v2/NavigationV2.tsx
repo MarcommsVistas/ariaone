@@ -66,12 +66,15 @@ export const NavigationV2 = () => {
                 <DropdownMenuItem onClick={() => navigate("/v2/admin")}>
                   Dashboard
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/v2/admin/templates")}>
-                  Templates
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/v2/admin/brand-voice")}>
-                  Brand Voice
-                </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/v2/admin/templates")}>
+                Templates
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/v2/admin/archive")}>
+                Archive
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/v2/admin/brand-voice")}>
+                Brand Voice
+              </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/v2/admin/reviews")}>
                   Review Queue
                 </DropdownMenuItem>
