@@ -7,7 +7,7 @@ import { SlideRenderer } from "@/components/editor/SlideRenderer";
 import { useExport } from "@/hooks/useExport";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Download, DownloadCloud, Send, Copy, Sparkles, Minus, Plus, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Download, DownloadCloud, Send, Copy, Sparkles, Minus, Plus, Loader2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { GenerationProgress } from "@/components/v2/GenerationProgress";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
@@ -39,6 +39,7 @@ export default function Preview() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(80);
+  const [reviewStatus, setReviewStatus] = useState<string | null>(null);
   const [generationProgress, setGenerationProgress] = useState<{
     phase: 'structure' | 'parsing' | 'population' | 'complete';
     message: string;
@@ -113,6 +114,19 @@ export default function Preview() {
       if (instanceError) throw instanceError;
 
       setInstance(instanceData);
+
+      // Fetch review status
+      const { data: reviewData } = await supabase
+        .from("creative_reviews")
+        .select("status")
+        .eq("instance_id", instanceId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (reviewData) {
+        setReviewStatus(reviewData.status);
+      }
 
       // Check if AI generation already happened
       if (instanceData.ai_generated) {
@@ -475,30 +489,7 @@ export default function Preview() {
           </div>
 
           <div className="p-6 space-y-6">
-            {/* Job Details */}
-            {jobDesc && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Job Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <div>
-                    <p className="text-muted-foreground text-xs mb-1">Position</p>
-                    <p className="font-medium">{jobDesc.title}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs mb-1">Location</p>
-                    <p>{jobDesc.location}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs mb-1">Description</p>
-                    <p className="text-muted-foreground">{jobDesc.description}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Caption */}
+            {/* Caption - Moved above Job Details */}
             {instance.caption_copy && (
               <Card>
                 <CardHeader>
@@ -521,11 +512,34 @@ export default function Preview() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Job Details */}
+            {jobDesc && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Job Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-1">Position</p>
+                    <p className="font-medium">{jobDesc.title}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-1">Location</p>
+                    <p>{jobDesc.location}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-1">Description</p>
+                    <p className="text-muted-foreground">{jobDesc.description}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
         {/* Main Canvas Area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col h-screen">
           {/* Top Toolbar */}
           <div className="h-14 border-b border-border flex items-center justify-between px-4">
             <Button
@@ -570,15 +584,30 @@ export default function Preview() {
                 </Button>
               )}
 
-              <Button size="sm" onClick={handleSubmitForReview}>
-                <Send className="w-4 h-4 mr-2" />
-                Submit for Review
-              </Button>
+              {reviewStatus === 'approved' ? (
+                <Button 
+                  size="sm" 
+                  onClick={handleExportCurrent}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+              ) : reviewStatus === 'pending' ? (
+                <Button size="sm" variant="outline" disabled>
+                  Under Review
+                </Button>
+              ) : (
+                <Button size="sm" onClick={handleSubmitForReview}>
+                  <Send className="w-4 h-4 mr-2" />
+                  Submit for Review
+                </Button>
+              )}
             </div>
           </div>
 
           {/* Canvas */}
-          <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto p-8 relative">
+          <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto p-8 relative h-[calc(100vh-56px)]">
             {currentSlide && (
               <>
                 {/* Hidden export container - renders at 1:1 scale for accurate export */}
@@ -645,42 +674,69 @@ export default function Preview() {
           {/* Slide Navigation Carousel */}
           {slides.length > 1 && (
             <div className="border-t border-border bg-panel p-4">
-              <div className="flex items-center gap-4 justify-center">
+              <div className="flex items-center gap-3 justify-center">
                 <Button
-                  variant="outline"
-                  size="sm"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setCurrentSlideIdx((i) => Math.max(0, i - 1))}
                   disabled={currentSlideIdx === 0}
+                  className="h-8 w-8"
                 >
-                  Previous
+                  <ChevronLeft className="w-4 h-4" />
                 </Button>
                 
-                <div className="flex gap-2 overflow-x-auto max-w-2xl">
-                  {slides.map((slide, idx) => (
-                    <button
-                      key={slide.id}
-                      onClick={() => setCurrentSlideIdx(idx)}
-                      className={`
-                        relative aspect-[16/10] w-24 rounded border-2 transition-all overflow-hidden
-                        ${idx === currentSlideIdx 
-                          ? 'border-primary shadow-lg' 
-                          : 'border-border hover:border-primary/50'}
-                      `}
-                    >
-                      <div className="absolute inset-0 bg-muted/30 flex items-center justify-center">
-                        <span className="text-xs font-medium">{idx + 1}</span>
-                      </div>
-                    </button>
-                  ))}
+                <div className="flex gap-2 overflow-x-auto max-w-3xl">
+                  {slides.map((slide, idx) => {
+                    const thumbnailScale = 0.08;
+                    const isActive = idx === currentSlideIdx;
+                    
+                    return (
+                      <button
+                        key={slide.id}
+                        onClick={() => setCurrentSlideIdx(idx)}
+                        className={`
+                          relative shrink-0 rounded-lg overflow-hidden transition-all
+                          ${isActive 
+                            ? 'ring-2 ring-primary shadow-lg' 
+                            : 'ring-1 ring-border hover:ring-primary/50'}
+                        `}
+                        style={{
+                          width: slide.width * thumbnailScale,
+                          height: slide.height * thumbnailScale,
+                        }}
+                      >
+                        <div 
+                          className="absolute inset-0"
+                          style={{ 
+                            transform: `scale(${thumbnailScale})`,
+                            transformOrigin: 'top left',
+                            width: slide.width,
+                            height: slide.height,
+                          }}
+                        >
+                          <SlideRenderer slide={slide} interactive={false} />
+                        </div>
+                        {/* Slide number overlay */}
+                        <div 
+                          className={`absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[10px] font-medium
+                            ${isActive ? 'bg-primary text-primary-foreground' : 'bg-background/80 text-foreground'}
+                          `}
+                        >
+                          {idx + 1}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <Button
-                  variant="outline"
-                  size="sm"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setCurrentSlideIdx((i) => Math.min(slides.length - 1, i + 1))}
                   disabled={currentSlideIdx === slides.length - 1}
+                  className="h-8 w-8"
                 >
-                  Next
+                  <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
             </div>
