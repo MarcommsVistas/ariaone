@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { InstanceThumbnail } from "./InstanceThumbnail";
 import { TemplateThumbnail } from "./TemplateThumbnail";
+import { format } from "date-fns";
 
 interface Template {
   id: string;
@@ -18,6 +19,7 @@ interface Template {
   brand: string | null;
   category: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 interface TemplateInstance {
@@ -82,7 +84,7 @@ export const HRDashboardV2 = () => {
         .from("templates")
         .select("*")
         .eq("is_published", true)
-        .order("created_at", { ascending: false });
+        .order("updated_at", { ascending: false });
 
       if (templatesError) throw templatesError;
 
@@ -374,17 +376,23 @@ export const HRDashboardV2 = () => {
                   <TemplateThumbnail templateId={template.id} />
                   <CardHeader>
                     <CardTitle className="text-lg">{template.name}</CardTitle>
-                    <CardDescription className="flex items-center gap-2">
-                      {template.brand && (
-                        <span className="px-2 py-1 rounded-full bg-muted text-xs">
-                          {template.brand}
-                        </span>
-                      )}
-                      {template.category && (
-                        <span className="px-2 py-1 rounded-full bg-muted text-xs">
-                          {template.category}
-                        </span>
-                      )}
+                    <CardDescription className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {template.brand && (
+                          <span className="px-2 py-1 rounded-full bg-muted text-xs">
+                            {template.brand}
+                          </span>
+                        )}
+                        {template.category && (
+                          <span className="px-2 py-1 rounded-full bg-muted text-xs">
+                            {template.category}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>Updated {format(new Date(template.updated_at), "MMM d, yyyy")}</span>
+                      </div>
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
