@@ -24,7 +24,7 @@ export const CanvasLayer = ({ layer, interactive = false, onClick }: CanvasLayer
       <div
         style={{
           ...baseStyle,
-          fontFamily: layer.fontFamily || 'Helvetica, sans-serif',
+          fontFamily: layer.fontFamily || 'DM Sans, sans-serif',
           fontSize: layer.fontSize || 16,
           fontWeight: layer.fontWeight || 400,
           color: layer.color || '#000000',

@@ -78,7 +78,7 @@ export const usePsdParser = () => {
       let type: 'text' | 'image' | 'shape' = 'shape';
       let textContent = '';
       let fontSize = 16;
-      let fontFamily = 'Helvetica';
+      let fontFamily = 'DM Sans';
       let color = '#000000';
       let align: 'left' | 'center' | 'right' = 'left';
       let src: string | undefined;
@@ -336,7 +336,7 @@ export const usePsdParser = () => {
         rotation: dbLayer.rotation,
         ...(dbLayer.type === 'text' && {
           text: dbLayer.text_content || '',
-          fontFamily: dbLayer.font_family || 'Helvetica',
+          fontFamily: dbLayer.font_family || 'DM Sans',
           fontSize: dbLayer.font_size || 16,
           color: dbLayer.color || '#000000',
           align: (dbLayer.text_align as 'left' | 'center' | 'right') || 'left',
@@ -546,7 +546,7 @@ export const usePsdParser = () => {
           rotation: dbLayer.rotation,
           ...(dbLayer.type === 'text' && {
             text: dbLayer.text_content || '',
-            fontFamily: dbLayer.font_family || 'Helvetica',
+            fontFamily: dbLayer.font_family || 'DM Sans',
             fontSize: dbLayer.font_size || 16,
             color: dbLayer.color || '#000000',
             align: (dbLayer.text_align as 'left' | 'center' | 'right') || 'left',
@@ -654,7 +654,7 @@ export const useAddSlideToTemplate = () => {
       let type: 'text' | 'image' | 'shape' = 'shape';
       let textContent = '';
       let fontSize = 16;
-      let fontFamily = 'Helvetica';
+      let fontFamily = 'DM Sans';
       let color = '#000000';
       let align: 'left' | 'center' | 'right' = 'left';
       let src: string | undefined;
@@ -891,7 +891,7 @@ export const useAddSlideToTemplate = () => {
         rotation: dbLayer.rotation,
         ...(dbLayer.type === 'text' && {
           text: dbLayer.text_content || '',
-          fontFamily: dbLayer.font_family || 'Helvetica',
+          fontFamily: dbLayer.font_family || 'DM Sans',
           fontSize: dbLayer.font_size || 16,
           color: dbLayer.color || '#000000',
           align: (dbLayer.text_align as 'left' | 'center' | 'right') || 'left',

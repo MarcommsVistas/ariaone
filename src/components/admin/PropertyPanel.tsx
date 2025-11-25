@@ -68,7 +68,7 @@ export const PropertyPanel = ({
 
   // Default system fonts
   const systemFonts = [
-    'Helvetica',
+    'DM Sans',
     'Inter',
     'Poppins',
     'Roboto',
@@ -257,7 +257,7 @@ export const PropertyPanel = ({
                 <Label htmlFor="layer-font-family" className="text-xs">Font Family</Label>
                 <select
                   id="layer-font-family"
-                  value={selectedLayer.fontFamily || 'Helvetica'}
+                  value={selectedLayer.fontFamily || 'DM Sans'}
                   onChange={(e) => updateLayer(selectedLayer.id, { fontFamily: e.target.value })}
                   className="w-full h-8 text-sm mt-1 border border-input bg-background rounded-md px-2 z-50"
                 >
