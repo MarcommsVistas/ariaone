@@ -60,7 +60,7 @@ const Studio = () => {
         )}
       </div>
       <div className="flex-1 overflow-hidden">
-        <AdminStudio />
+        <AdminStudio enableAI={true} />
       </div>
     </div>
   );

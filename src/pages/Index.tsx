@@ -34,7 +34,7 @@ const Index = () => {
     // Marcomms users can switch between modes
     if (userRole === 'marcomms') {
       if (mode === 'admin') {
-        return currentTemplate ? <AdminStudio /> : <CreativeDashboard />;
+        return currentTemplate ? <AdminStudio enableAI={false} /> : <CreativeDashboard />;
       }
       return currentTemplate ? <HRInterface /> : <HRDashboard />;
     }

@@ -15,11 +15,13 @@ import { useState, useEffect } from "react";
 interface PropertyPanelProps {
   selectedLayerOverride?: Layer | null;
   onUpdateLayerOverride?: (layerId: string, updates: Partial<Layer>) => void;
+  enableAI?: boolean;
 }
 
 export const PropertyPanel = ({
   selectedLayerOverride,
-  onUpdateLayerOverride
+  onUpdateLayerOverride,
+  enableAI = false
 }: PropertyPanelProps = {}) => {
   const { selectedLayer: storeSelectedLayer, updateLayer: storeUpdateLayer } = useTemplateStore();
   const { uploadedFonts } = useFontStore();
@@ -73,7 +75,7 @@ export const PropertyPanel = ({
     <div className="h-full w-full bg-panel border-l border-border overflow-auto flex flex-col">
       <div className="h-12 border-b border-border flex items-center justify-between px-4 flex-shrink-0">
         <h3 className="font-semibold text-sm text-foreground">Properties</h3>
-        <AIGenerationDialog />
+        {enableAI && <AIGenerationDialog />}
       </div>
       
       {/* Font Uploader Section */}
@@ -392,113 +394,112 @@ export const PropertyPanel = ({
         )}
 
         {/* AI Configuration (for template layers only) */}
-        <Separator />
-        <div>
-          <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-            AI Configuration
-          </h4>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="ai-editable" className="text-xs">AI Editable</Label>
-              <Switch
-                id="ai-editable"
-                checked={selectedLayer.aiEditable || false}
-                onCheckedChange={(checked) => updateLayer(selectedLayer.id, { aiEditable: checked })}
-              />
-            </div>
-            
-            {selectedLayer.aiEditable && (
-              <>
-                <div>
-                  <Label htmlFor="ai-content-type" className="text-xs">Content Type</Label>
-                  <Select
-                    value={selectedLayer.aiContentType || "other"}
-                    onValueChange={(value) => updateLayer(selectedLayer.id, { aiContentType: value })}
-                  >
-                    <SelectTrigger id="ai-content-type" className="h-8 text-sm mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[400px]">
-                      <SelectItem value="headline">Headline / Job Title</SelectItem>
-                      <SelectItem value="intro">Introduction</SelectItem>
-                      <SelectItem value="location">Location</SelectItem>
-                      
-                      <Separator className="my-2" />
-                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                        Qualifications
-                      </div>
-                      <SelectItem value="qualifications_education">Education Requirements</SelectItem>
-                      <SelectItem value="qualifications_experience">Experience Requirements</SelectItem>
-                      <SelectItem value="qualifications_combined">Combined Qualifications</SelectItem>
-                      
-                      <Separator className="my-2" />
-                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                        Lists (Auto-counted)
-                      </div>
-                      <SelectItem value="skills">Skills</SelectItem>
-                      <SelectItem value="domain_expertise">Domain Expertise</SelectItem>
-                      <SelectItem value="requirements">Job Requirements</SelectItem>
-                      <SelectItem value="responsibilities">Key Responsibilities</SelectItem>
-                      
-                      <Separator className="my-2" />
-                      <SelectItem value="job_type">Job Type / Contract</SelectItem>
-                      <SelectItem value="email_subject">Email Subject Line</SelectItem>
-                      <SelectItem value="cta">Call to Action</SelectItem>
-                      <SelectItem value="other">Other / Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  {/* Helper text for dynamic content types */}
-                  {['skills', 'domain_expertise', 'requirements', 'responsibilities'].includes(selectedLayer.aiContentType || '') && (
-                    <p className="text-xs text-muted-foreground mt-1.5 flex items-start gap-1">
-                      <span className="text-primary">💡</span>
-                      <span>AI will extract one item per layer with this type</span>
-                    </p>
-                  )}
-                  
-                  {selectedLayer.aiContentType === 'headline' && (
-                    <p className="text-xs text-muted-foreground mt-1.5">
-                      Uses job title directly from the instance name
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="ai-prompt-template" className="text-xs">Custom Prompt Template</Label>
-                  <Textarea
-                    id="ai-prompt-template"
-                    value={selectedLayer.aiPromptTemplate || ""}
-                    onChange={(e) => updateLayer(selectedLayer.id, { aiPromptTemplate: e.target.value })}
-                    placeholder="Use {title}, {description}, {location} as placeholders"
-                    className="text-sm mt-1 min-h-[80px]"
+        {enableAI && (
+          <>
+            <Separator />
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                AI Configuration
+              </h4>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="ai-editable" className="text-xs">AI Editable</Label>
+                  <Switch
+                    id="ai-editable"
+                    checked={selectedLayer.aiEditable || false}
+                    onCheckedChange={(checked) => updateLayer(selectedLayer.id, { aiEditable: checked })}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Leave empty to use default prompt based on content type
-                  </p>
                 </div>
-              </>
-            )}
-
-            <div className="flex items-center justify-between">
-              <Label htmlFor="hr-visible" className="text-xs">Visible to HR</Label>
-              <Switch
-                id="hr-visible"
-                checked={selectedLayer.hrVisible !== false}
-                onCheckedChange={(checked) => updateLayer(selectedLayer.id, { hrVisible: checked })}
-              />
+                
+                {selectedLayer.aiEditable && (
+                  <>
+                    <div>
+                      <Label htmlFor="ai-content-type" className="text-xs">Content Type</Label>
+                      <Select
+                        value={selectedLayer.aiContentType || "other"}
+                        onValueChange={(value) => updateLayer(selectedLayer.id, { aiContentType: value })}
+                      >
+                        <SelectTrigger id="ai-content-type" className="h-8 text-sm mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[400px]">
+                          <SelectItem value="headline">Headline / Job Title</SelectItem>
+                          <SelectItem value="intro">Introduction</SelectItem>
+                          <SelectItem value="location">Location</SelectItem>
+                          
+                          <Separator className="my-2" />
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                            Core Responsibilities
+                          </div>
+                          <SelectItem value="core_responsibility_1">Core Responsibility 1</SelectItem>
+                          <SelectItem value="core_responsibility_2">Core Responsibility 2</SelectItem>
+                          <SelectItem value="core_responsibility_3">Core Responsibility 3</SelectItem>
+                          <SelectItem value="core_responsibility_4">Core Responsibility 4</SelectItem>
+                          <SelectItem value="core_responsibility_5">Core Responsibility 5</SelectItem>
+                          
+                          <Separator className="my-2" />
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                            Requirements
+                          </div>
+                          <SelectItem value="requirement_1">Requirement 1</SelectItem>
+                          <SelectItem value="requirement_2">Requirement 2</SelectItem>
+                          <SelectItem value="requirement_3">Requirement 3</SelectItem>
+                          <SelectItem value="requirement_4">Requirement 4</SelectItem>
+                          <SelectItem value="requirement_5">Requirement 5</SelectItem>
+                          
+                          <Separator className="my-2" />
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                            Preferred Qualifications
+                          </div>
+                          <SelectItem value="preferred_qualification_1">Preferred Qualification 1</SelectItem>
+                          <SelectItem value="preferred_qualification_2">Preferred Qualification 2</SelectItem>
+                          <SelectItem value="preferred_qualification_3">Preferred Qualification 3</SelectItem>
+                          
+                          <Separator className="my-2" />
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                            Benefits
+                          </div>
+                          <SelectItem value="benefit_1">Benefit 1</SelectItem>
+                          <SelectItem value="benefit_2">Benefit 2</SelectItem>
+                          <SelectItem value="benefit_3">Benefit 3</SelectItem>
+                          <SelectItem value="benefit_4">Benefit 4</SelectItem>
+                          
+                          <Separator className="my-2" />
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                            Culture
+                          </div>
+                          <SelectItem value="culture_value_1">Culture Value 1</SelectItem>
+                          <SelectItem value="culture_value_2">Culture Value 2</SelectItem>
+                          <SelectItem value="culture_value_3">Culture Value 3</SelectItem>
+                          
+                          <Separator className="my-2" />
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                            Additional
+                          </div>
+                          <SelectItem value="compensation_range">Compensation Range</SelectItem>
+                          <SelectItem value="call_to_action">Call to Action</SelectItem>
+                          <SelectItem value="other">Other / Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="ai-prompt-template" className="text-xs">Custom Prompt (Optional)</Label>
+                      <Textarea
+                        id="ai-prompt-template"
+                        value={selectedLayer.aiPromptTemplate || ""}
+                        onChange={(e) => updateLayer(selectedLayer.id, { aiPromptTemplate: e.target.value })}
+                        placeholder="Custom instructions for AI generation..."
+                        className="mt-1 text-sm min-h-[60px]"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-
-            <div className="flex items-center justify-between">
-              <Label htmlFor="hr-editable" className="text-xs">HR Can Edit</Label>
-              <Switch
-                id="hr-editable"
-                checked={selectedLayer.hrEditable || false}
-                onCheckedChange={(checked) => updateLayer(selectedLayer.id, { hrEditable: checked })}
-              />
-            </div>
-          </div>
+          </>
+        )}
         </div>
-      </div>
       )}
     </div>
   );
