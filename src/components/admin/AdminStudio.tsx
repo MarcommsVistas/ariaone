@@ -13,7 +13,11 @@ import { AlertCircle, Minus, Plus } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-export const AdminStudio = () => {
+interface AdminStudioProps {
+  enableAI?: boolean;
+}
+
+export const AdminStudio = ({ enableAI = false }: AdminStudioProps) => {
   const { currentSlide, setSelectedLayer } = useTemplateStore();
   const [zoom, setZoom] = useState(80); // percentage - default 80% like HR
 
@@ -49,7 +53,7 @@ export const AdminStudio = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <TemplateHeader />
+      <TemplateHeader enableAI={enableAI} />
       <div className="flex-1 overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="h-full">
         <ResizablePanel defaultSize={20} minSize={14} maxSize={35} className="h-full">
@@ -122,8 +126,8 @@ export const AdminStudio = () => {
         <ScrollArea className="h-full">
           <div className="space-y-4 p-4">
             <VersionHistoryPanel />
-            <TemplateStrategyPanel />
-            <PropertyPanel />
+            {enableAI && <TemplateStrategyPanel />}
+            <PropertyPanel enableAI={enableAI} />
           </div>
         </ScrollArea>
       </ResizablePanel>

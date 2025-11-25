@@ -20,7 +20,11 @@ const PRESET_CATEGORIES = [
   "Video"
 ];
 
-export const TemplateHeader = () => {
+interface TemplateHeaderProps {
+  enableAI?: boolean;
+}
+
+export const TemplateHeader = ({ enableAI = false }: TemplateHeaderProps) => {
   const { currentTemplate, updateTemplateName, updateTemplateBrand, updateTemplateCategory, saveTemplate, publishTemplate, unpublishTemplate } = useTemplateStore();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingBrand, setIsEditingBrand] = useState(false);
@@ -255,7 +259,7 @@ export const TemplateHeader = () => {
       </div>
 
       <div className="flex items-center gap-3">
-        <BulkLayerConfigurationDialog />
+        {enableAI && <BulkLayerConfigurationDialog />}
         
         <Button
           onClick={handleSave}
