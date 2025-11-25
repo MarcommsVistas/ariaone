@@ -9,6 +9,7 @@ interface InteractionOverlayProps {
   selectedLayer?: Layer | null;
   onUpdateLayer?: (layerId: string, updates: Partial<Layer>) => void;
   onDeselectLayer?: () => void;
+  onDragEnd?: (layerId: string, finalUpdates: Partial<Layer>) => void;
 }
 
 export const InteractionOverlay = ({ 
@@ -17,7 +18,8 @@ export const InteractionOverlay = ({
   scale,
   selectedLayer: selectedLayerProp,
   onUpdateLayer,
-  onDeselectLayer
+  onDeselectLayer,
+  onDragEnd
 }: InteractionOverlayProps) => {
   const { 
     selectedLayer: storeSelectedLayer, 
@@ -125,11 +127,22 @@ export const InteractionOverlay = ({
   }, [isDragging, isResizing, isRotating, selectedLayer, scale, resizeHandle, updateLayer]);
 
   const handleMouseUp = React.useCallback(() => {
+    // Save final state to database if dragging/resizing/rotating
+    if (selectedLayer && (isDragging || isResizing || isRotating) && onDragEnd) {
+      onDragEnd(selectedLayer.id, {
+        x: selectedLayer.x,
+        y: selectedLayer.y,
+        width: selectedLayer.width,
+        height: selectedLayer.height,
+        rotation: selectedLayer.rotation,
+      });
+    }
+    
     setIsDragging(false);
     setIsResizing(false);
     setIsRotating(false);
     setResizeHandle('');
-  }, []);
+  }, [selectedLayer, isDragging, isResizing, isRotating, onDragEnd]);
 
   // Add/remove global mouse listeners - MUST be before any conditional returns
   React.useEffect(() => {

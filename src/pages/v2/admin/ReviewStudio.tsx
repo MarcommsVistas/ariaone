@@ -153,8 +153,20 @@ export default function ReviewStudio() {
     }
   };
 
-  // Update layer property and save to database
-  const updateLayerProperty = async (layerId: string, updates: any) => {
+  // Update layer locally for instant UI feedback (no database save)
+  const updateLayerLocal = (layerId: string, updates: any) => {
+    setSlides(prevSlides =>
+      prevSlides.map(slide => ({
+        ...slide,
+        layers: slide.layers.map(layer =>
+          layer.id === layerId ? { ...layer, ...updates } : layer
+        ),
+      }))
+    );
+  };
+
+  // Save layer changes to database (called on drag end or property change)
+  const saveLayerToDatabase = async (layerId: string, updates: any) => {
     try {
       // Map frontend properties to database columns
       const dbUpdates: any = {};
@@ -181,15 +193,8 @@ export default function ReviewStudio() {
 
       if (error) throw error;
 
-      // Update local state with functional update to avoid stale state
-      setSlides(prevSlides =>
-        prevSlides.map(slide => ({
-          ...slide,
-          layers: slide.layers.map(layer =>
-            layer.id === layerId ? { ...layer, ...updates } : layer
-          ),
-        }))
-      );
+      // Update local state to ensure consistency
+      updateLayerLocal(layerId, updates);
     } catch (error) {
       console.error("Error updating layer:", error);
       toast({
@@ -198,6 +203,14 @@ export default function ReviewStudio() {
         variant: "destructive",
       });
     }
+  };
+
+  // Combined update: local + database (for property panel changes)
+  const updateLayerProperty = async (layerId: string, updates: any) => {
+    // Update UI immediately
+    updateLayerLocal(layerId, updates);
+    // Save to database
+    await saveLayerToDatabase(layerId, updates);
   };
 
   const handleApprove = async () => {
@@ -848,8 +861,9 @@ export default function ReviewStudio() {
                     slideHeight={currentSlide.height}
                     scale={zoom / 100}
                     selectedLayer={selectedLayer}
-                    onUpdateLayer={updateLayerProperty}
+                    onUpdateLayer={updateLayerLocal}
                     onDeselectLayer={() => setSelectedLayerId(null)}
+                    onDragEnd={saveLayerToDatabase}
                   />
                 </div>
               </div>

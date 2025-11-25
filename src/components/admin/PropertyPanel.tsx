@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface PropertyPanelProps {
   selectedLayerOverride?: Layer | null;
@@ -32,6 +32,26 @@ export const PropertyPanel = ({
   // Buffered text state for ReviewStudio to prevent lag
   const [localText, setLocalText] = useState(selectedLayer?.text || "");
   const [lastLayerId, setLastLayerId] = useState<string | null>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced update function
+  const debouncedUpdate = (layerId: string, updates: Partial<Layer>, delay = 300) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      updateLayer(layerId, updates);
+    }, delay);
+  };
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   // Sync buffer when layer changes or when in AdminStudio mode
   useEffect(() => {
@@ -212,15 +232,13 @@ export const PropertyPanel = ({
               <div>
                 <Label htmlFor="layer-text" className="text-xs">Content</Label>
                 {onUpdateLayerOverride ? (
-                  // ReviewStudio: buffered, saves on blur
+                  // ReviewStudio: buffered, debounced save
                   <Textarea
                     id="layer-text"
                     value={localText}
-                    onChange={(e) => setLocalText(e.target.value)}
-                    onBlur={() => {
-                      if (localText !== (selectedLayer.text || "")) {
-                        updateLayer(selectedLayer.id, { text: localText });
-                      }
+                    onChange={(e) => {
+                      setLocalText(e.target.value);
+                      debouncedUpdate(selectedLayer.id, { text: e.target.value }, 500);
                     }}
                     className="mt-1 text-sm min-h-[80px]"
                   />
