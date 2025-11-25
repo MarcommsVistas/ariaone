@@ -10,33 +10,15 @@ interface InstanceThumbnailProps {
 export const InstanceThumbnail = ({ instanceId }: InstanceThumbnailProps) => {
   const [slides, setSlides] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [cachedThumbnailUrl, setCachedThumbnailUrl] = useState<string | null>(null);
-  const [useFallback, setUseFallback] = useState(false);
 
   useEffect(() => {
-    const fetchThumbnail = async () => {
+    const fetchSlides = async () => {
       try {
-        // First, try to get cached thumbnail
-        const { data: cachedData, error: cacheError } = await supabase
-          .from("instance_thumbnails")
-          .select("thumbnail_url")
-          .eq("instance_id", instanceId)
-          .maybeSingle();
-
-        if (!cacheError && cachedData?.thumbnail_url) {
-          setCachedThumbnailUrl(cachedData.thumbnail_url);
-          setIsLoading(false);
-          return;
-        }
-
-        // If no cached thumbnail, fall back to fetching slides (only first slide)
-        setUseFallback(true);
         const { data: slidesData, error } = await supabase
           .from("slides")
           .select("*, layers(*)")
           .eq("instance_id", instanceId)
-          .order("order_index", { ascending: true })
-          .limit(1);
+          .order("order_index", { ascending: true });
 
         if (error) throw error;
 
@@ -70,11 +52,6 @@ export const InstanceThumbnail = ({ instanceId }: InstanceThumbnailProps) => {
         })) || [];
 
         setSlides(mappedSlides);
-
-        // Trigger background thumbnail generation
-        if (mappedSlides.length > 0) {
-          triggerThumbnailGeneration(instanceId);
-        }
       } catch (error) {
         console.error("Error fetching thumbnail:", error);
       } finally {
@@ -82,41 +59,13 @@ export const InstanceThumbnail = ({ instanceId }: InstanceThumbnailProps) => {
       }
     };
 
-    fetchThumbnail();
+    fetchSlides();
   }, [instanceId]);
-
-  const triggerThumbnailGeneration = async (instanceId: string) => {
-    try {
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-thumbnail`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ instanceId }),
-      });
-    } catch (error) {
-      console.error("Error triggering thumbnail generation:", error);
-    }
-  };
 
   if (isLoading) {
     return (
       <div className="aspect-[16/10] bg-muted/30 rounded-t-lg flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground text-sm">Loading...</div>
-      </div>
-    );
-  }
-
-  // Show cached thumbnail if available
-  if (cachedThumbnailUrl && !useFallback) {
-    return (
-      <div className="aspect-[4/3] bg-muted/30 rounded-t-lg overflow-hidden flex items-center justify-center">
-        <img 
-          src={cachedThumbnailUrl} 
-          alt="Thumbnail" 
-          className="w-full h-full object-contain"
-        />
       </div>
     );
   }
@@ -135,7 +84,7 @@ export const InstanceThumbnail = ({ instanceId }: InstanceThumbnailProps) => {
   const scale = maxThumbnailSize / Math.max(firstSlide.width, firstSlide.height);
 
   return (
-    <div className="aspect-[4/3] bg-muted/30 rounded-t-lg overflow-hidden flex items-center justify-center">
+    <div className="aspect-[4/3] bg-muted/30 rounded-t-lg overflow-hidden flex items-center justify-center p-4">
       <div 
         className="relative bg-white shadow-md rounded-sm overflow-hidden" 
         style={{

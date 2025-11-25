@@ -18,8 +18,7 @@ export const TemplateThumbnail = ({ templateId }: TemplateThumbnailProps) => {
           .from("slides")
           .select("*, layers(*)")
           .eq("template_id", templateId)
-          .order("order_index", { ascending: true })
-          .limit(1);
+          .order("order_index", { ascending: true });
 
         if (error) throw error;
 
