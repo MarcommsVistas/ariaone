@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 import { NavigationV2 } from "@/components/v2/NavigationV2";
 import { InstanceThumbnail } from "@/components/v2/InstanceThumbnail";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -204,7 +205,7 @@ export default function Reviews() {
                 <CardHeader>
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
-                            <CardTitle className="text-lg flex items-center gap-2">
+                            <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
                               {review.template_instances?.name || "Untitled"}
                               {review.deletion_requested && (
                                 <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-orange-500/10 text-orange-600 text-xs font-medium">
@@ -213,6 +214,11 @@ export default function Reviews() {
                                 </span>
                               )}
                             </CardTitle>
+                            {review.deletion_requested && review.deletion_requested_at && (
+                              <p className="text-xs text-orange-600/80">
+                                Requested at {format(new Date(review.deletion_requested_at), "MMM d, yyyy 'at' h:mm a")}
+                              </p>
+                            )}
                             <CardDescription className="flex items-center gap-2">
                               {review.template_instances?.brand && (
                                 <span className="px-2 py-1 rounded-full bg-muted text-xs">

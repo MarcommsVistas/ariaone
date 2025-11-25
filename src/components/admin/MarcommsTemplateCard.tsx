@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Edit, Archive, Layers } from "lucide-react";
+import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -138,9 +139,16 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
               )}
             </div>
             
-            <p className="text-sm text-muted-foreground">
-              {template.slides.length} {template.slides.length === 1 ? 'slide' : 'slides'}
-            </p>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">
+                {template.slides.length} {template.slides.length === 1 ? 'slide' : 'slides'}
+              </p>
+              {template.updated_at && (
+                <p className="text-xs text-muted-foreground">
+                  Updated {format(new Date(template.updated_at), "MMM d, yyyy 'at' h:mm a")}
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="flex gap-2">
@@ -265,9 +273,16 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
               </div>
             </div>
             
-            <p className="text-sm text-muted-foreground">
-              {template.slides.length} {template.slides.length === 1 ? 'slide' : 'slides'}
-            </p>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">
+                {template.slides.length} {template.slides.length === 1 ? 'slide' : 'slides'}
+              </p>
+              {template.updated_at && (
+                <p className="text-xs text-muted-foreground">
+                  Updated {format(new Date(template.updated_at), "MMM d, yyyy 'at' h:mm a")}
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="flex gap-2">
