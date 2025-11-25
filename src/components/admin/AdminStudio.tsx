@@ -8,7 +8,6 @@ import { TemplateHeader } from "./TemplateHeader";
 import { VersionHistoryPanel } from "./VersionHistoryPanel";
 import { SlideNavigation } from "@/components/editor/SlideNavigation";
 import { TemplateStrategyPanel } from "./TemplateStrategyPanel";
-import { BulkLayerConfigurationDialog } from "./BulkLayerConfigurationDialog";
 import { AlertCircle, Minus, Plus } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -125,9 +124,9 @@ export const AdminStudio = ({ enableAI = false }: AdminStudioProps) => {
       <ResizablePanel defaultSize={25} minSize={20} maxSize={35} className="h-full">
         <ScrollArea className="h-full">
           <div className="space-y-4 p-4">
-            <VersionHistoryPanel />
-            {enableAI && <TemplateStrategyPanel />}
             <PropertyPanel enableAI={enableAI} />
+            {enableAI && <TemplateStrategyPanel />}
+            <VersionHistoryPanel />
           </div>
         </ScrollArea>
       </ResizablePanel>

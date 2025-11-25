@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { BulkLayerConfigurationDialog } from "./BulkLayerConfigurationDialog";
 
 const PRESET_CATEGORIES = [
   "Social Media",
@@ -275,8 +274,6 @@ export const TemplateHeader = ({ enableAI = false }: TemplateHeaderProps) => {
       </div>
 
       <div className="flex items-center gap-3">
-        {enableAI && <BulkLayerConfigurationDialog />}
-        
         <Button
           onClick={handleSave}
         >
