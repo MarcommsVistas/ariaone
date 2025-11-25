@@ -274,7 +274,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
                 hrEditable: dbLayer.hr_editable || false,
                 ...(dbLayer.type === 'text' && {
                   text: dbLayer.text_content || '',
-                  fontFamily: dbLayer.font_family || 'DM Sans',
+                  fontFamily: dbLayer.font_family || 'Helvetica',
                   fontSize: dbLayer.font_size || 16,
                   fontWeight: 400,
                   color: dbLayer.color || '#000000',
@@ -368,7 +368,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
                 rotation: dbLayer.rotation,
                 ...(dbLayer.type === 'text' && {
                   text: dbLayer.text_content || '',
-                  fontFamily: dbLayer.font_family || 'DM Sans',
+                  fontFamily: dbLayer.font_family || 'Helvetica',
                   fontSize: dbLayer.font_size || 16,
                   color: dbLayer.color || '#000000',
                 })
@@ -1421,7 +1421,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => {
                 rotation: dbLayer.rotation,
                 ...(dbLayer.type === 'text' && {
                   text: dbLayer.text_content || '',
-                  fontFamily: dbLayer.font_family || 'DM Sans',
+                  fontFamily: dbLayer.font_family || 'Helvetica',
                   fontSize: dbLayer.font_size || 16,
                   fontWeight: 400,
                   color: dbLayer.color || '#000000',

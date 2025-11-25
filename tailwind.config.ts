@@ -67,7 +67,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        sans: ['Helvetica', 'system-ui', 'sans-serif'],
       },
       transitionProperty: {
         'smooth': 'var(--transition-smooth)',
