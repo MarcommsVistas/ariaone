@@ -16,5 +16,8 @@ verify_jwt = false
 [functions.export-creative]
 verify_jwt = false
 
+[functions.backup-templates]
+verify_jwt = false
+
 [functions.parse-job-description]
 verify_jwt = false

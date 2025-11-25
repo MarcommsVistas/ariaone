@@ -13,6 +13,7 @@ serve(async (req) => {
   }
 
   try {
+    const startTime = Date.now();
     const { instanceId } = await req.json();
     console.log('🚀 Starting dynamic content generation for instance:', instanceId);
 
@@ -21,45 +22,64 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !LOVABLE_API_KEY) {
+      console.error('❌ Missing environment variables');
       throw new Error('Missing required environment variables');
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Fetch the instance and template details
-    const { data: instance, error: instanceError } = await supabase
-      .from('template_instances')
-      .select('*, original_template_id')
-      .eq('id', instanceId)
-      .single();
+    console.log('📥 Fetching instance data...');
+    try {
+      const { data: instance, error: instanceError } = await supabase
+        .from('template_instances')
+        .select('*, original_template_id')
+        .eq('id', instanceId)
+        .single();
 
-    if (instanceError || !instance) {
-      throw new Error('Instance not found');
-    }
+      if (instanceError) {
+        console.error('❌ Instance fetch error:', instanceError);
+        throw instanceError;
+      }
+      if (!instance) {
+        console.error('❌ Instance not found');
+        throw new Error('Instance not found');
+      }
 
-    console.log('✅ Found instance:', instance.name);
+      console.log('✅ Found instance:', instance.name, `(${Date.now() - startTime}ms)`);
 
-    // PHASE 1: TEMPLATE STRUCTURE ANALYSIS
-    console.log('📊 Phase 1: Analyzing template structure...');
+      // PHASE 1: TEMPLATE STRUCTURE ANALYSIS
+      console.log('📊 Phase 1: Analyzing template structure...');
 
-    // Check if slides exist for this instance, if not copy from template
-    const { data: existingSlides } = await supabase
-      .from('slides')
-      .select('id')
-      .eq('instance_id', instanceId);
+      // Check if slides exist for this instance, if not copy from template
+      try {
+        const { data: existingSlides, error: slidesCheckError } = await supabase
+          .from('slides')
+          .select('id')
+          .eq('instance_id', instanceId);
 
-    // If no slides exist, copy structure from template
-    if (!existingSlides || existingSlides.length === 0) {
-      console.log('No slides found for instance, copying from template...');
-      
-      // Get template slides
-      const { data: templateSlides } = await supabase
-        .from('slides')
-        .select('*')
-        .eq('template_id', instance.original_template_id)
-        .order('order_index', { ascending: true });
+        if (slidesCheckError) {
+          console.error('❌ Error checking slides:', slidesCheckError);
+          throw slidesCheckError;
+        }
 
-      if (templateSlides && templateSlides.length > 0) {
+        // If no slides exist, copy structure from template
+        if (!existingSlides || existingSlides.length === 0) {
+          console.log('⚠️ No slides found for instance, copying from template...');
+          
+          // Get template slides
+          const { data: templateSlides, error: templateSlidesError } = await supabase
+            .from('slides')
+            .select('*')
+            .eq('template_id', instance.original_template_id)
+            .order('order_index', { ascending: true });
+
+          if (templateSlidesError) {
+            console.error('❌ Error fetching template slides:', templateSlidesError);
+            throw templateSlidesError;
+          }
+
+          if (templateSlides && templateSlides.length > 0) {
         // Create slides for instance
         for (const templateSlide of templateSlides) {
           const { data: newSlide, error: slideError } = await supabase
@@ -128,12 +148,19 @@ serve(async (req) => {
           }
         }
         
-        console.log('Successfully copied template structure to instance');
+            console.log('✅ Successfully copied template structure to instance');
+          } else {
+            console.warn('⚠️ No template slides found to copy');
+          }
+        }
+      } catch (structureError) {
+        console.error('❌ Error in structure analysis:', structureError);
+        throw structureError;
       }
-    }
 
-    // Get all AI-editable layers for this instance
-    const { data: slides } = await supabase
+      // Get all AI-editable layers for this instance
+      console.log('🔍 Fetching AI-editable layers...');
+      const { data: slides, error: slidesError } = await supabase
       .from('slides')
       .select(`
         id,
@@ -150,20 +177,27 @@ serve(async (req) => {
           height
         )
       `)
-      .eq('instance_id', instanceId)
-      .eq('layers.ai_editable', true)
-      .order('order_index', { ascending: true });
+        .eq('instance_id', instanceId)
+        .eq('layers.ai_editable', true)
+        .order('order_index', { ascending: true });
 
-    if (!slides || slides.length === 0) {
-      console.log('⚠️ No AI-editable layers found');
-      return new Response(
-        JSON.stringify({ 
-          message: 'No AI-editable layers found',
-          updated_layers: 0
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+      if (slidesError) {
+        console.error('❌ Error fetching slides:', slidesError);
+        throw slidesError;
+      }
+
+      if (!slides || slides.length === 0) {
+        console.log('⚠️ No AI-editable layers found');
+        return new Response(
+          JSON.stringify({ 
+            message: 'No AI-editable layers found',
+            updated_layers: 0
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`✅ Found ${slides.length} slides with AI-editable layers (${Date.now() - startTime}ms)`);
 
     // Group layers by ai_content_type and count them
     const layersByCategory: Record<string, any[]> = {};
@@ -384,12 +418,20 @@ Apply now and join our team! 🚀
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
+    } catch (instanceError) {
+      console.error('❌ Critical error in instance processing:', instanceError);
+      throw instanceError;
+    }
+
   } catch (error) {
-    console.error('Error in generate-creative:', error);
+    console.error('❌ Fatal error in generate-creative:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Unknown error occurred',
-        details: error instanceof Error ? error.stack : undefined
+        details: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
       }),
       { 
         status: 500,
