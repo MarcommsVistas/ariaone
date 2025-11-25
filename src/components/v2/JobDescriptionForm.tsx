@@ -62,10 +62,14 @@ export const JobDescriptionForm = ({ templateId, templateName }: JobDescriptionF
     setIsSubmitting(true);
 
     try {
+      console.log("[Form] Starting submission...");
+      
       // Get current user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log("[Form] Auth check complete. User:", user?.id);
       
       if (authError || !user) {
+        console.error("[Form] Auth error:", authError);
         toast({
           title: "Authentication Error",
           description: "Please log in to generate creatives.",
@@ -75,12 +79,14 @@ export const JobDescriptionForm = ({ templateId, templateName }: JobDescriptionF
         return;
       }
 
-      // Add timeout wrapper for database operation
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      console.log("[Form] Creating instance with data:", {
+        templateId,
+        userId: user.id,
+        jobTitle: data.title
+      });
 
-      // Create template instance with simplified select (only fetch ID)
-      const { data: instance, error: instanceError } = await supabase
+      // Real timeout using Promise.race (15 seconds)
+      const insertPromise = supabase
         .from("template_instances")
         .insert({
           name: `${data.title} - ${templateName}`,
@@ -98,7 +104,17 @@ export const JobDescriptionForm = ({ templateId, templateName }: JobDescriptionF
         .select('id')
         .single();
 
-      clearTimeout(timeoutId);
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Database request timeout after 15 seconds')), 15000)
+      );
+
+      console.log("[Form] Executing database insert with 15s timeout...");
+      const { data: instance, error: instanceError } = await Promise.race([
+        insertPromise,
+        timeoutPromise
+      ]) as any;
+
+      console.log("[Form] Insert complete. Instance:", instance, "Error:", instanceError);
 
       if (instanceError) throw instanceError;
       if (!instance) throw new Error("Instance creation returned no data");
