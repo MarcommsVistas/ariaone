@@ -365,7 +365,7 @@ export default function Preview() {
               <CardHeader>
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
                   </div>
                   <CardTitle>Loading Creative...</CardTitle>
                 </div>
@@ -373,7 +373,7 @@ export default function Preview() {
               <CardContent>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Fetching creative data</span>
+                  <span>Fetching creative data...</span>
                 </div>
               </CardContent>
             </Card>
