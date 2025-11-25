@@ -1,22 +1,15 @@
 import { useTemplateStore } from "@/store/useTemplateStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  classifyTemplate, 
-  generateTemplateStrategy,
-  type TemplateType 
-} from "@/lib/templateClassification";
-import { Layers, TrendingUp, AlertCircle, CheckCircle, Info } from "lucide-react";
+import { classifyTemplate, type TemplateType } from "@/lib/templateClassification";
+import { Layers, Info, AlertCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useEffect } from "react";
 
 export const TemplateStrategyPanel = () => {
   const { currentTemplate } = useTemplateStore();
-  const [isUpdating, setIsUpdating] = useState(false);
 
   if (!currentTemplate) {
     return null;
@@ -31,13 +24,12 @@ export const TemplateStrategyPanel = () => {
     slide.layers.filter(layer => layer.aiEditable)
   );
 
-  const strategy = generateTemplateStrategy(
-    slideCount, 
-    allLayers.map(layer => ({
-      ai_content_type: layer.aiContentType || 'other',
-      name: layer.name
-    }))
-  );
+  // Group layers by content type
+  const contentTypeCounts = allLayers.reduce((acc, layer) => {
+    const type = layer.aiContentType || 'other';
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   // Auto-update template classification when slides change
   useEffect(() => {
@@ -77,28 +69,6 @@ export const TemplateStrategyPanel = () => {
     }
   };
 
-  const getActionIcon = (action: 'add' | 'remove' | 'optimal') => {
-    switch (action) {
-      case 'add':
-        return <TrendingUp className="h-4 w-4 text-amber-500" />;
-      case 'remove':
-        return <AlertCircle className="h-4 w-4 text-orange-500" />;
-      case 'optimal':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-    }
-  };
-
-  const getActionText = (action: 'add' | 'remove' | 'optimal', current: number, suggested: number) => {
-    switch (action) {
-      case 'add':
-        return `Add ${suggested - current} more`;
-      case 'remove':
-        return `Consider reducing by ${current - suggested}`;
-      case 'optimal':
-        return 'Optimal';
-    }
-  };
-
   return (
     <Card className="border-border bg-card">
       <CardHeader className="space-y-1">
@@ -121,7 +91,7 @@ export const TemplateStrategyPanel = () => {
         <div className="space-y-2">
           <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Info className="h-4 w-4" />
-            Current Setup
+            Your AI Configuration
           </h4>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="flex justify-between p-2 rounded-lg bg-muted/50">
@@ -137,67 +107,33 @@ export const TemplateStrategyPanel = () => {
 
         <Separator />
 
-        {/* Suggested Layer Mapping */}
+        {/* Content Types Configured */}
         <div className="space-y-3">
           <h4 className="text-sm font-semibold text-foreground">
-            Suggested Layer Mapping
+            Content Types Configured
           </h4>
           
-          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-            {strategy.recommendations.map((rec, index) => {
-              const mapping = classification.suggestedMappings.find(
-                m => m.contentType === rec.contentType
-              );
-              
-              if (!mapping) return null;
-
-              return (
-                <div
-                  key={index}
-                  className="p-3 rounded-lg border border-border bg-muted/30 space-y-2"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium text-foreground">
-                          {mapping.category}
-                        </span>
-                        {getActionIcon(rec.action)}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {mapping.description}
-                      </p>
-                    </div>
-                    <Badge variant="outline" className="text-xs ml-2">
-                      {mapping.contentType}
+          {Object.keys(contentTypeCounts).length > 0 ? (
+            <div className="space-y-1.5">
+              {Object.entries(contentTypeCounts)
+                .sort(([, a], [, b]) => b - a)
+                .map(([type, count]) => (
+                  <div
+                    key={type}
+                    className="flex items-center justify-between p-2 rounded-lg bg-muted/30 text-sm"
+                  >
+                    <span className="text-foreground">• {type}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {count} {count === 1 ? 'layer' : 'layers'}
                     </Badge>
                   </div>
-
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">
-                      Current: <span className="font-medium text-foreground">{rec.current}</span> | 
-                      Suggested: <span className="font-medium text-foreground">{rec.suggested}</span>
-                    </span>
-                    <span className={
-                      rec.action === 'optimal' 
-                        ? 'text-green-500' 
-                        : rec.action === 'add'
-                        ? 'text-amber-500'
-                        : 'text-orange-500'
-                    }>
-                      {getActionText(rec.action, rec.current, rec.suggested)}
-                    </span>
-                  </div>
-
-                  <div className="pt-2 border-t border-border/50">
-                    <p className="text-xs text-muted-foreground italic">
-                      Example: "{mapping.example}"
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic">
+              No AI-editable layers configured yet
+            </p>
+          )}
         </div>
 
         <Separator />
