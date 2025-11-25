@@ -80,11 +80,30 @@ export const InstanceThumbnail = ({ instanceId }: InstanceThumbnailProps) => {
   }
 
   const firstSlide = slides[0];
+  const maxThumbnailSize = 280;
+  const scale = maxThumbnailSize / Math.max(firstSlide.width, firstSlide.height);
 
   return (
-    <div className="aspect-[16/10] bg-muted/30 rounded-t-lg overflow-hidden flex items-center justify-center p-4">
-      <div style={{ transform: 'scale(0.15)', transformOrigin: 'center' }}>
-        <SlideRenderer slide={firstSlide} />
+    <div className="aspect-[4/3] bg-muted/30 rounded-t-lg overflow-hidden flex items-center justify-center p-4">
+      <div 
+        className="relative bg-white shadow-md rounded-sm overflow-hidden" 
+        style={{
+          width: '100%',
+          maxWidth: `${maxThumbnailSize}px`,
+          aspectRatio: `${firstSlide.width} / ${firstSlide.height}`
+        }}
+      >
+        <div 
+          className="absolute inset-0"
+          style={{ 
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            width: firstSlide.width,
+            height: firstSlide.height
+          }}
+        >
+          <SlideRenderer slide={firstSlide} />
+        </div>
       </div>
     </div>
   );

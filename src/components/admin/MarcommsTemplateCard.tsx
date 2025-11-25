@@ -70,19 +70,29 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
 
   // Grid view
   if (viewMode === "grid") {
+    const maxThumbnailSize = 280;
+    const scale = firstSlide ? maxThumbnailSize / Math.max(firstSlide.width, firstSlide.height) : 1;
+
     return (
       <Card className="border border-border hover:border-primary/50 transition-colors overflow-hidden group">
         {/* Thumbnail Preview */}
-        <div className="aspect-square bg-muted/30 p-4 flex items-center justify-center overflow-hidden">
+        <div className="aspect-[4/3] bg-muted/30 p-4 flex items-center justify-center overflow-hidden">
           {firstSlide ? (
-            <div className="w-full h-full flex items-center justify-center">
-              <div
-                style={{
-                  transform: `scale(${Math.min(
-                    250 / firstSlide.width,
-                    250 / firstSlide.height
-                  )})`,
-                  transformOrigin: 'center',
+            <div 
+              className="relative bg-white shadow-md rounded-sm overflow-hidden" 
+              style={{
+                width: '100%',
+                maxWidth: `${maxThumbnailSize}px`,
+                aspectRatio: `${firstSlide.width} / ${firstSlide.height}`
+              }}
+            >
+              <div 
+                className="absolute inset-0"
+                style={{ 
+                  transform: `scale(${scale})`,
+                  transformOrigin: 'top left',
+                  width: firstSlide.width,
+                  height: firstSlide.height
                 }}
               >
                 <SlideRenderer slide={firstSlide} />
@@ -183,22 +193,34 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
   }
 
   // List view
+  const maxThumbnailSizeList = 120;
+  const scaleList = firstSlide ? maxThumbnailSizeList / Math.max(firstSlide.width, firstSlide.height) : 1;
+
   return (
     <Card className="border border-border hover:border-primary/50 transition-colors overflow-hidden group">
       <div className="flex gap-4 p-4">
         {/* Thumbnail Preview */}
-        <div className="w-32 h-32 bg-muted/30 p-2 flex items-center justify-center overflow-hidden rounded-lg shrink-0">
+        <div className="w-32 h-24 bg-muted/30 p-2 flex items-center justify-center overflow-hidden rounded-lg shrink-0">
           {firstSlide ? (
-            <div
+            <div 
+              className="relative bg-white shadow-sm rounded-sm overflow-hidden" 
               style={{
-                transform: `scale(${Math.min(
-                  120 / firstSlide.width,
-                  120 / firstSlide.height
-                )})`,
-                transformOrigin: 'center',
+                width: '100%',
+                maxWidth: `${maxThumbnailSizeList}px`,
+                aspectRatio: `${firstSlide.width} / ${firstSlide.height}`
               }}
             >
-              <SlideRenderer slide={firstSlide} />
+              <div 
+                className="absolute inset-0"
+                style={{ 
+                  transform: `scale(${scaleList})`,
+                  transformOrigin: 'top left',
+                  width: firstSlide.width,
+                  height: firstSlide.height
+                }}
+              >
+                <SlideRenderer slide={firstSlide} />
+              </div>
             </div>
           ) : (
             <div className="text-muted-foreground text-xs">No preview</div>

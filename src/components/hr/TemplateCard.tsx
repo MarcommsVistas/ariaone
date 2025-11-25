@@ -18,16 +18,19 @@ export const TemplateCard = ({
   onOpenStudio
 }: TemplateCardProps) => {
   const firstSlide = template.slides[0];
+  const maxThumbnailSize = 280;
+  const scale = firstSlide ? maxThumbnailSize / Math.max(firstSlide.width, firstSlide.height) : 1;
+
   return <Card className="overflow-hidden border border-border bg-card hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
       {/* Thumbnail Preview */}
-      <div className="bg-muted/30 flex items-center justify-center p-6 overflow-hidden px-[12px] py-[12px]">
+      <div className="bg-muted/30 flex items-center justify-center p-4 overflow-hidden aspect-[4/3]">
         <div className="relative bg-white shadow-md rounded-sm overflow-hidden" style={{
         width: '100%',
-        maxWidth: '360px',
+        maxWidth: `${maxThumbnailSize}px`,
         aspectRatio: firstSlide ? `${firstSlide.width} / ${firstSlide.height}` : '1 / 1'
       }}>
           {firstSlide ? <div className="absolute inset-0" style={{
-          transform: `scale(${360 / Math.max(firstSlide.width, firstSlide.height)})`,
+          transform: `scale(${scale})`,
           transformOrigin: 'top left',
           width: firstSlide.width,
           height: firstSlide.height
