@@ -8,6 +8,8 @@ import { useExport } from "@/hooks/useExport";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Download, DownloadCloud, Send, Copy, Sparkles, Minus, Plus, Loader2, AlertCircle } from "lucide-react";
+import { GenerationProgress } from "@/components/v2/GenerationProgress";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,12 +39,66 @@ export default function Preview() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(80);
+  const [generationProgress, setGenerationProgress] = useState<{
+    phase: 'structure' | 'parsing' | 'population' | 'complete';
+    message: string;
+    percentage: number;
+    details?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (instanceId) {
       fetchInstanceData();
     }
   }, [instanceId]);
+
+  // Subscribe to realtime updates for generation progress
+  useEffect(() => {
+    if (!instanceId || !isGenerating) return;
+
+    let channel: RealtimeChannel | null = null;
+
+    const subscribeToProgress = async () => {
+      channel = supabase
+        .channel(`instance-progress-${instanceId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'template_instances',
+            filter: `id=eq.${instanceId}`,
+          },
+          (payload) => {
+            const progress = payload.new.generation_progress;
+            if (progress) {
+              console.log('[Preview] Progress update:', progress);
+              setGenerationProgress(progress);
+              
+              // If generation is complete, fetch slides
+              if (progress.phase === 'complete') {
+                setTimeout(() => {
+                  fetchSlides().then(slidesData => {
+                    setSlides(slidesData);
+                    setIsGenerating(false);
+                    setGenerationProgress(null);
+                  });
+                }, 1000);
+              }
+            }
+          }
+        )
+        .subscribe();
+    };
+
+    subscribeToProgress();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [instanceId, isGenerating]);
 
   const fetchInstanceData = async () => {
     try {
@@ -301,31 +357,27 @@ export default function Preview() {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <NavigationV2 />
-        <div className="flex-1 flex items-center justify-center">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+        <div className="flex-1 flex items-center justify-center p-4">
+          {isGenerating ? (
+            <GenerationProgress progress={generationProgress} />
+          ) : (
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+                  </div>
+                  <CardTitle>Loading Creative...</CardTitle>
                 </div>
-                <CardTitle>
-                  {loading ? "Loading Creative..." : "Generating Creative Content"}
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>Processing job description</span>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Fetching creative data</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>Generating content</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     );

@@ -444,6 +444,7 @@ export type Database = {
           created_at: string
           created_by: string
           deleted_at: string | null
+          generation_progress: Json | null
           id: string
           job_description: Json | null
           job_description_parsed: Json | null
@@ -461,6 +462,7 @@ export type Database = {
           created_at?: string
           created_by: string
           deleted_at?: string | null
+          generation_progress?: Json | null
           id?: string
           job_description?: Json | null
           job_description_parsed?: Json | null
@@ -478,6 +480,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           deleted_at?: string | null
+          generation_progress?: Json | null
           id?: string
           job_description?: Json | null
           job_description_parsed?: Json | null

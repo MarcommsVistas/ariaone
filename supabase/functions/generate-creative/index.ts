@@ -48,6 +48,19 @@ serve(async (req) => {
 
       console.log('✅ Found instance:', instance.name, `(${Date.now() - startTime}ms)`);
 
+      // Update progress: Starting structure analysis
+      await supabase
+        .from('template_instances')
+        .update({
+          generation_progress: {
+            phase: 'structure',
+            message: 'Analyzing template structure',
+            percentage: 10,
+            details: 'Checking slides and layers configuration'
+          }
+        })
+        .eq('id', instanceId);
+
       // PHASE 1: TEMPLATE STRUCTURE ANALYSIS
       console.log('📊 Phase 1: Analyzing template structure...');
 
@@ -199,8 +212,21 @@ serve(async (req) => {
 
       console.log(`✅ Found ${slides.length} slides with AI-editable layers (${Date.now() - startTime}ms)`);
 
-    // Group layers by ai_content_type and count them
-    const layersByCategory: Record<string, any[]> = {};
+      // Update progress: Structure analysis complete
+      await supabase
+        .from('template_instances')
+        .update({
+          generation_progress: {
+            phase: 'parsing',
+            message: 'Parsing job description with AI',
+            percentage: 35,
+            details: 'Extracting key information and requirements'
+          }
+        })
+        .eq('id', instanceId);
+
+      // Group layers by ai_content_type and count them
+      const layersByCategory: Record<string, any[]> = {};
     const extractionRequirements: Record<string, { count: number; max_chars_per_item?: number }> = {};
 
     for (const slide of slides) {
@@ -324,6 +350,19 @@ serve(async (req) => {
 
     console.log('💾 Stored parsed data in instance');
 
+    // Update progress: Starting layer population
+    await supabase
+      .from('template_instances')
+      .update({
+        generation_progress: {
+          phase: 'population',
+          message: 'Populating creative layers',
+          percentage: 65,
+          details: 'Applying extracted content to design'
+        }
+      })
+      .eq('id', instanceId);
+
     // PHASE 3: SMART LAYER POPULATION
     console.log('🎨 Phase 3: Populating layers with extracted content...');
 
@@ -406,6 +445,27 @@ Apply now and join our team! 🚀
     console.log(`\n🎉 Content generation completed!`);
     console.log(`   - Updated ${updatedLayersCount} layers across ${Object.keys(layersByCategory).length} categories`);
     console.log(`   - Generated social media caption`);
+
+    // Update progress: Complete
+    await supabase
+      .from('template_instances')
+      .update({
+        generation_progress: {
+          phase: 'complete',
+          message: 'Generation complete!',
+          percentage: 100,
+          details: `Updated ${updatedLayersCount} layers successfully`
+        }
+      })
+      .eq('id', instanceId);
+
+    // Clear progress after a delay (cleanup)
+    setTimeout(async () => {
+      await supabase
+        .from('template_instances')
+        .update({ generation_progress: null })
+        .eq('id', instanceId);
+    }, 5000);
 
     return new Response(
       JSON.stringify({ 
