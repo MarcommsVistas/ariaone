@@ -1,6 +1,5 @@
 import { useTemplateStore, Layer } from "@/store/useTemplateStore";
 import { useFontStore } from "@/store/useFontStore";
-import { AIGenerationDialog } from "./AIGenerationDialog";
 import { FontUploader } from "@/components/hr/FontUploader";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -95,7 +94,6 @@ export const PropertyPanel = ({
     <div className="h-full w-full bg-panel border-l border-border overflow-auto flex flex-col">
       <div className="h-12 border-b border-border flex items-center justify-between px-4 flex-shrink-0">
         <h3 className="font-semibold text-sm text-foreground">Properties</h3>
-        {enableAI && <AIGenerationDialog />}
       </div>
       
       {/* Font Uploader Section */}
