@@ -70,7 +70,7 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
 
   // Grid view
   if (viewMode === "grid") {
-    const maxThumbnailSize = 350; // Increased by 25% from 280
+    const maxThumbnailSize = 420; // Increased by 20% from 350
     const scale = firstSlide ? maxThumbnailSize / Math.max(firstSlide.width, firstSlide.height) : 1;
 
     return (
