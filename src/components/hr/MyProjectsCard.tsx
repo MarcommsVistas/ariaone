@@ -39,7 +39,10 @@ export const MyProjectsCard = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(instance.name);
   const firstSlide = instance.slides[0];
-  const thumbnailScale = firstSlide ? 160 / Math.max(firstSlide.width, firstSlide.height) : 1;
+  const maxThumbnailSizeGrid = 280;
+  const maxThumbnailSizeList = 120;
+  const scaleGrid = firstSlide ? maxThumbnailSizeGrid / Math.max(firstSlide.width, firstSlide.height) : 1;
+  const scaleList = firstSlide ? maxThumbnailSizeList / Math.max(firstSlide.width, firstSlide.height) : 1;
 
   const handleDelete = () => {
     onDelete(instance.id);
@@ -53,30 +56,29 @@ export const MyProjectsCard = ({
         <Card className="overflow-hidden hover:shadow-md transition-shadow group">
           <div className="flex items-center gap-4 p-4">
             {/* Thumbnail */}
-            <div className="relative w-32 h-20 bg-canvas rounded overflow-hidden border border-border flex-shrink-0">
+            <div className="w-32 h-24 bg-muted/30 p-2 flex items-center justify-center overflow-hidden rounded-lg flex-shrink-0">
               {firstSlide ? (
-                <div className="absolute inset-0 flex items-center justify-center p-2">
-                  <div
-                    className="relative bg-white shadow-sm rounded-sm overflow-hidden"
-                    style={{
-                      width: firstSlide.width * thumbnailScale * 0.5,
-                      height: firstSlide.height * thumbnailScale * 0.5,
+                <div 
+                  className="relative bg-white shadow-sm rounded-sm overflow-hidden" 
+                  style={{
+                    width: '100%',
+                    maxWidth: `${maxThumbnailSizeList}px`,
+                    aspectRatio: `${firstSlide.width} / ${firstSlide.height}`
+                  }}
+                >
+                  <div 
+                    className="absolute inset-0"
+                    style={{ 
+                      transform: `scale(${scaleList})`,
+                      transformOrigin: 'top left',
+                      width: firstSlide.width,
+                      height: firstSlide.height
                     }}
                   >
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        transform: `scale(${thumbnailScale * 0.5})`,
-                        transformOrigin: "top left",
-                        width: firstSlide.width,
-                        height: firstSlide.height,
-                      }}
-                    >
-                      <SlideRenderer
-                        slide={firstSlide}
-                        interactive={false}
-                      />
-                    </div>
+                    <SlideRenderer
+                      slide={firstSlide}
+                      interactive={false}
+                    />
                   </div>
                 </div>
               ) : (
@@ -204,20 +206,21 @@ export const MyProjectsCard = ({
       <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
         <CardContent className="p-0">
           {/* Preview */}
-          <div className="relative aspect-[16/10] bg-canvas overflow-hidden border-b border-border">
+          <div className="aspect-[4/3] bg-muted/30 overflow-hidden border-b border-border">
             {firstSlide ? (
-              <div className="absolute inset-0 flex items-center justify-center p-4">
+              <div className="h-full flex items-center justify-center p-4">
                 <div
                   className="relative bg-white shadow-md rounded-sm overflow-hidden"
                   style={{
-                    width: firstSlide.width * thumbnailScale,
-                    height: firstSlide.height * thumbnailScale,
+                    width: '100%',
+                    maxWidth: `${maxThumbnailSizeGrid}px`,
+                    aspectRatio: `${firstSlide.width} / ${firstSlide.height}`
                   }}
                 >
                   <div
                     className="absolute inset-0"
                     style={{
-                      transform: `scale(${thumbnailScale})`,
+                      transform: `scale(${scaleGrid})`,
                       transformOrigin: "top left",
                       width: firstSlide.width,
                       height: firstSlide.height,
@@ -231,7 +234,7 @@ export const MyProjectsCard = ({
                 </div>
               </div>
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-full flex items-center justify-center">
                 <Layers className="w-12 h-12 text-muted-foreground/30" />
               </div>
             )}
