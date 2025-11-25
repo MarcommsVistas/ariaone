@@ -70,20 +70,21 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
 
   // Grid view
   if (viewMode === "grid") {
-    const maxThumbnailSize = 280;
+    const maxThumbnailSize = 350; // Increased by 25% from 280
     const scale = firstSlide ? maxThumbnailSize / Math.max(firstSlide.width, firstSlide.height) : 1;
 
     return (
       <Card className="border border-border hover:border-primary/50 transition-colors overflow-hidden group">
         {/* Thumbnail Preview */}
-        <div className="aspect-[4/3] bg-muted/30 p-4 flex items-center justify-center overflow-hidden">
+        <div className="bg-muted/30 p-6 flex items-center justify-center overflow-hidden" style={{ minHeight: '280px' }}>
           {firstSlide ? (
             <div 
               className="relative bg-white shadow-md rounded-sm overflow-hidden" 
               style={{
-                width: '100%',
+                width: firstSlide.width * scale,
+                height: firstSlide.height * scale,
                 maxWidth: `${maxThumbnailSize}px`,
-                aspectRatio: `${firstSlide.width} / ${firstSlide.height}`
+                maxHeight: `${maxThumbnailSize}px`
               }}
             >
               <div 
@@ -193,21 +194,22 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
   }
 
   // List view
-  const maxThumbnailSizeList = 120;
+  const maxThumbnailSizeList = 150; // Increased by 25% from 120
   const scaleList = firstSlide ? maxThumbnailSizeList / Math.max(firstSlide.width, firstSlide.height) : 1;
 
   return (
     <Card className="border border-border hover:border-primary/50 transition-colors overflow-hidden group">
       <div className="flex gap-4 p-4">
         {/* Thumbnail Preview */}
-        <div className="w-32 h-24 bg-muted/30 p-2 flex items-center justify-center overflow-hidden rounded-lg shrink-0">
+        <div className="bg-muted/30 p-3 flex items-center justify-center overflow-hidden rounded-lg shrink-0" style={{ width: '160px', height: '120px' }}>
           {firstSlide ? (
             <div 
               className="relative bg-white shadow-sm rounded-sm overflow-hidden" 
               style={{
-                width: '100%',
+                width: firstSlide.width * scaleList,
+                height: firstSlide.height * scaleList,
                 maxWidth: `${maxThumbnailSizeList}px`,
-                aspectRatio: `${firstSlide.width} / ${firstSlide.height}`
+                maxHeight: `${maxThumbnailSizeList}px`
               }}
             >
               <div 
