@@ -208,6 +208,38 @@ export type Database = {
         }
         Relationships: []
       }
+      instance_thumbnails: {
+        Row: {
+          created_at: string
+          generated_at: string
+          id: string
+          instance_id: string
+          thumbnail_url: string
+        }
+        Insert: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          instance_id: string
+          thumbnail_url: string
+        }
+        Update: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          instance_id?: string
+          thumbnail_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instance_thumbnails_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: true
+            referencedRelation: "template_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       layers: {
         Row: {
           ai_content_type: string | null

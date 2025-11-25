@@ -21,3 +21,6 @@ verify_jwt = false
 
 [functions.parse-job-description]
 verify_jwt = false
+
+[functions.generate-thumbnail]
+verify_jwt = false
