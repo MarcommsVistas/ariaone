@@ -23,17 +23,17 @@ const jobDescriptionSchema = z.object({
   title: z
     .string()
     .trim()
-    .min(3, { message: "Job title must be at least 3 characters" })
+    .min(50, { message: "Job title must be at least 50 characters" })
     .max(100, { message: "Job title must be less than 100 characters" }),
   description: z
     .string()
     .trim()
-    .min(20, { message: "Job description must be at least 20 characters" })
+    .min(200, { message: "Job description must be at least 200 characters" })
     .max(2000, { message: "Job description must be less than 2000 characters" }),
   location: z
     .string()
     .trim()
-    .min(2, { message: "Location must be at least 2 characters" })
+    .min(4, { message: "Location must be at least 4 characters" })
     .max(100, { message: "Location must be less than 100 characters" }),
 });
 
