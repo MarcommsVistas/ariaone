@@ -4,7 +4,7 @@ import { Sparkles, ArrowLeft, ChevronDown } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { NotificationBell } from "./NotificationBell";
+import { NotificationCenter } from "./NotificationCenter";
 import ariaOneLogo from "@/assets/aria-one-logo.png";
 import {
   DropdownMenu,
@@ -97,7 +97,7 @@ export const NavigationV2 = () => {
             </Button>
           )}
 
-          <NotificationBell />
+          <NotificationCenter />
 
           {userRole && (
             <div className="px-3 py-1 rounded-full bg-muted text-xs font-medium capitalize">
