@@ -10,10 +10,10 @@ import { Navigate } from "react-router-dom";
 
 const Index = () => {
   const { mode, currentTemplate, currentInstance } = useTemplateStore();
-  const { userRole, isLoading } = useAuthStore();
+  const { userRole, isLoading, preferredVersion } = useAuthStore();
 
-  // Redirect HR and marcomms users to V2 by default
-  if (!isLoading && (userRole === 'hr' || userRole === 'marcomms')) {
+  // Redirect users to V2 if they prefer V2 (or haven't set a preference)
+  if (!isLoading && (userRole === 'hr' || userRole === 'marcomms') && preferredVersion !== 'v1') {
     return <Navigate to="/v2" replace />;
   }
 
