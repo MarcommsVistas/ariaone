@@ -33,6 +33,7 @@ export const TemplateHeader = ({ enableAI = false }: TemplateHeaderProps) => {
   const [tempCategory, setTempCategory] = useState(currentTemplate?.category || "");
   const [availableCategories, setAvailableCategories] = useState<string[]>(PRESET_CATEGORIES);
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
+  const [hasBeenSaved, setHasBeenSaved] = useState(false);
   const { toast } = useToast();
 
   // Fetch categories and brands from database
@@ -103,6 +104,7 @@ export const TemplateHeader = ({ enableAI = false }: TemplateHeaderProps) => {
   const handleSave = async () => {
     try {
       await saveTemplate();
+      setHasBeenSaved(true);
       toast({
         title: "Template saved",
         description: "All changes have been saved",
@@ -135,6 +137,7 @@ export const TemplateHeader = ({ enableAI = false }: TemplateHeaderProps) => {
   const handleUnpublish = async () => {
     try {
       await unpublishTemplate();
+      setHasBeenSaved(false);
       toast({
         title: "Template unpublished",
         description: `${currentTemplate.name} is now hidden from HR`,
@@ -274,27 +277,29 @@ export const TemplateHeader = ({ enableAI = false }: TemplateHeaderProps) => {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button
-          onClick={handleSave}
-        >
-          <Save className="mr-2 h-4 w-4" />
-          Save Template
-        </Button>
+        {!hasBeenSaved && (
+          <Button onClick={handleSave}>
+            <Save className="mr-2 h-4 w-4" />
+            Save Template
+          </Button>
+        )}
         
-        {currentTemplate.saved ? (
-          <Button
-            onClick={handleUnpublish}
-            className="bg-gray-700 hover:bg-gray-800 text-white"
-          >
-            Unpublish
-          </Button>
-        ) : (
-          <Button
-            onClick={handlePublish}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            Publish to HR
-          </Button>
+        {hasBeenSaved && (
+          currentTemplate.saved ? (
+            <Button
+              onClick={handleUnpublish}
+              className="bg-gray-700 hover:bg-gray-800 text-white"
+            >
+              Unpublish
+            </Button>
+          ) : (
+            <Button
+              onClick={handlePublish}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Publish to HR
+            </Button>
+          )
         )}
       </div>
     </div>
