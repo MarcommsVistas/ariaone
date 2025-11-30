@@ -6,10 +6,16 @@ import { HRInterface } from "@/components/hr/HRInterface";
 import { CreativeDashboard } from "@/components/admin/CreativeDashboard";
 import { HRDashboard } from "@/components/hr/HRDashboard";
 import { Layers } from "lucide-react";
+import { Navigate } from "react-router-dom";
 
 const Index = () => {
   const { mode, currentTemplate, currentInstance } = useTemplateStore();
   const { userRole, isLoading } = useAuthStore();
+
+  // Redirect HR users to V2 by default
+  if (!isLoading && userRole === 'hr') {
+    return <Navigate to="/v2" replace />;
+  }
 
   const renderContent = () => {
     // Show loading state while auth is initializing

@@ -132,10 +132,12 @@ export const Navigation = () => {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSwitchToV2} className="gap-2 cursor-pointer">
-              <Sparkles className="w-4 h-4" />
-              Switch to V2 (AI)
-            </DropdownMenuItem>
+            {userRole === 'marcomms' && (
+              <DropdownMenuItem onClick={handleSwitchToV2} className="gap-2 cursor-pointer">
+                <Sparkles className="w-4 h-4" />
+                Switch to V2 (AI)
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
               <LogOut className="w-4 h-4" />
               Logout
