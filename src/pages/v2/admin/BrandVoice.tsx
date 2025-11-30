@@ -21,6 +21,7 @@ interface Brand {
   name: string;
   tov_guidelines: string | null;
   tov_document_url: string | null;
+  custom_prompt: string | null;
   ai_enabled: boolean | null;
   ai_instructions: any;
 }
@@ -47,6 +48,7 @@ export default function BrandVoice() {
     name: "",
     tov_guidelines: "",
     tov_document_url: "",
+    custom_prompt: "",
     ai_enabled: true,
     ai_instructions: {},
   };
@@ -124,6 +126,7 @@ export default function BrandVoice() {
             name: editingBrand.name,
             tov_guidelines: editingBrand.tov_guidelines,
             tov_document_url: editingBrand.tov_document_url,
+            custom_prompt: editingBrand.custom_prompt,
             ai_enabled: editingBrand.ai_enabled,
             ai_instructions: editingBrand.ai_instructions,
           })
@@ -136,6 +139,7 @@ export default function BrandVoice() {
           name: editingBrand.name,
           tov_guidelines: editingBrand.tov_guidelines,
           tov_document_url: editingBrand.tov_document_url,
+          custom_prompt: editingBrand.custom_prompt,
           ai_enabled: editingBrand.ai_enabled,
           ai_instructions: editingBrand.ai_instructions,
         });
@@ -241,6 +245,20 @@ export default function BrandVoice() {
                     onChange={(e) => setEditingBrand(prev => prev ? { ...prev, tov_document_url: e.target.value } : null)}
                     placeholder="https://..."
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="custom_prompt">Custom AI Prompt (HIGHEST PRIORITY)</Label>
+                  <Textarea
+                    id="custom_prompt"
+                    value={editingBrand?.custom_prompt || ""}
+                    onChange={(e) => setEditingBrand(prev => prev ? { ...prev, custom_prompt: e.target.value } : null)}
+                    placeholder="Add specific AI instructions like character limits, formatting rules, etc. This will be treated as the highest priority directive."
+                    rows={4}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {editingBrand?.custom_prompt?.length || 0} characters
+                  </p>
                 </div>
 
                 <div className="flex items-center space-x-2">
