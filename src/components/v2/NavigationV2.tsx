@@ -1,10 +1,12 @@
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ArrowLeft, ChevronDown } from "lucide-react";
+import { Sparkles, ChevronDown } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationCenter } from "./NotificationCenter";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import ariaOneLogo from "@/assets/aria-one-logo.png";
 import {
   DropdownMenu,
@@ -19,19 +21,23 @@ export const NavigationV2 = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  const handleSwitchToV1 = async () => {
+  const handleVersionToggle = async (checked: boolean) => {
     try {
+      const newVersion = checked ? 'v2' : 'v1';
+      
       // Update preferred version in database
       const { error } = await supabase
         .from('user_roles')
-        .update({ preferred_version: 'v1' })
+        .update({ preferred_version: newVersion })
         .eq('user_id', user?.id);
 
       if (error) throw error;
 
-      // Update state and navigate
-      await useAuthStore.getState().setPreferredVersion('v1');
-      navigate('/');
+      // Update state and navigate if switching to V1
+      await useAuthStore.getState().setPreferredVersion(newVersion);
+      if (!checked) {
+        navigate('/');
+      }
     } catch (error) {
       console.error("Error switching version:", error);
       toast({
@@ -86,15 +92,20 @@ export const NavigationV2 = () => {
           )}
 
           {userRole === 'marcomms' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSwitchToV1}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Switch to V1
-            </Button>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-card">
+              <Label htmlFor="version-toggle" className="text-xs font-medium text-muted-foreground cursor-pointer">
+                V1
+              </Label>
+              <Switch
+                id="version-toggle"
+                checked={true}
+                onCheckedChange={handleVersionToggle}
+                className="data-[state=checked]:bg-primary"
+              />
+              <Label htmlFor="version-toggle" className="text-xs font-medium text-foreground cursor-pointer">
+                V2
+              </Label>
+            </div>
           )}
 
           <NotificationCenter />
