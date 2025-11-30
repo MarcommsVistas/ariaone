@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Sparkles, Search, Plus, FileText, Clock, CheckCircle, AlertCircle, Settings, Layers, FolderOpen, Grid3x3, List, Trash2, XCircle, Eye } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sparkles, Search, Plus, FileText, Clock, CheckCircle, AlertCircle, Settings, Layers, FolderOpen, Grid3x3, List, Trash2, XCircle, Eye, Filter, Tag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { InstanceThumbnail } from "./InstanceThumbnail";
@@ -44,6 +45,9 @@ export const HRDashboardV2 = () => {
   const [instances, setInstances] = useState<TemplateInstance[]>([]);
   const [reviews, setReviews] = useState<Record<string, Review>>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("recent");
   const [projectViewMode, setProjectViewMode] = useState<"grid" | "list">("grid");
   const [isLoading, setIsLoading] = useState(true);
   const [deletingInstanceId, setDeletingInstanceId] = useState<string | null>(null);
@@ -136,11 +140,59 @@ export const HRDashboardV2 = () => {
     }
   };
 
-  const filteredTemplates = templates.filter(template =>
-    template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    template.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    template.category?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Extract unique brands from templates
+  const brands = useMemo(() => {
+    const brandSet = new Set<string>();
+    templates.forEach(template => {
+      if (template.brand) brandSet.add(template.brand);
+    });
+    return Array.from(brandSet).sort();
+  }, [templates]);
+
+  // Extract unique categories from templates
+  const categories = useMemo(() => {
+    const categorySet = new Set<string>();
+    templates.forEach(template => {
+      if (template.category) categorySet.add(template.category);
+    });
+    return Array.from(categorySet).sort();
+  }, [templates]);
+
+  const filteredTemplates = useMemo(() => {
+    let filtered = templates;
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(t =>
+        t.name.toLowerCase().includes(query) ||
+        t.brand?.toLowerCase().includes(query) ||
+        t.category?.toLowerCase().includes(query)
+      );
+    }
+    
+    // Filter by brand
+    if (selectedBrand !== "all") {
+      filtered = filtered.filter(t => t.brand === selectedBrand);
+    }
+    
+    // Filter by category
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(t => t.category === selectedCategory);
+    }
+    
+    // Sort templates
+    if (sortBy === "name") {
+      filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === "brand") {
+      filtered = [...filtered].sort((a, b) => (a.brand || "").localeCompare(b.brand || ""));
+    } else if (sortBy === "category") {
+      filtered = [...filtered].sort((a, b) => (a.category || "").localeCompare(b.category || ""));
+    }
+    // "recent" is already sorted by updated_at from the database
+    
+    return filtered;
+  }, [templates, searchQuery, selectedBrand, selectedCategory, sortBy]);
 
   const handleDeleteInstance = async (instanceId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -348,16 +400,67 @@ export const HRDashboardV2 = () => {
 
         {/* Available Templates Tab */}
         <TabsContent value="templates" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Browse Templates</h2>
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <h2 className="text-2xl font-semibold mb-4">Browse Templates</h2>
+          
+          {/* Filters */}
+          <div className="flex flex-col gap-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search templates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-10"
               />
+            </div>
+
+            {/* Filter Row */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Category Filter */}
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <Tag className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Brand Filter */}
+              <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="All Brands" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Brands</SelectItem>
+                  {brands.map(brand => (
+                    <SelectItem key={brand} value={brand}>
+                      {brand}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Sort */}
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Most Recent</SelectItem>
+                  <SelectItem value="name">Name A-Z</SelectItem>
+                  <SelectItem value="category">Category</SelectItem>
+                  <SelectItem value="brand">Brand</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -366,7 +469,9 @@ export const HRDashboardV2 = () => {
               <div className="text-center space-y-3">
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto" />
                 <p className="text-muted-foreground">
-                  {searchQuery ? "No templates found" : "No templates available yet"}
+                  {searchQuery || selectedBrand !== "all" || selectedCategory !== "all"
+                    ? "No templates match your filters"
+                    : "No templates available yet"}
                 </p>
               </div>
             </Card>
