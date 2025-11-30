@@ -106,7 +106,7 @@ const NotificationItem = ({ notification, onNavigate }: NotificationItemProps) =
     <div
       onClick={() => onNavigate(notification)}
       className={`
-        p-4 cursor-pointer transition-colors hover:bg-accent/50
+        p-4 cursor-pointer transition-colors hover:bg-accent
         ${!notification.read ? "bg-primary/5 border-l-4 border-primary" : "border-l-4 border-transparent"}
       `}
     >
@@ -116,7 +116,7 @@ const NotificationItem = ({ notification, onNavigate }: NotificationItemProps) =
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className={`text-sm ${!notification.read ? "font-semibold" : "font-medium text-muted-foreground"}`}>
+            <p className={`text-sm text-foreground ${!notification.read ? "font-semibold" : "font-medium"}`}>
               {notification.title}
             </p>
             {!notification.read && (
@@ -149,12 +149,41 @@ export const NotificationCenter = () => {
   const handleNotificationClick = async (notification: Notification) => {
     await markAsRead(notification.id);
 
-    if (notification.data?.instanceId) {
-      if (notification.type === "review_completed") {
-        navigate(`/v2`);
-      } else if (notification.type === "changes_requested") {
-        navigate(`/v2/preview/${notification.data.instanceId}`);
-      }
+    // Handle navigation based on notification type
+    switch (notification.type) {
+      case "review_submitted":
+      case "deletion_requested":
+        // Admin notifications - go to reviews page
+        navigate("/v2/admin/reviews");
+        break;
+      
+      case "review_completed":
+      case "review_approved":
+      case "review_rejected":
+        // HR notifications - go to their dashboard
+        navigate("/v2");
+        break;
+      
+      case "changes_requested":
+        // HR notifications - go to specific instance preview
+        if (notification.data?.instanceId) {
+          navigate(`/v2/preview/${notification.data.instanceId}`);
+        } else {
+          navigate("/v2");
+        }
+        break;
+      
+      case "deletion_approved":
+      case "deletion_rejected":
+        // HR notifications about deletion requests
+        navigate("/v2");
+        break;
+      
+      default:
+        // Fallback - try to navigate to instance if available
+        if (notification.data?.instanceId) {
+          navigate(`/v2/preview/${notification.data.instanceId}`);
+        }
     }
   };
 
