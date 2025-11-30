@@ -172,10 +172,10 @@ export default function Reviews() {
             </ToggleGroup>
 
             <Button
-              variant={showDeletionOnly ? "default" : "outline"}
+              variant={showDeletionOnly ? "default" : deletionRequestCount > 0 ? "destructive" : "outline"}
               size="sm"
               onClick={() => setShowDeletionOnly(!showDeletionOnly)}
-              className="gap-2"
+              className={`gap-2 ${deletionRequestCount > 0 && !showDeletionOnly ? "animate-pulse" : ""}`}
             >
               <Trash2 className="h-4 w-4" />
               Deletion Requests ({deletionRequestCount})
