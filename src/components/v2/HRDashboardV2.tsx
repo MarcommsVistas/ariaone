@@ -93,6 +93,7 @@ export const HRDashboardV2 = () => {
         .from("template_instances")
         .select("*")
         .eq("workflow_version", "v2")
+        .is("deleted_at", null)
         .order("updated_at", { ascending: false });
 
       if (instancesError) throw instancesError;

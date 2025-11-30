@@ -66,13 +66,15 @@ export default function Reviews() {
         .from("creative_reviews")
         .select(`
           *,
-          template_instances (
+          template_instances!inner (
             name,
             brand,
             category,
-            job_description
+            job_description,
+            deleted_at
           )
         `)
+        .is("template_instances.deleted_at", null)
         .order("submitted_at", { ascending: false });
 
       if (error) throw error;
