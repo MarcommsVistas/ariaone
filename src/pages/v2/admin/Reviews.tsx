@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardList, Eye, Clock, CheckCircle, XCircle, AlertCircle, Trash2 } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ClipboardList, Eye, Clock, CheckCircle, XCircle, AlertCircle, Trash2, Grid3x3, List } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -33,6 +34,7 @@ export default function Reviews() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("pending");
   const [showDeletionOnly, setShowDeletionOnly] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -174,6 +176,19 @@ export default function Reviews() {
               </TabsList>
             </Tabs>
             
+            <ToggleGroup 
+              type="single" 
+              value={viewMode} 
+              onValueChange={(value) => value && setViewMode(value as "grid" | "list")}
+            >
+              <ToggleGroupItem value="grid" aria-label="Grid view">
+                <Grid3x3 className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="List view">
+                <List className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+
             <Button
               variant={showDeletionOnly ? "default" : "outline"}
               size="sm"
@@ -200,13 +215,27 @@ export default function Reviews() {
                   </div>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className={
+                  viewMode === "grid"
+                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    : "space-y-4"
+                }>
             {filteredReviews.map((review) => (
-              <Card key={review.id} className="hover:shadow-lg transition-shadow overflow-hidden">
-                <InstanceThumbnail instanceId={review.instance_id} />
-                <CardHeader>
+              <Card 
+                key={review.id} 
+                className={`hover:shadow-lg transition-shadow overflow-hidden ${
+                  viewMode === "list" ? "flex flex-row" : ""
+                }`}
+              >
+                {viewMode === "list" ? (
+                  <>
+                    <div className="w-48 shrink-0">
+                      <InstanceThumbnail instanceId={review.instance_id} />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between p-6">
+                      <div className="space-y-3">
                         <div className="flex items-start justify-between">
-                          <div className="space-y-1">
+                          <div className="space-y-1 flex-1">
                             <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
                               {review.template_instances?.name || "Untitled"}
                               {review.deletion_requested && (
@@ -221,7 +250,7 @@ export default function Reviews() {
                                 Requested at {format(new Date(review.deletion_requested_at), "MMM d, yyyy 'at' h:mm a")}
                               </p>
                             )}
-                            <CardDescription className="flex items-center gap-2">
+                            <div className="flex items-center gap-2">
                               {review.template_instances?.brand && (
                                 <span className="px-2 py-1 rounded-full bg-muted text-xs">
                                   {review.template_instances.brand}
@@ -232,14 +261,13 @@ export default function Reviews() {
                                   {review.template_instances.category}
                                 </span>
                               )}
-                            </CardDescription>
+                            </div>
                           </div>
                           {getStatusBadge(review.status)}
                         </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
+
                         {review.template_instances?.job_description && (
-                          <div className="space-y-2 text-sm">
+                          <div className="flex items-center gap-4 text-sm">
                             <div>
                               <span className="font-medium">Job Title: </span>
                               <span className="text-muted-foreground">
@@ -266,18 +294,96 @@ export default function Reviews() {
                             <p className="text-muted-foreground">{review.review_notes}</p>
                           </div>
                         )}
+                      </div>
 
-                        <Button
-                          onClick={() => navigate(`/v2/admin/review/${review.instance_id}`)}
-                          className="w-full gap-2"
-                        >
-                          <Eye className="h-4 w-4" />
-                          Review Submission
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                      <Button
+                        onClick={() => navigate(`/v2/admin/review/${review.instance_id}`)}
+                        className="mt-4 gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Review Submission
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <InstanceThumbnail instanceId={review.instance_id} />
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
+                            {review.template_instances?.name || "Untitled"}
+                            {review.deletion_requested && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-orange-500/10 text-orange-600 text-xs font-medium">
+                                <Trash2 className="h-3 w-3" />
+                                Deletion Requested
+                              </span>
+                            )}
+                          </CardTitle>
+                          {review.deletion_requested && review.deletion_requested_at && (
+                            <p className="text-xs text-orange-600/80">
+                              Requested at {format(new Date(review.deletion_requested_at), "MMM d, yyyy 'at' h:mm a")}
+                            </p>
+                          )}
+                          <CardDescription className="flex items-center gap-2">
+                            {review.template_instances?.brand && (
+                              <span className="px-2 py-1 rounded-full bg-muted text-xs">
+                                {review.template_instances.brand}
+                              </span>
+                            )}
+                            {review.template_instances?.category && (
+                              <span className="px-2 py-1 rounded-full bg-muted text-xs">
+                                {review.template_instances.category}
+                              </span>
+                            )}
+                          </CardDescription>
+                        </div>
+                        {getStatusBadge(review.status)}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {review.template_instances?.job_description && (
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <span className="font-medium">Job Title: </span>
+                            <span className="text-muted-foreground">
+                              {review.template_instances.job_description.title}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-medium">Location: </span>
+                            <span className="text-muted-foreground">
+                              {review.template_instances.job_description.location}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="text-xs text-muted-foreground">
+                        Submitted {new Date(review.submitted_at).toLocaleDateString()} at{" "}
+                        {new Date(review.submitted_at).toLocaleTimeString()}
+                      </div>
+
+                      {review.review_notes && (
+                        <div className="p-3 bg-muted rounded-lg text-sm">
+                          <p className="font-medium mb-1">Review Notes:</p>
+                          <p className="text-muted-foreground">{review.review_notes}</p>
+                        </div>
+                      )}
+
+                      <Button
+                        onClick={() => navigate(`/v2/admin/review/${review.instance_id}`)}
+                        className="w-full gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Review Submission
+                      </Button>
+                    </CardContent>
+                  </>
+                )}
+              </Card>
+            ))}
+          </div>
               )}
             </TabsContent>
           </Tabs>
