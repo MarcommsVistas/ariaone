@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { NavigationV2 } from "@/components/v2/NavigationV2";
 import { CreativeDashboard } from "@/components/admin/CreativeDashboard";
 import { useTemplateStore } from "@/store/useTemplateStore";
+import { BackupManager } from "@/components/admin/BackupManager";
 
 const Templates = () => {
   const { userRole, isLoading } = useAuthStore();
@@ -30,7 +31,10 @@ const Templates = () => {
     <div className="h-screen flex flex-col bg-background">
       <NavigationV2 />
       <div className="flex-1 overflow-auto">
-        <CreativeDashboard onEditTemplate={handleEditTemplate} />
+        <div className="container mx-auto py-6 space-y-6">
+          <BackupManager />
+          <CreativeDashboard onEditTemplate={handleEditTemplate} />
+        </div>
       </div>
     </div>
   );
