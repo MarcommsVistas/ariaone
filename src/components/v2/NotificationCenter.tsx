@@ -106,27 +106,27 @@ const NotificationItem = ({ notification, onNavigate }: NotificationItemProps) =
     <div
       onClick={() => onNavigate(notification)}
       className={`
-        p-4 cursor-pointer transition-colors hover:bg-accent
+        group p-4 cursor-pointer transition-colors hover:bg-accent
         ${!notification.read ? "bg-primary/5 border-l-4 border-primary" : "border-l-4 border-transparent"}
       `}
     >
       <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 mt-0.5">
+        <div className="flex-shrink-0 mt-0.5 [&>svg]:transition-colors group-hover:[&>svg]:text-accent-foreground">
           {getNotificationIcon(notification.type)}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className={`text-sm text-foreground ${!notification.read ? "font-semibold" : "font-medium"}`}>
+            <p className={`text-sm text-foreground group-hover:text-accent-foreground ${!notification.read ? "font-semibold" : "font-medium"}`}>
               {notification.title}
             </p>
             {!notification.read && (
               <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1" />
             )}
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground group-hover:text-accent-foreground mt-1">
             {notification.message}
           </p>
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-xs text-muted-foreground group-hover:text-accent-foreground/80 mt-2">
             {formatNotificationTime(notification.created_at)}
           </p>
         </div>
