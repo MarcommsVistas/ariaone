@@ -880,6 +880,8 @@ export default function ReviewStudio() {
             <PropertyPanel
               selectedLayerOverride={selectedLayer}
               onUpdateLayerOverride={updateLayerProperty}
+              enableAI={false}
+              brandName={instance?.brand}
             />
           </div>
       </div>

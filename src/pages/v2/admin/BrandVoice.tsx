@@ -8,7 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Save, X, ChevronDown } from "lucide-react";
+import { BrandImageGallery } from "@/components/admin/BrandImageGallery";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface Brand {
   id: string;
@@ -19,11 +25,22 @@ interface Brand {
   ai_instructions: any;
 }
 
+interface BrandImage {
+  id: string;
+  brand_id: string;
+  storage_path: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string | null;
+  created_at: string;
+}
+
 export default function BrandVoice() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [brandImages, setBrandImages] = useState<Record<string, BrandImage[]>>({});
   const { toast } = useToast();
 
   const emptyBrand: Partial<Brand> = {
@@ -47,6 +64,21 @@ export default function BrandVoice() {
 
       if (error) throw error;
       setBrands(data || []);
+      
+      // Fetch images for each brand
+      if (data) {
+        const imagesMap: Record<string, BrandImage[]> = {};
+        for (const brand of data) {
+          const { data: images } = await supabase
+            .from("brand_images")
+            .select("*")
+            .eq("brand_id", brand.id)
+            .order("created_at", { ascending: false });
+          
+          imagesMap[brand.id] = images || [];
+        }
+        setBrandImages(imagesMap);
+      }
     } catch (error) {
       console.error("Error fetching brands:", error);
       toast({
@@ -57,6 +89,19 @@ export default function BrandVoice() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchBrandImages = async (brandId: string) => {
+    const { data } = await supabase
+      .from("brand_images")
+      .select("*")
+      .eq("brand_id", brandId)
+      .order("created_at", { ascending: false });
+    
+    setBrandImages(prev => ({
+      ...prev,
+      [brandId]: data || []
+    }));
   };
 
   const handleSave = async () => {
@@ -206,6 +251,22 @@ export default function BrandVoice() {
                   />
                   <Label htmlFor="ai_enabled">Enable AI Generation</Label>
                 </div>
+
+                {editingBrand?.id && (
+                  <Collapsible defaultOpen>
+                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:underline">
+                      <ChevronDown className="h-4 w-4" />
+                      Image Gallery
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-4">
+                      <BrandImageGallery
+                        brandId={editingBrand.id}
+                        images={brandImages[editingBrand.id] || []}
+                        onImagesChange={() => fetchBrandImages(editingBrand.id)}
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
 
                 <div className="flex gap-2">
                   <Button onClick={handleSave}>
