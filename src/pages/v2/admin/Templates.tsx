@@ -32,8 +32,8 @@ const Templates = () => {
       <NavigationV2 />
       <div className="flex-1 overflow-auto">
         <div className="container mx-auto py-6 space-y-6">
-          <BackupManager />
           <CreativeDashboard onEditTemplate={handleEditTemplate} />
+          <BackupManager />
         </div>
       </div>
     </div>
