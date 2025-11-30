@@ -85,15 +85,17 @@ export const NavigationV2 = () => {
             </DropdownMenu>
           )}
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSwitchToV1}
-            className="gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Switch to V1
-          </Button>
+          {userRole === 'marcomms' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSwitchToV1}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Switch to V1
+            </Button>
+          )}
 
           <NotificationBell />
 
