@@ -1,6 +1,7 @@
 import { useTemplateStore, Layer } from "@/store/useTemplateStore";
 import { useFontStore } from "@/store/useFontStore";
 import { FontUploader } from "@/components/hr/FontUploader";
+import { BrandImagePicker } from "@/components/admin/BrandImagePicker";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -15,12 +16,14 @@ interface PropertyPanelProps {
   selectedLayerOverride?: Layer | null;
   onUpdateLayerOverride?: (layerId: string, updates: Partial<Layer>) => void;
   enableAI?: boolean;
+  brandName?: string;
 }
 
 export const PropertyPanel = ({
   selectedLayerOverride,
   onUpdateLayerOverride,
-  enableAI = false
+  enableAI = false,
+  brandName
 }: PropertyPanelProps = {}) => {
   const { selectedLayer: storeSelectedLayer, updateLayer: storeUpdateLayer } = useTemplateStore();
   const { uploadedFonts } = useFontStore();
@@ -215,6 +218,37 @@ export const PropertyPanel = ({
             </div>
           </div>
         </div>
+
+        {selectedLayer.type === 'image' && (
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+              Image Properties
+            </h4>
+            <div className="space-y-3">
+              {selectedLayer.src && (
+                <div>
+                  <Label className="text-xs">Current Image</Label>
+                  <div className="mt-2 rounded-lg overflow-hidden border">
+                    <img
+                      src={selectedLayer.src}
+                      alt="Current"
+                      className="w-full h-auto max-h-40 object-contain bg-muted"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <div>
+                <Label className="text-xs mb-2 block">Brand Gallery</Label>
+                <BrandImagePicker
+                  brandName={brandName}
+                  currentImageSrc={selectedLayer.src}
+                  onSelectImage={(imageUrl) => updateLayer(selectedLayer.id, { src: imageUrl })}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {selectedLayer.type === 'text' && (
           <div>
