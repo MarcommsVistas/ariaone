@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,16 +14,16 @@ All colors MUST be HSL.
 
     --canvas-bg: 220 15% 96%;
     --panel-bg: 220 15% 98%;
-    
+
     --card: 0 0% 100%;
     --card-foreground: 215 25% 15%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 215 25% 15%;
 
-    --primary: 0 84% 60%;
+    --primary: 360 100% 37.6471%;
     --primary-foreground: 0 0% 100%;
-    
+
     --primary-hover: 0 84% 54%;
     --primary-light: 0 84% 95%;
 
@@ -32,18 +33,18 @@ All colors MUST be HSL.
     --muted: 215 15% 95%;
     --muted-foreground: 215 15% 45%;
 
-    --accent: 0 84% 60%;
+    --accent: 360 100% 37.6471%;
     --accent-foreground: 0 0% 100%;
-    
+
     --gradient-primary: linear-gradient(135deg, hsl(0 84% 60%), hsl(15 84% 60%));
     --gradient-glow: linear-gradient(135deg, hsl(0 84% 60% / 0.1), hsl(15 84% 60% / 0.05));
 
-    --destructive: 0 84% 60%;
+    --destructive: 360 100% 37.6471%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 215 15% 88%;
     --input: 215 15% 88%;
-    --ring: 0 84% 60%;
+    --ring: 360 100% 37.6471%;
 
     --radius: 0.5rem;
 
@@ -58,7 +59,7 @@ All colors MUST be HSL.
 
     /* Transitions */
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
