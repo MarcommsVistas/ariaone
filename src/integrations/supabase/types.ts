@@ -755,6 +755,27 @@ export type Database = {
           performed_by_email: string
         }[]
       }
+      get_reviews_with_emails: {
+        Args: never
+        Returns: {
+          change_requests: Json
+          created_at: string
+          deletion_request_notes: string
+          deletion_requested: boolean
+          deletion_requested_at: string
+          id: string
+          instance_id: string
+          review_notes: string
+          reviewed_at: string
+          reviewed_by: string
+          status: string
+          submitted_at: string
+          submitted_by: string
+          submitted_by_email: string
+          template_instances: Json
+          updated_at: string
+        }[]
+      }
       get_user_email: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
