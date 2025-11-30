@@ -14,6 +14,7 @@ interface Review {
   id: string;
   instance_id: string;
   submitted_by: string;
+  submitted_by_email: string;
   submitted_at: string;
   status: string;
   reviewed_at: string | null;
@@ -65,23 +66,17 @@ export default function Reviews() {
 
   const fetchReviews = async () => {
     try {
-      const { data, error } = await supabase
-        .from("creative_reviews")
-        .select(`
-          *,
-          template_instances!inner (
-            name,
-            brand,
-            category,
-            job_description_parsed,
-            deleted_at
-          )
-        `)
-        .is("template_instances.deleted_at", null)
-        .order("submitted_at", { ascending: false });
+      const { data, error } = await supabase.rpc('get_reviews_with_emails');
 
       if (error) throw error;
-      setReviews(data || []);
+      
+      // Map the response to match the Review interface
+      const mappedData = (data || []).map((item: any) => ({
+        ...item,
+        template_instances: item.template_instances as any
+      }));
+      
+      setReviews(mappedData);
     } catch (error) {
       console.error("Error fetching reviews:", error);
       toast({

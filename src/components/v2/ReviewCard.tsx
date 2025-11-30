@@ -12,6 +12,7 @@ interface Review {
   status: string;
   submitted_at: string;
   submitted_by: string;
+  submitted_by_email: string;
   reviewed_at: string | null;
   reviewed_by: string | null;
   review_notes: string | null;
@@ -120,7 +121,7 @@ export const ReviewCard = ({ review, viewMode = "grid", onReview, className }: R
 
             <div className="flex items-center justify-between mt-3">
               <div className="text-sm text-muted-foreground">
-                Submitted by {review.submitted_by}
+                Submitted by {review.submitted_by_email}
               </div>
               <Button
                 onClick={() => onReview(review.instance_id)}
@@ -188,7 +189,7 @@ export const ReviewCard = ({ review, viewMode = "grid", onReview, className }: R
       </CardContent>
       <CardFooter className="pt-4 border-t flex justify-between items-center">
         <span className="text-sm text-muted-foreground">
-          By {review.submitted_by}
+          By {review.submitted_by_email}
         </span>
         <Button
           onClick={() => onReview(review.instance_id)}
