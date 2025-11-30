@@ -32,7 +32,7 @@ export const AdminDashboardV2 = () => {
       yesterday.setDate(yesterday.getDate() - 1);
 
       const [reviewsRes, templatesRes, brandsRes, categoriesRes, logsRes] = await Promise.all([
-        supabase.from('creative_reviews').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('creative_reviews').select('id', { count: 'exact', head: true }).or('status.eq.pending,deletion_requested.eq.true'),
         supabase.from('templates').select('id', { count: 'exact', head: true }),
         supabase.from('brands').select('id', { count: 'exact', head: true }),
         supabase.from('categories').select('id', { count: 'exact', head: true }),
