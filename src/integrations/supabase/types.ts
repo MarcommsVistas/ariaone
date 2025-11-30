@@ -105,6 +105,7 @@ export type Database = {
           ai_enabled: boolean | null
           ai_instructions: Json | null
           created_at: string | null
+          custom_prompt: string | null
           id: string
           name: string
           tov_document_url: string | null
@@ -114,6 +115,7 @@ export type Database = {
           ai_enabled?: boolean | null
           ai_instructions?: Json | null
           created_at?: string | null
+          custom_prompt?: string | null
           id?: string
           name: string
           tov_document_url?: string | null
@@ -123,6 +125,7 @@ export type Database = {
           ai_enabled?: boolean | null
           ai_instructions?: Json | null
           created_at?: string | null
+          custom_prompt?: string | null
           id?: string
           name?: string
           tov_document_url?: string | null

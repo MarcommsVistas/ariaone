@@ -81,16 +81,9 @@ Extract the following categories from the job description above:\n\n`;
       prompt += `\n`;
     }
 
-    // Add brand voice context if provided
-    if (brand_guidelines?.tov) {
-      prompt += `\nBrand Voice Guidelines:\n`;
-      prompt += `Tone: ${brand_guidelines.tov}\n`;
-      if (brand_guidelines.focus_areas?.length) {
-        prompt += `Focus Areas: ${brand_guidelines.focus_areas.join(', ')}\n`;
-      }
-    }
+    prompt += `\n⚠️ REMINDER: All extracted content MUST strictly follow the MANDATORY brand voice directives specified in the system prompt. Non-compliance is not acceptable.`;
 
-    prompt += `\nIMPORTANT: Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
+    prompt += `\n\nIMPORTANT: Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
 {
   "job_title": "${job_description.title}",
   "location": "${job_description.location || 'Not specified'}",`;
@@ -112,6 +105,53 @@ Extract the following categories from the job description above:\n\n`;
 
     console.log('Calling Lovable AI for JD parsing...');
 
+    // Build system prompt with MANDATORY brand directives
+    let systemPrompt = `You are a job description parser that extracts structured data for creative templates.
+
+MANDATORY BRAND VOICE DIRECTIVES - YOU MUST FOLLOW THESE:`;
+
+    if (brand_guidelines?.custom_prompt) {
+      systemPrompt += `
+
+🔴 CUSTOM INSTRUCTION (HIGHEST PRIORITY - NEVER IGNORE):
+${brand_guidelines.custom_prompt}`;
+    }
+
+    if (brand_guidelines?.tov) {
+      systemPrompt += `
+
+TONE OF VOICE (MUST STRICTLY ADHERE):
+${brand_guidelines.tov}
+ALL generated content MUST follow this tone. Do not deviate.`;
+    }
+
+    if (brand_guidelines?.guidelines?.length) {
+      systemPrompt += `
+
+SPECIFIC GUIDELINES (FOLLOW EACH RULE):`;
+      brand_guidelines.guidelines.forEach((guideline: string, i: number) => {
+        systemPrompt += `\n${i + 1}. ${guideline}`;
+      });
+    }
+
+    if (brand_guidelines?.focus_areas?.length) {
+      systemPrompt += `
+
+FOCUS AREAS (EMPHASIZE THESE):
+${brand_guidelines.focus_areas.join(', ')}`;
+    }
+
+    systemPrompt += `
+
+Return valid JSON only, no markdown formatting, no code blocks.`;
+
+    console.log('🎯 System prompt includes brand directives:', {
+      has_custom_prompt: !!brand_guidelines?.custom_prompt,
+      has_tov: !!brand_guidelines?.tov,
+      guidelines_count: brand_guidelines?.guidelines?.length || 0,
+      focus_areas_count: brand_guidelines?.focus_areas?.length || 0
+    });
+
     // Call Lovable AI
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -122,10 +162,7 @@ Extract the following categories from the job description above:\n\n`;
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { 
-            role: 'system', 
-            content: 'You are a job description parser. Return valid JSON only, no markdown formatting, no code blocks.' 
-          },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,

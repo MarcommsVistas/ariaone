@@ -265,30 +265,41 @@ serve(async (req) => {
 
     let brandGuidelines = {
       tov: 'Professional and aspirational',
-      focus_areas: [] as string[]
+      custom_prompt: null as string | null,
+      focus_areas: [] as string[],
+      guidelines: [] as string[]
     };
 
     if (template?.brand) {
       console.log('Loading brand context for:', template.brand);
       const { data: brandData } = await supabase
         .from('brands')
-        .select('tov_guidelines, ai_instructions')
+        .select('tov_guidelines, ai_instructions, custom_prompt')
         .eq('name', template.brand)
         .single();
 
       if (brandData) {
         brandGuidelines.tov = brandData.tov_guidelines || brandGuidelines.tov;
+        brandGuidelines.custom_prompt = brandData.custom_prompt || null;
+        
         if (brandData.ai_instructions) {
           try {
             const instructions = typeof brandData.ai_instructions === 'string' 
               ? JSON.parse(brandData.ai_instructions)
               : brandData.ai_instructions;
-            brandGuidelines.focus_areas = instructions.focus_areas || [];
+            // Fix field name: support both 'focus_areas' and 'focus'
+            brandGuidelines.focus_areas = instructions.focus_areas || instructions.focus || [];
+            // Include guidelines array
+            brandGuidelines.guidelines = instructions.guidelines || [];
           } catch (e) {
             console.error('Failed to parse AI instructions:', e);
           }
         }
-        console.log('✅ Loaded brand context');
+        console.log('✅ Loaded brand context:', {
+          has_custom_prompt: !!brandGuidelines.custom_prompt,
+          focus_areas_count: brandGuidelines.focus_areas.length,
+          guidelines_count: brandGuidelines.guidelines.length
+        });
       }
     }
 
