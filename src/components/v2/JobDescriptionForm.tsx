@@ -42,9 +42,11 @@ type JobDescriptionFormData = z.infer<typeof jobDescriptionSchema>;
 interface JobDescriptionFormProps {
   templateId: string;
   templateName: string;
+  brand?: string | null;
+  category?: string | null;
 }
 
-export const JobDescriptionForm = ({ templateId, templateName }: JobDescriptionFormProps) => {
+export const JobDescriptionForm = ({ templateId, templateName, brand, category }: JobDescriptionFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -93,6 +95,8 @@ export const JobDescriptionForm = ({ templateId, templateName }: JobDescriptionF
           original_template_id: templateId,
           created_by: user.id,
           workflow_version: "v2",
+          brand: brand,
+          category: category,
           job_description: {
             title: data.title,
             description: data.description,

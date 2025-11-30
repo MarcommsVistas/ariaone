@@ -147,7 +147,12 @@ export default function Generate() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <JobDescriptionForm templateId={template.id} templateName={template.name} />
+              <JobDescriptionForm 
+                templateId={template.id} 
+                templateName={template.name}
+                brand={template.brand}
+                category={template.category}
+              />
             </CardContent>
           </Card>
         </div>
