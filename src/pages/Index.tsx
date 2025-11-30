@@ -12,8 +12,8 @@ const Index = () => {
   const { mode, currentTemplate, currentInstance } = useTemplateStore();
   const { userRole, isLoading } = useAuthStore();
 
-  // Redirect HR users to V2 by default
-  if (!isLoading && userRole === 'hr') {
+  // Redirect HR and marcomms users to V2 by default
+  if (!isLoading && (userRole === 'hr' || userRole === 'marcomms')) {
     return <Navigate to="/v2" replace />;
   }
 
