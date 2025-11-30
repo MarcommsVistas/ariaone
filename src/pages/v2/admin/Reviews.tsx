@@ -175,7 +175,7 @@ export default function Reviews() {
               variant={showDeletionOnly ? "default" : deletionRequestCount > 0 ? "destructive" : "outline"}
               size="sm"
               onClick={() => setShowDeletionOnly(!showDeletionOnly)}
-              className={`gap-2 ${deletionRequestCount > 0 && !showDeletionOnly ? "animate-pulse" : ""}`}
+              className="gap-2"
             >
               <Trash2 className="h-4 w-4" />
               Deletion Requests ({deletionRequestCount})
