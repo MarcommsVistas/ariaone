@@ -678,7 +678,7 @@ export default function Preview() {
           )}
 
         {/* Canvas */}
-        <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto p-8 relative">
+        <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto px-8 pb-8 pt-4 relative">
             {currentSlide && (
               <>
                 {/* Hidden export container - renders at 1:1 scale for accurate export */}
