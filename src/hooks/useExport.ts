@@ -119,11 +119,6 @@ export const useExport = () => {
         pixelRatio: 2,
         cacheBust: true,
         skipFonts: true, // Skip external stylesheets that cause CORS errors
-        filter: (node) => {
-          // Filter out any problematic nodes
-          const element = node as HTMLElement;
-          return !element.className?.includes('pointer-events-none');
-        },
       });
 
       // Clean up injected fonts
@@ -208,11 +203,6 @@ export const useExport = () => {
           pixelRatio: 2,
           cacheBust: true,
           skipFonts: true, // Skip external stylesheets that cause CORS errors
-          filter: (node) => {
-            // Filter out any problematic nodes
-            const element = node as HTMLElement;
-            return !element.className?.includes('pointer-events-none');
-          },
         });
 
         // Clean up injected fonts

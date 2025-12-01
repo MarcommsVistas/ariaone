@@ -684,13 +684,13 @@ export default function Preview() {
                 {/* Hidden export container - renders at 1:1 scale for accurate export */}
                 <div 
                   id="preview-canvas"
-                  className="absolute opacity-0 pointer-events-none"
                   style={{
                     position: 'fixed',
                     left: '-9999px',
-                    top: 0,
+                    top: '-9999px',
                     width: currentSlide.width,
                     height: currentSlide.height,
+                    zIndex: -1,
                   }}
                 >
                   <SlideRenderer slide={currentSlide} interactive={false} />
