@@ -551,15 +551,17 @@ export default function Preview() {
             </Button>
 
             <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleExportPdf}
-                disabled={isExporting}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                {isExporting ? "Exporting..." : "Export PDF"}
-              </Button>
+              {reviewStatus === 'approved' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleExportPdf}
+                  disabled={isExporting}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isExporting ? "Exporting..." : "Export PDF"}
+                </Button>
+              )}
 
               {reviewStatus === 'approved' ? (
                 <Button 
