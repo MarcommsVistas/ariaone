@@ -90,7 +90,9 @@ export const useExport = () => {
       // Wait for all custom fonts to be loaded
       if (uploadedFonts.length > 0) {
         await Promise.all(
-          uploadedFonts.map(font => document.fonts.load(`16px ${font.family}`))
+          uploadedFonts.map(font => 
+            document.fonts.load(`${font.weight || 400} 16px "${font.family}"`).catch(() => {})
+          )
         );
       }
 
@@ -120,8 +122,8 @@ export const useExport = () => {
         cacheBust: true,
         skipFonts: true, // Skip external stylesheets that cause CORS errors
         backgroundColor: '#ffffff',
-        width: element.scrollWidth || element.offsetWidth,
-        height: element.scrollHeight || element.offsetHeight,
+        width: parseInt(element.style.width) || element.offsetWidth,
+        height: parseInt(element.style.height) || element.offsetHeight,
       });
 
       // Clean up injected fonts
@@ -177,7 +179,9 @@ export const useExport = () => {
         // Wait for all custom fonts to be loaded
         if (uploadedFonts.length > 0) {
           await Promise.all(
-            uploadedFonts.map(font => document.fonts.load(`16px ${font.family}`))
+            uploadedFonts.map(font => 
+              document.fonts.load(`${font.weight || 400} 16px "${font.family}"`).catch(() => {})
+            )
           );
         }
 
@@ -207,8 +211,8 @@ export const useExport = () => {
           cacheBust: true,
           skipFonts: true, // Skip external stylesheets that cause CORS errors
           backgroundColor: '#ffffff',
-          width: element.scrollWidth || element.offsetWidth,
-          height: element.scrollHeight || element.offsetHeight,
+          width: parseInt(element.style.width) || element.offsetWidth,
+          height: parseInt(element.style.height) || element.offsetHeight,
         });
 
         // Clean up injected fonts

@@ -663,26 +663,46 @@ export default function Preview() {
         {/* Canvas */}
         <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto px-8 pb-8 pt-4 relative">
             {currentSlide && (
-              <div
-                className="relative"
-                style={{
-                  width: currentSlide.width * baseScale,
-                  height: currentSlide.height * baseScale,
-                }}
-              >
+              <>
+                {/* Hidden export container - renders at 1:1 scale without transform */}
                 <div
                   id="preview-canvas"
                   style={{
-                    transform: `scale(${effectiveScale})`,
-                    transformOrigin: "center center",
+                    position: 'absolute',
+                    visibility: 'hidden',
                     width: currentSlide.width,
                     height: currentSlide.height,
                     backgroundColor: '#ffffff',
+                    overflow: 'hidden',
+                    left: 0,
+                    top: 0,
+                    zIndex: -1,
                   }}
                 >
                   <SlideRenderer slide={currentSlide} interactive={false} />
                 </div>
-              </div>
+
+                {/* Visible canvas with zoom - for display only */}
+                <div
+                  className="relative"
+                  style={{
+                    width: currentSlide.width * baseScale,
+                    height: currentSlide.height * baseScale,
+                  }}
+                >
+                  <div
+                    style={{
+                      transform: `scale(${effectiveScale})`,
+                      transformOrigin: "center center",
+                      width: currentSlide.width,
+                      height: currentSlide.height,
+                      backgroundColor: '#ffffff',
+                    }}
+                  >
+                    <SlideRenderer slide={currentSlide} interactive={false} />
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Zoom Controls */}
