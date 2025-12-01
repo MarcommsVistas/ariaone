@@ -460,23 +460,6 @@ export default function Preview() {
       <NavigationV2 />
       
       <div className="flex-1 flex overflow-hidden">
-        {/* Hidden export container - renders at 1:1 scale for accurate export */}
-        {currentSlide && (
-          <div 
-            id="preview-canvas"
-            className="absolute opacity-0 pointer-events-none"
-            style={{
-              position: 'fixed',
-              left: '-9999px',
-              top: 0,
-              width: currentSlide.width,
-              height: currentSlide.height,
-            }}
-          >
-            <SlideRenderer slide={currentSlide} interactive={false} />
-          </div>
-        )}
-
       {/* Left Sidebar */}
       <div className="w-[400px] bg-panel border-r border-border overflow-y-auto flex-shrink-0">
           <div className="sticky top-0 z-10 bg-panel/95 backdrop-blur-sm border-b border-border">
@@ -691,6 +674,7 @@ export default function Preview() {
                     width: currentSlide.width,
                     height: currentSlide.height,
                     zIndex: -1,
+                    backgroundColor: '#ffffff',
                   }}
                 >
                   <SlideRenderer slide={currentSlide} interactive={false} />

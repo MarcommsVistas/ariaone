@@ -119,6 +119,7 @@ export const useExport = () => {
         pixelRatio: 2,
         cacheBust: true,
         skipFonts: true, // Skip external stylesheets that cause CORS errors
+        backgroundColor: '#ffffff',
       });
 
       // Clean up injected fonts
@@ -203,6 +204,7 @@ export const useExport = () => {
           pixelRatio: 2,
           cacheBust: true,
           skipFonts: true, // Skip external stylesheets that cause CORS errors
+          backgroundColor: '#ffffff',
         });
 
         // Clean up injected fonts
