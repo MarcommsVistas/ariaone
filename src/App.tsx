@@ -22,6 +22,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuthStore } from "./store/useAuthStore";
 import { FontManager } from "./components/FontManager";
 import { useEffect } from "react";
+import { ThemeProvider } from "next-themes";
 
 const queryClient = new QueryClient();
 
@@ -47,11 +48,12 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <FontManager />
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <TooltipProvider>
+          <FontManager />
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
           <Routes>
             <Route 
               path="/login" 
@@ -166,6 +168,7 @@ const App = () => {
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };
