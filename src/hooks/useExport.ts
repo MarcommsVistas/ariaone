@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { toPng, toJpeg } from 'html-to-image';
 import { toast } from 'sonner';
 import JSZip from 'jszip';
+import { jsPDF } from 'jspdf';
 import { useFontStore } from '@/store/useFontStore';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -237,5 +238,101 @@ export const useExport = () => {
     }
   };
 
-  return { exportAsImage, exportAllSlides, isExporting };
+  const exportAsPdf = async (
+    slides: Array<{ id: string; name: string; width: number; height: number }>,
+    renderSlide: (slideId: string) => Promise<void>,
+    elementId: string,
+    templateName: string,
+    quality = 0.95
+  ) => {
+    setIsExporting(true);
+
+    try {
+      if (slides.length === 0) {
+        throw new Error('No slides to export');
+      }
+
+      const firstSlide = slides[0];
+      const orientation = firstSlide.width > firstSlide.height ? 'landscape' : 'portrait';
+      
+      // Convert pixels to mm at 96 DPI
+      const pxToMm = (px: number) => px * 0.264583;
+      
+      const pdf = new jsPDF({
+        orientation,
+        unit: 'mm',
+        format: [pxToMm(firstSlide.width), pxToMm(firstSlide.height)]
+      });
+
+      for (let i = 0; i < slides.length; i++) {
+        const slide = slides[i];
+        
+        // Render the slide
+        await renderSlide(slide.id);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        const element = document.getElementById(elementId);
+        if (!element) {
+          throw new Error('Element not found');
+        }
+
+        // Inject fonts and get CSS
+        const fontEmbedCSS = await injectCustomFonts(element);
+
+        // Wait for all images to load
+        const images = element.getElementsByTagName('img');
+        await Promise.all(
+          Array.from(images).map(
+            (img) =>
+              new Promise((resolve) => {
+                if (img.complete) {
+                  resolve(null);
+                } else {
+                  img.onload = () => resolve(null);
+                  img.onerror = () => resolve(null);
+                }
+              })
+          )
+        );
+
+        // Export slide as JPEG data URL
+        const dataUrl = await toJpeg(element, {
+          quality,
+          pixelRatio: 2,
+          cacheBust: true,
+          fontEmbedCSS,
+          backgroundColor: '#ffffff',
+          width: slide.width,
+          height: slide.height,
+          style: {
+            transform: 'none',
+            transformOrigin: 'top left',
+          },
+        });
+
+        // Add new page for slides after the first
+        if (i > 0) {
+          const slideOrientation = slide.width > slide.height ? 'landscape' : 'portrait';
+          pdf.addPage([pxToMm(slide.width), pxToMm(slide.height)], slideOrientation);
+        }
+
+        // Add image to cover full page
+        pdf.addImage(dataUrl, 'JPEG', 0, 0, pxToMm(slide.width), pxToMm(slide.height));
+
+        toast(`Processing slide ${i + 1} of ${slides.length}`);
+      }
+
+      // Download PDF
+      pdf.save(`${templateName}.pdf`);
+      toast.success(`Successfully exported ${slides.length} slide${slides.length > 1 ? 's' : ''} as PDF`);
+
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      toast.error('Failed to export PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return { exportAsImage, exportAllSlides, exportAsPdf, isExporting };
 };

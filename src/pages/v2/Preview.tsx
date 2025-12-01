@@ -30,7 +30,7 @@ export default function Preview() {
   const { instanceId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { exportAsImage, exportAllSlides, isExporting } = useExport();
+  const { exportAsImage, exportAllSlides, exportAsPdf, isExporting } = useExport();
   
   const [instance, setInstance] = useState<any>(null);
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -275,6 +275,21 @@ export default function Preview() {
       'preview-canvas',
       instance.name,
       'jpeg',
+      0.95
+    );
+  };
+
+  const handleExportPdf = async () => {
+    if (!instance || slides.length === 0) return;
+
+    await exportAsPdf(
+      slides.map(s => ({ id: s.id, name: s.name, width: s.width, height: s.height })),
+      async (slideId) => {
+        const slideIndex = slides.findIndex(s => s.id === slideId);
+        setCurrentSlideIdx(slideIndex);
+      },
+      'preview-canvas',
+      instance.name,
       0.95
     );
   };
@@ -536,45 +551,25 @@ export default function Preview() {
             </Button>
 
             <div className="flex items-center gap-2">
-              {slides.length > 1 ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="outline" disabled={isExporting}>
-                      <Download className="w-4 h-4 mr-2" />
-                      {isExporting ? "Exporting..." : "Export"}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleExportCurrent}>
-                      <Download className="w-4 h-4 mr-2" />
-                      Export Current Slide
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleExportAll}>
-                      <DownloadCloud className="w-4 h-4 mr-2" />
-                      Export All Slides (ZIP)
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleExportCurrent}
-                  disabled={isExporting}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  {isExporting ? "Exporting..." : "Export"}
-                </Button>
-              )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleExportPdf}
+                disabled={isExporting}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                {isExporting ? "Exporting..." : "Export PDF"}
+              </Button>
 
               {reviewStatus === 'approved' ? (
                 <Button 
                   size="sm" 
-                  onClick={handleExportCurrent}
+                  onClick={handleExportPdf}
                   className="bg-green-600 hover:bg-green-700 text-white"
+                  disabled={isExporting}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Download
+                  {isExporting ? "Exporting..." : "Download PDF"}
                 </Button>
               ) : reviewStatus === 'pending' ? (
                 <Button size="sm" variant="outline" disabled>
