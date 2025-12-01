@@ -124,6 +124,11 @@ export const useExport = () => {
         backgroundColor: '#ffffff',
         width: parseInt(element.style.width) || element.offsetWidth,
         height: parseInt(element.style.height) || element.offsetHeight,
+        // Override transform during capture to get 1:1 output
+        style: {
+          transform: 'none',
+          transformOrigin: 'top left',
+        },
       });
 
       // Clean up injected fonts
@@ -213,6 +218,11 @@ export const useExport = () => {
           backgroundColor: '#ffffff',
           width: parseInt(element.style.width) || element.offsetWidth,
           height: parseInt(element.style.height) || element.offsetHeight,
+          // Override transform during capture to get 1:1 output
+          style: {
+            transform: 'none',
+            transformOrigin: 'top left',
+          },
         });
 
         // Clean up injected fonts
