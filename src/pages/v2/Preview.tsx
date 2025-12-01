@@ -456,7 +456,7 @@ export default function Preview() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen flex flex-col bg-background">
       <NavigationV2 />
       
       <div className="flex-1 flex overflow-hidden">
@@ -477,8 +477,8 @@ export default function Preview() {
           </div>
         )}
 
-        {/* Left Sidebar */}
-        <div className="w-[400px] bg-panel border-r border-border overflow-auto">
+      {/* Left Sidebar */}
+      <div className="w-[400px] bg-panel border-r border-border overflow-y-auto flex-shrink-0">
           <div className="sticky top-0 z-10 bg-panel/95 backdrop-blur-sm border-b border-border">
             <div className="h-14 flex items-center justify-between px-5">
               <div className="flex items-center gap-2">
@@ -538,8 +538,8 @@ export default function Preview() {
           </div>
         </div>
 
-        {/* Main Canvas Area */}
-        <div className="flex-1 flex flex-col h-screen">
+      {/* Main Canvas Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
           {/* Top Toolbar */}
           <div className="h-14 border-b border-border flex items-center justify-between px-4">
             <Button
@@ -677,8 +677,8 @@ export default function Preview() {
             </div>
           )}
 
-          {/* Canvas */}
-          <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto p-8 relative h-[calc(100vh-56px)]">
+        {/* Canvas */}
+        <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto p-8 relative">
             {currentSlide && (
               <>
                 {/* Hidden export container - renders at 1:1 scale for accurate export */}
