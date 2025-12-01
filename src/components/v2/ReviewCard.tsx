@@ -68,9 +68,7 @@ export const ReviewCard = ({ review, viewMode = "grid", onReview, className }: R
     return (
       <Card className={cn("hover:shadow-lg transition-shadow", className)}>
         <div className="flex gap-4 p-4">
-          <div className="bg-muted/30 p-3 rounded-lg shrink-0" style={{ width: '160px', height: '120px' }}>
-            <InstanceThumbnail instanceId={review.instance_id} />
-          </div>
+          <InstanceThumbnail instanceId={review.instance_id} size="sm" mode="list" />
           <div className="flex-1 flex flex-col justify-between min-w-0">
             <div className="space-y-2">
               <div className="flex items-start justify-between gap-4">
@@ -139,9 +137,7 @@ export const ReviewCard = ({ review, viewMode = "grid", onReview, className }: R
   // Grid view
   return (
     <Card className={cn("hover:shadow-lg transition-shadow overflow-hidden", className)}>
-      <div className="bg-muted/30 p-6 rounded-t-lg" style={{ minHeight: '340px' }}>
-        <InstanceThumbnail instanceId={review.instance_id} />
-      </div>
+      <InstanceThumbnail instanceId={review.instance_id} size="lg" mode="grid" />
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold text-lg line-clamp-2">

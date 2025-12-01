@@ -1,111 +1,11 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { SlideRenderer } from "@/components/editor/SlideRenderer";
-import { FileText } from "lucide-react";
+import { SlideThumbnail } from "@/components/shared/SlideThumbnail";
 
 interface TemplateThumbnailProps {
   templateId: string;
+  size?: 'sm' | 'md' | 'lg';
+  mode?: 'grid' | 'list';
 }
 
-export const TemplateThumbnail = ({ templateId }: TemplateThumbnailProps) => {
-  const [slides, setSlides] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchSlides = async () => {
-      try {
-        const { data: slidesData, error } = await supabase
-          .from("slides")
-          .select("*, layers(*)")
-          .eq("template_id", templateId)
-          .order("order_index", { ascending: true });
-
-        if (error) throw error;
-
-        // Map database properties to component interface
-        const mappedSlides = slidesData?.map(slide => ({
-          ...slide,
-          layers: slide.layers.map((layer: any) => ({
-            id: layer.id,
-            name: layer.name,
-            type: layer.type,
-            text: layer.text_content,
-            src: layer.image_src,
-            x: layer.x,
-            y: layer.y,
-            width: layer.width,
-            height: layer.height,
-            opacity: layer.opacity,
-            rotation: layer.rotation,
-            visible: layer.visible,
-            locked: layer.locked,
-            zIndex: layer.z_index,
-            fontFamily: layer.font_family,
-            fontSize: layer.font_size,
-            fontWeight: layer.font_weight,
-            color: layer.color,
-            align: layer.text_align,
-            lineHeight: layer.line_height,
-            letterSpacing: layer.letter_spacing,
-            textTransform: layer.text_transform
-          }))
-        })) || [];
-
-        setSlides(mappedSlides);
-      } catch (error) {
-        console.error("Error fetching template thumbnail:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSlides();
-  }, [templateId]);
-
-  if (isLoading) {
-    return (
-      <div className="bg-muted/30 flex items-center justify-center p-6">
-        <div className="animate-pulse text-muted-foreground text-sm">Loading...</div>
-      </div>
-    );
-  }
-
-  if (slides.length === 0) {
-    return (
-      <div className="bg-muted/30 flex flex-col items-center justify-center gap-2 p-6">
-        <FileText className="h-8 w-8 text-muted-foreground/50" />
-        <p className="text-xs text-muted-foreground">No preview available</p>
-      </div>
-    );
-  }
-
-  const firstSlide = slides[0];
-  const maxThumbnailSize = 350;
-  const scale = maxThumbnailSize / Math.max(firstSlide.width, firstSlide.height);
-
-  return (
-    <div className="bg-muted/30 flex items-center justify-center overflow-hidden" style={{ minHeight: '260px' }}>
-      <div 
-        className="relative bg-white shadow-md rounded-sm overflow-hidden" 
-        style={{
-          width: firstSlide.width * scale,
-          height: firstSlide.height * scale,
-          maxWidth: `${maxThumbnailSize}px`,
-          maxHeight: `${maxThumbnailSize}px`
-        }}
-      >
-        <div 
-          className="absolute inset-0"
-          style={{ 
-            transform: `scale(${scale})`,
-            transformOrigin: 'top left',
-            width: firstSlide.width,
-            height: firstSlide.height
-          }}
-        >
-          <SlideRenderer slide={firstSlide} />
-        </div>
-      </div>
-    </div>
-  );
+export const TemplateThumbnail = ({ templateId, size = 'md', mode = 'grid' }: TemplateThumbnailProps) => {
+  return <SlideThumbnail templateId={templateId} size={size} mode={mode} />;
 };
