@@ -549,8 +549,21 @@ export default function ReviewStudio() {
     }
   };
 
-  const handleZoomIn = () => setZoom(prev => Math.min(prev + 10, 150));
-  const handleZoomOut = () => setZoom(prev => Math.max(prev - 10, 30));
+  // Calculate base scale to fit the canvas
+  const containerPadding = 40;
+  const availableWidth = window.innerWidth - 400 - 350 - containerPadding; // left sidebar + right sidebar
+  const availableHeight = window.innerHeight - 64 - 56 - 100 - containerPadding; // nav + toolbar + carousel
+  const scaleX = currentSlide ? availableWidth / currentSlide.width : 1;
+  const scaleY = currentSlide ? availableHeight / currentSlide.height : 1;
+  const baseScale = Math.min(scaleX, scaleY, 1);
+
+  const minZoom = 30;
+  const maxZoom = 150;
+  const effectiveScale = baseScale * (zoom / 100);
+
+  const handleZoomIn = () => setZoom((z) => Math.min(maxZoom, z + 10));
+  const handleZoomOut = () => setZoom((z) => Math.max(minZoom, z - 10));
+  const handleZoomReset = () => setZoom(80);
 
   const jobDescription = instance?.job_description;
 
@@ -593,32 +606,6 @@ export default function ReviewStudio() {
                 )}
               </div>
             )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleZoomOut}
-              disabled={zoom <= 30}
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="min-w-[70px]"
-            >
-              {zoom}%
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleZoomIn}
-              disabled={zoom >= 150}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </div>
@@ -847,10 +834,16 @@ export default function ReviewStudio() {
           )}
 
           {/* Interactive Canvas */}
-          <div className="flex-1 bg-muted/30 overflow-auto flex items-center justify-center p-8">
+          <div className="flex-1 bg-muted/30 overflow-auto flex items-center justify-center p-8 relative">
             {currentSlide ? (
-              <div className="relative" style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'center' }}>
-                <div className="relative">
+              <div 
+                className="relative"
+                style={{
+                  width: currentSlide.width * effectiveScale,
+                  height: currentSlide.height * effectiveScale,
+                }}
+              >
+                <div style={{ transform: `scale(${effectiveScale})`, transformOrigin: 'top left' }}>
                   <SlideRenderer
                     slide={currentSlide}
                     interactive={true}
@@ -859,7 +852,7 @@ export default function ReviewStudio() {
                   <InteractionOverlay
                     slideWidth={currentSlide.width}
                     slideHeight={currentSlide.height}
-                    scale={zoom / 100}
+                    scale={effectiveScale}
                     selectedLayer={selectedLayer}
                     onUpdateLayer={updateLayerLocal}
                     onDeselectLayer={() => setSelectedLayerId(null)}
@@ -872,6 +865,31 @@ export default function ReviewStudio() {
                 No slides available
               </div>
             )}
+
+            {/* Zoom controls - fixed position inside canvas */}
+            <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-panel/95 border border-border rounded-full px-3 py-1.5 shadow-lg backdrop-blur-sm z-50">
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <button
+                type="button"
+                onClick={handleZoomReset}
+                className="text-xs font-medium text-muted-foreground min-w-[52px] text-center hover:text-foreground transition-colors"
+              >
+                {Math.round(zoom)}%
+              </button>
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
           </div>
         </div>
 
