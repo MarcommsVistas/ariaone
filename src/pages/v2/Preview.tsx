@@ -606,74 +606,9 @@ export default function Preview() {
             </div>
           </div>
 
-          {/* Canvas */}
-          <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto p-8 relative h-[calc(100vh-56px)]">
-            {currentSlide && (
-              <>
-                {/* Hidden export container - renders at 1:1 scale for accurate export */}
-                <div 
-                  id="preview-canvas"
-                  className="absolute opacity-0 pointer-events-none"
-                  style={{
-                    position: 'fixed',
-                    left: '-9999px',
-                    top: 0,
-                    width: currentSlide.width,
-                    height: currentSlide.height,
-                  }}
-                >
-                  <SlideRenderer slide={currentSlide} interactive={false} />
-                </div>
-
-                {/* Visible canvas with zoom */}
-                <div
-                  className="relative"
-                  style={{
-                    width: currentSlide.width * baseScale,
-                    height: currentSlide.height * baseScale,
-                  }}
-                >
-                  <div
-                    style={{
-                      transform: `scale(${effectiveScale})`,
-                      transformOrigin: "center center",
-                    }}
-                  >
-                    <SlideRenderer slide={currentSlide} interactive={false} />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Zoom Controls */}
-            <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-panel/95 border border-border rounded-full px-3 py-1.5 shadow-lg backdrop-blur-sm z-50">
-              <button
-                type="button"
-                onClick={handleZoomOut}
-                className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
-              >
-                <Minus className="w-3 h-3" />
-              </button>
-              <button
-                type="button"
-                onClick={handleZoomReset}
-                className="text-xs font-medium text-muted-foreground min-w-[52px] text-center hover:text-foreground transition-colors"
-              >
-                {Math.round(zoom)}%
-              </button>
-              <button
-                type="button"
-                onClick={handleZoomIn}
-                className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
-              >
-                <Plus className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
-
           {/* Slide Navigation Carousel */}
           {slides.length > 1 && (
-            <div className="border-t border-border bg-panel p-4">
+            <div className="border-b bg-panel p-4">
               <div className="flex items-center gap-3 justify-center">
                 <Button
                   variant="ghost"
@@ -741,6 +676,71 @@ export default function Preview() {
               </div>
             </div>
           )}
+
+          {/* Canvas */}
+          <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto p-8 relative h-[calc(100vh-56px)]">
+            {currentSlide && (
+              <>
+                {/* Hidden export container - renders at 1:1 scale for accurate export */}
+                <div 
+                  id="preview-canvas"
+                  className="absolute opacity-0 pointer-events-none"
+                  style={{
+                    position: 'fixed',
+                    left: '-9999px',
+                    top: 0,
+                    width: currentSlide.width,
+                    height: currentSlide.height,
+                  }}
+                >
+                  <SlideRenderer slide={currentSlide} interactive={false} />
+                </div>
+
+                {/* Visible canvas with zoom */}
+                <div
+                  className="relative"
+                  style={{
+                    width: currentSlide.width * baseScale,
+                    height: currentSlide.height * baseScale,
+                  }}
+                >
+                  <div
+                    style={{
+                      transform: `scale(${effectiveScale})`,
+                      transformOrigin: "center center",
+                    }}
+                  >
+                    <SlideRenderer slide={currentSlide} interactive={false} />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Zoom Controls */}
+            <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-panel/95 border border-border rounded-full px-3 py-1.5 shadow-lg backdrop-blur-sm z-50">
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <button
+                type="button"
+                onClick={handleZoomReset}
+                className="text-xs font-medium text-muted-foreground min-w-[52px] text-center hover:text-foreground transition-colors"
+              >
+                {Math.round(zoom)}%
+              </button>
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                className="flex items-center justify-center h-7 w-7 rounded-full border border-border bg-background hover:bg-secondary transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
