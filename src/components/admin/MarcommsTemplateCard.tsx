@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Template, useTemplateStore } from "@/store/useTemplateStore";
-import { SlideRenderer } from "@/components/editor/SlideRenderer";
+import { SlideThumbnail } from "@/components/shared/SlideThumbnail";
 import { classifyTemplate } from "@/lib/templateClassification";
 import {
   AlertDialog,
@@ -71,39 +71,10 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
 
   // Grid view
   if (viewMode === "grid") {
-    const maxThumbnailSize = 420; // Increased by 20% from 350
-    const scale = firstSlide ? maxThumbnailSize / Math.max(firstSlide.width, firstSlide.height) : 1;
-
     return (
       <Card className="border border-border hover:border-primary/50 transition-colors overflow-hidden group">
         {/* Thumbnail Preview */}
-        <div className="bg-muted/30 p-6 flex items-center justify-center overflow-hidden" style={{ minHeight: '340px' }}>
-          {firstSlide ? (
-            <div 
-              className="relative bg-white shadow-md rounded-sm overflow-hidden" 
-              style={{
-                width: firstSlide.width * scale,
-                height: firstSlide.height * scale,
-                maxWidth: `${maxThumbnailSize}px`,
-                maxHeight: `${maxThumbnailSize}px`
-              }}
-            >
-              <div 
-                className="absolute inset-0"
-                style={{ 
-                  transform: `scale(${scale})`,
-                  transformOrigin: 'top left',
-                  width: firstSlide.width,
-                  height: firstSlide.height
-                }}
-              >
-                <SlideRenderer slide={firstSlide} />
-              </div>
-            </div>
-          ) : (
-            <div className="text-muted-foreground text-sm">No preview</div>
-          )}
-        </div>
+        <SlideThumbnail slide={firstSlide} size="lg" mode="grid" />
 
         {/* Template Info */}
         <CardContent className="p-4 space-y-3">
@@ -202,40 +173,11 @@ export const MarcommsTemplateCard = ({ template, onEditTemplate, viewMode = "gri
   }
 
   // List view
-  const maxThumbnailSizeList = 150; // Increased by 25% from 120
-  const scaleList = firstSlide ? maxThumbnailSizeList / Math.max(firstSlide.width, firstSlide.height) : 1;
-
   return (
     <Card className="border border-border hover:border-primary/50 transition-colors overflow-hidden group">
       <div className="flex gap-4 p-4">
         {/* Thumbnail Preview */}
-        <div className="bg-muted/30 p-3 flex items-center justify-center overflow-hidden rounded-lg shrink-0" style={{ width: '160px', height: '120px' }}>
-          {firstSlide ? (
-            <div 
-              className="relative bg-white shadow-sm rounded-sm overflow-hidden" 
-              style={{
-                width: firstSlide.width * scaleList,
-                height: firstSlide.height * scaleList,
-                maxWidth: `${maxThumbnailSizeList}px`,
-                maxHeight: `${maxThumbnailSizeList}px`
-              }}
-            >
-              <div 
-                className="absolute inset-0"
-                style={{ 
-                  transform: `scale(${scaleList})`,
-                  transformOrigin: 'top left',
-                  width: firstSlide.width,
-                  height: firstSlide.height
-                }}
-              >
-                <SlideRenderer slide={firstSlide} />
-              </div>
-            </div>
-          ) : (
-            <div className="text-muted-foreground text-xs">No preview</div>
-          )}
-        </div>
+        <SlideThumbnail slide={firstSlide} size="sm" mode="list" />
 
         {/* Template Info */}
         <div className="flex-1 flex flex-col justify-between min-w-0">

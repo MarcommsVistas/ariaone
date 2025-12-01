@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SlideRenderer } from "@/components/editor/SlideRenderer";
+import { SlideThumbnail } from "@/components/shared/SlideThumbnail";
 import { Template, TemplateInstance } from "@/store/useTemplateStore";
 import { Copy, FileEdit } from "lucide-react";
 import { format } from "date-fns";
@@ -18,29 +18,10 @@ export const TemplateCard = ({
   onOpenStudio
 }: TemplateCardProps) => {
   const firstSlide = template.slides[0];
-  const maxThumbnailSize = 280;
-  const scale = firstSlide ? maxThumbnailSize / Math.max(firstSlide.width, firstSlide.height) : 1;
 
   return <Card className="overflow-hidden border border-border bg-card hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
       {/* Thumbnail Preview */}
-      <div className="bg-muted/30 flex items-center justify-center p-4 overflow-hidden aspect-[4/3]">
-        <div className="relative bg-white shadow-md rounded-sm overflow-hidden" style={{
-        width: '100%',
-        maxWidth: `${maxThumbnailSize}px`,
-        aspectRatio: firstSlide ? `${firstSlide.width} / ${firstSlide.height}` : '1 / 1'
-      }}>
-          {firstSlide ? <div className="absolute inset-0" style={{
-          transform: `scale(${scale})`,
-          transformOrigin: 'top left',
-          width: firstSlide.width,
-          height: firstSlide.height
-        }}>
-              <SlideRenderer slide={firstSlide} interactive={false} />
-            </div> : <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground text-sm">No preview</p>
-            </div>}
-        </div>
-      </div>
+      <SlideThumbnail slide={firstSlide} size="md" mode="grid" />
 
       {/* Template Info */}
       <div className="p-4 space-y-3">

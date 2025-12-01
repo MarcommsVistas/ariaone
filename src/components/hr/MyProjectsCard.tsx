@@ -3,7 +3,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { SlideRenderer } from "@/components/editor/SlideRenderer";
+import { SlideThumbnail } from "@/components/shared/SlideThumbnail";
 import { Pencil, Trash2, Calendar, Layers } from "lucide-react";
 import { TemplateInstance, Template } from "@/store/useTemplateStore";
 import { formatDistanceToNow } from "date-fns";
@@ -39,10 +39,6 @@ export const MyProjectsCard = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(instance.name);
   const firstSlide = instance.slides[0];
-  const maxThumbnailSizeGrid = 280;
-  const maxThumbnailSizeList = 120;
-  const scaleGrid = firstSlide ? maxThumbnailSizeGrid / Math.max(firstSlide.width, firstSlide.height) : 1;
-  const scaleList = firstSlide ? maxThumbnailSizeList / Math.max(firstSlide.width, firstSlide.height) : 1;
 
   const handleDelete = () => {
     onDelete(instance.id);
@@ -56,37 +52,7 @@ export const MyProjectsCard = ({
         <Card className="overflow-hidden hover:shadow-md transition-shadow group">
           <div className="flex items-center gap-4 p-4">
             {/* Thumbnail */}
-            <div className="w-32 h-24 bg-muted/30 p-2 flex items-center justify-center overflow-hidden rounded-lg flex-shrink-0">
-              {firstSlide ? (
-                <div 
-                  className="relative bg-white shadow-sm rounded-sm overflow-hidden" 
-                  style={{
-                    width: '100%',
-                    maxWidth: `${maxThumbnailSizeList}px`,
-                    aspectRatio: `${firstSlide.width} / ${firstSlide.height}`
-                  }}
-                >
-                  <div 
-                    className="absolute inset-0"
-                    style={{ 
-                      transform: `scale(${scaleList})`,
-                      transformOrigin: 'top left',
-                      width: firstSlide.width,
-                      height: firstSlide.height
-                    }}
-                  >
-                    <SlideRenderer
-                      slide={firstSlide}
-                      interactive={false}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Layers className="w-8 h-8 text-muted-foreground/30" />
-                </div>
-              )}
-            </div>
+            <SlideThumbnail slide={firstSlide} size="sm" mode="list" />
 
             {/* Content */}
             <div className="flex-1 min-w-0 space-y-2">
@@ -206,39 +172,7 @@ export const MyProjectsCard = ({
       <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
         <CardContent className="p-0">
           {/* Preview */}
-          <div className="aspect-[4/3] bg-muted/30 overflow-hidden border-b border-border">
-            {firstSlide ? (
-              <div className="h-full flex items-center justify-center p-4">
-                <div
-                  className="relative bg-white shadow-md rounded-sm overflow-hidden"
-                  style={{
-                    width: '100%',
-                    maxWidth: `${maxThumbnailSizeGrid}px`,
-                    aspectRatio: `${firstSlide.width} / ${firstSlide.height}`
-                  }}
-                >
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      transform: `scale(${scaleGrid})`,
-                      transformOrigin: "top left",
-                      width: firstSlide.width,
-                      height: firstSlide.height,
-                    }}
-                  >
-                    <SlideRenderer
-                      slide={firstSlide}
-                      interactive={false}
-                    />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <Layers className="w-12 h-12 text-muted-foreground/30" />
-              </div>
-            )}
-          </div>
+          <SlideThumbnail slide={firstSlide} size="md" mode="grid" />
 
           {/* Content */}
           <div className="p-4 space-y-3">
