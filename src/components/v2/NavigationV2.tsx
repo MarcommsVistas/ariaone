@@ -7,6 +7,7 @@ import { NotificationCenter } from "./NotificationCenter";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import ariaOneLogo from "@/assets/aria-one-logo.png";
+import ariaOneLogoDark from "@/assets/aria-one-logo-dark.png";
 import { useTheme } from "next-themes";
 import {
   DropdownMenu,
@@ -26,7 +27,7 @@ export const NavigationV2 = () => {
     <nav className="border-b border-border bg-card">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
-          <img src={ariaOneLogo} alt="Aria-One" className="h-8 dark:brightness-0 dark:invert" />
+          <img src={theme === 'dark' ? ariaOneLogoDark : ariaOneLogo} alt="Aria-One" className="h-8" />
         </div>
 
         <div className="flex items-center gap-3">
