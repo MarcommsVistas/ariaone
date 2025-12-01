@@ -663,46 +663,26 @@ export default function Preview() {
         {/* Canvas */}
         <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto px-8 pb-8 pt-4 relative">
             {currentSlide && (
-              <>
-                {/* Hidden export container - renders at 1:1 scale without transform */}
+              <div
+                className="relative"
+                style={{
+                  width: currentSlide.width * baseScale,
+                  height: currentSlide.height * baseScale,
+                }}
+              >
                 <div
                   id="preview-canvas"
                   style={{
-                    position: 'absolute',
-                    visibility: 'hidden',
+                    transform: `scale(${effectiveScale})`,
+                    transformOrigin: "center center",
                     width: currentSlide.width,
                     height: currentSlide.height,
                     backgroundColor: '#ffffff',
-                    overflow: 'hidden',
-                    left: 0,
-                    top: 0,
-                    zIndex: -1,
                   }}
                 >
                   <SlideRenderer slide={currentSlide} interactive={false} />
                 </div>
-
-                {/* Visible canvas with zoom - for display only */}
-                <div
-                  className="relative"
-                  style={{
-                    width: currentSlide.width * baseScale,
-                    height: currentSlide.height * baseScale,
-                  }}
-                >
-                  <div
-                    style={{
-                      transform: `scale(${effectiveScale})`,
-                      transformOrigin: "center center",
-                      width: currentSlide.width,
-                      height: currentSlide.height,
-                      backgroundColor: '#ffffff',
-                    }}
-                  >
-                    <SlideRenderer slide={currentSlide} interactive={false} />
-                  </div>
-                </div>
-              </>
+              </div>
             )}
 
             {/* Zoom Controls */}
