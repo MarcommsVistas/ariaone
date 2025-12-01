@@ -120,6 +120,8 @@ export const useExport = () => {
         cacheBust: true,
         skipFonts: true, // Skip external stylesheets that cause CORS errors
         backgroundColor: '#ffffff',
+        width: element.scrollWidth || element.offsetWidth,
+        height: element.scrollHeight || element.offsetHeight,
       });
 
       // Clean up injected fonts
@@ -205,6 +207,8 @@ export const useExport = () => {
           cacheBust: true,
           skipFonts: true, // Skip external stylesheets that cause CORS errors
           backgroundColor: '#ffffff',
+          width: element.scrollWidth || element.offsetWidth,
+          height: element.scrollHeight || element.offsetHeight,
         });
 
         // Clean up injected fonts
