@@ -9,12 +9,32 @@ export const useExport = () => {
   const [isExporting, setIsExporting] = useState(false);
   const { uploadedFonts } = useFontStore();
 
-  const injectCustomFonts = async () => {
-    const fontStyle = document.createElement('style');
-    fontStyle.id = 'custom-fonts-for-export';
+  const injectCustomFonts = async (element: HTMLElement): Promise<string> => {
+    // Collect all unique font families used in the element
+    const usedFontFamilies = new Set<string>();
+    element.querySelectorAll('*').forEach(el => {
+      const style = window.getComputedStyle(el);
+      const fontFamily = style.fontFamily.split(',')[0].replace(/['"]/g, '').trim();
+      if (fontFamily) usedFontFamilies.add(fontFamily);
+    });
+
+    console.log('Used font families in export:', Array.from(usedFontFamilies));
     
-    // Fetch font data from Supabase Storage and convert to base64
+    let fontEmbedCSS = '';
+    
+    // Match used fonts to uploaded fonts with fuzzy matching
     for (const font of uploadedFonts) {
+      // Check if this font or a variation is used
+      const isUsed = Array.from(usedFontFamilies).some(used => {
+        const usedLower = used.toLowerCase();
+        const fontLower = font.family.toLowerCase();
+        return usedLower.includes(fontLower) || fontLower.includes(usedLower);
+      });
+      
+      if (!isUsed) continue;
+
+      console.log(`Embedding font: ${font.family} (${font.name})`);
+      
       try {
         const { data, error } = await supabase.storage
           .from('custom-fonts')
@@ -33,7 +53,8 @@ export const useExport = () => {
           reader.readAsDataURL(blob);
         });
 
-        const fontFaceRule = `
+        // Add @font-face rule to CSS
+        fontEmbedCSS += `
           @font-face {
             font-family: '${font.family}';
             src: url('${dataUrl}');
@@ -41,33 +62,25 @@ export const useExport = () => {
             font-style: ${font.style || 'normal'};
           }
         `;
-        fontStyle.appendChild(document.createTextNode(fontFaceRule));
       } catch (error) {
         console.error(`Failed to fetch font ${font.name} for export:`, error);
       }
     }
     
-    document.head.appendChild(fontStyle);
-    
-    // Wait for fonts to load - including common Google Fonts
+    // Wait for fonts to load
     await document.fonts.ready;
     
-    // Pre-load common fonts used in templates
-    const commonFonts = [
-      '400 16px "DM Sans"',
-      '500 16px "DM Sans"',
-      '600 16px "DM Sans"',
-      '700 16px "DM Sans"',
-    ];
-    
-    await Promise.all([
-      ...commonFonts.map(f => document.fonts.load(f).catch(() => {})),
-      ...uploadedFonts.map(font => 
-        document.fonts.load(`${font.weight || 400} 16px "${font.family}"`).catch(() => {})
+    // Pre-load fonts used in the element
+    await Promise.all(
+      Array.from(usedFontFamilies).map(family =>
+        document.fonts.load(`400 16px "${family}"`).catch(() => {})
       )
-    ]);
+    );
     
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Extra delay for font rendering
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return fontEmbedCSS;
   };
 
   const exportAsImage = async (
@@ -84,17 +97,8 @@ export const useExport = () => {
         throw new Error('Element not found');
       }
 
-      // Inject fonts
-      await injectCustomFonts();
-
-      // Wait for all custom fonts to be loaded
-      if (uploadedFonts.length > 0) {
-        await Promise.all(
-          uploadedFonts.map(font => 
-            document.fonts.load(`${font.weight || 400} 16px "${font.family}"`).catch(() => {})
-          )
-        );
-      }
+      // Inject fonts and get CSS
+      const fontEmbedCSS = await injectCustomFonts(element);
 
       // Wait for all images to load
       const images = element.getElementsByTagName('img');
@@ -112,15 +116,12 @@ export const useExport = () => {
         )
       );
 
-      // Add a delay to ensure fonts and rendering are complete
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
       const exportFunction = format === 'png' ? toPng : toJpeg;
       const dataUrl = await exportFunction(element, {
         quality,
         pixelRatio: 2,
         cacheBust: true,
-        skipFonts: true, // Skip external stylesheets that cause CORS errors
+        fontEmbedCSS, // Provide embedded fonts as CSS
         backgroundColor: '#ffffff',
         width: parseInt(element.style.width) || element.offsetWidth,
         height: parseInt(element.style.height) || element.offsetHeight,
@@ -130,10 +131,6 @@ export const useExport = () => {
           transformOrigin: 'top left',
         },
       });
-
-      // Clean up injected fonts
-      const fontStyle = document.getElementById('custom-fonts-for-export');
-      if (fontStyle) fontStyle.remove();
 
       // Create download link
       const link = document.createElement('a');
@@ -178,17 +175,8 @@ export const useExport = () => {
           throw new Error('Element not found');
         }
 
-        // Inject fonts
-        await injectCustomFonts();
-
-        // Wait for all custom fonts to be loaded
-        if (uploadedFonts.length > 0) {
-          await Promise.all(
-            uploadedFonts.map(font => 
-              document.fonts.load(`${font.weight || 400} 16px "${font.family}"`).catch(() => {})
-            )
-          );
-        }
+        // Inject fonts and get CSS
+        const fontEmbedCSS = await injectCustomFonts(element);
 
         // Wait for all images to load
         const images = element.getElementsByTagName('img');
@@ -206,15 +194,12 @@ export const useExport = () => {
           )
         );
 
-        // Add delay to ensure fonts are rendered
-        await new Promise((resolve) => setTimeout(resolve, 300));
-
         // Export the slide
         const dataUrl = await exportFunction(element, {
           quality,
           pixelRatio: 2,
           cacheBust: true,
-          skipFonts: true, // Skip external stylesheets that cause CORS errors
+          fontEmbedCSS, // Provide embedded fonts as CSS
           backgroundColor: '#ffffff',
           width: parseInt(element.style.width) || element.offsetWidth,
           height: parseInt(element.style.height) || element.offsetHeight,
@@ -224,10 +209,6 @@ export const useExport = () => {
             transformOrigin: 'top left',
           },
         });
-
-        // Clean up injected fonts
-        const fontStyle = document.getElementById('custom-fonts-for-export');
-        if (fontStyle) fontStyle.remove();
 
         // Convert data URL to blob
         const base64Data = dataUrl.split(',')[1];
