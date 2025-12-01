@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -53,10 +53,6 @@ export const NavigationV2 = () => {
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
           <img src={ariaOneLogo} alt="Aria-One" className="h-8" />
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
-            <Sparkles className="h-3 w-3 text-primary" />
-            <span className="text-xs font-medium text-primary">AI-Powered V2</span>
-          </div>
         </div>
 
         <div className="flex items-center gap-3">
