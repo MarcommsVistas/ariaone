@@ -663,41 +663,26 @@ export default function Preview() {
         {/* Canvas */}
         <div className="flex-1 bg-canvas flex items-center justify-center overflow-auto px-8 pb-8 pt-4 relative">
             {currentSlide && (
-              <>
-                {/* Hidden export container - renders at 1:1 scale for accurate export */}
-                <div 
+              <div
+                className="relative"
+                style={{
+                  width: currentSlide.width * baseScale,
+                  height: currentSlide.height * baseScale,
+                }}
+              >
+                <div
                   id="preview-canvas"
                   style={{
-                    position: 'fixed',
-                    left: '-9999px',
-                    top: '-9999px',
+                    transform: `scale(${effectiveScale})`,
+                    transformOrigin: "center center",
                     width: currentSlide.width,
                     height: currentSlide.height,
-                    zIndex: -1,
                     backgroundColor: '#ffffff',
                   }}
                 >
                   <SlideRenderer slide={currentSlide} interactive={false} />
                 </div>
-
-                {/* Visible canvas with zoom */}
-                <div
-                  className="relative"
-                  style={{
-                    width: currentSlide.width * baseScale,
-                    height: currentSlide.height * baseScale,
-                  }}
-                >
-                  <div
-                    style={{
-                      transform: `scale(${effectiveScale})`,
-                      transformOrigin: "center center",
-                    }}
-                  >
-                    <SlideRenderer slide={currentSlide} interactive={false} />
-                  </div>
-                </div>
-              </>
+              </div>
             )}
 
             {/* Zoom Controls */}
